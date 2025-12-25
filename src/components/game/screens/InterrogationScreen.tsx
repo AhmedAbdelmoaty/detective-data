@@ -1,282 +1,356 @@
 import { useState } from "react";
-import { ArrowLeft, CheckCircle, XCircle } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import { ArrowLeft } from "lucide-react";
+import { InteractiveRoom } from "../InteractiveRoom";
+import { EnhancedDialogue } from "../EnhancedDialogue";
+import { SceneTransition } from "../SceneTransition";
+import { AnimatedCharacter } from "../AnimatedCharacter";
 import { GameCard } from "../GameCard";
-import { CharacterAvatar } from "../CharacterAvatar";
-import { ChatBubble } from "../ChatBubble";
-import { cn } from "@/lib/utils";
+import interrogationRoom from "@/assets/rooms/interrogation-room.png";
+import suspectArrested from "@/assets/scenes/suspect-arrested.png";
+import suspectEscaped from "@/assets/scenes/suspect-escaped.png";
 
 interface InterrogationScreenProps {
   onNavigate: (screen: string) => void;
 }
 
-const suspects = [
+type SuspectId = "ahmed" | "sara" | "karim";
+
+interface Suspect {
+  id: SuspectId;
+  dialogues: Array<{
+    characterId: SuspectId;
+    text: string;
+    mood?: "neutral" | "happy" | "nervous" | "angry" | "suspicious";
+  }>;
+  suspicious: boolean;
+}
+
+const suspects: Suspect[] = [
   {
-    id: 1,
-    name: "أحمد",
-    nameEn: "Ahmed",
-    role: "المدير المالي",
-    roleEn: "CFO",
-    emoji: "👨‍💼",
-    color: "cyan" as const,
-    dialogue: [
-      "أنا مسؤول عن التوقيعات فقط، لكن مش أنا اللي بأعمل التحويلات.",
-      "كل حاجة موثقة عندي. ممكن تراجع السجلات.",
-      "لو فيه تلاعب، أكيد حد تاني عمله.",
+    id: "ahmed",
+    dialogues: [
+      {
+        characterId: "ahmed",
+        text: "أنا مسؤول فقط عن التوقيعات النهائية. لا أقوم بإدخال أي معاملات بنفسي.",
+        mood: "neutral",
+      },
+      {
+        characterId: "ahmed",
+        text: "كل المعاملات تمر عبر سارة للمراجعة وكريم للمشتريات. أنا فقط أوقع.",
+        mood: "neutral",
+      },
+      {
+        characterId: "ahmed",
+        text: "إذا كان هناك تلاعب، فأنا لم ألاحظه لأن الأوراق كانت تبدو سليمة.",
+        mood: "neutral",
+      },
     ],
     suspicious: false,
   },
   {
-    id: 2,
-    name: "سارة",
-    nameEn: "Sara",
-    role: "محاسبة",
-    roleEn: "Accountant",
-    emoji: "👩‍💻",
-    color: "purple" as const,
-    dialogue: [
-      "أنا بشتغل ساعات إضافية عشان الشغل كتير، مش عشان حاجة تانية!",
-      "أنا اللي اكتشفت إن الأرقام مش راكبة من الأول.",
-      "شوف سجلات المشتريات... فيها حاجات غريبة.",
+    id: "sara",
+    dialogues: [
+      {
+        characterId: "sara",
+        text: "أنا أعمل ساعات إضافية كل يوم! لدي الكثير من التقارير لمراجعتها.",
+        mood: "neutral",
+      },
+      {
+        characterId: "sara",
+        text: "لاحظت بعض المعاملات الغريبة من قسم المشتريات، لكنها كانت موقعة من أحمد.",
+        mood: "suspicious",
+      },
+      {
+        characterId: "sara",
+        text: "كريم كان يقدم فواتير كثيرة جداً في الأشهر الأخيرة. أكثر من المعتاد بكثير.",
+        mood: "suspicious",
+      },
     ],
     suspicious: false,
   },
   {
-    id: 3,
-    name: "كريم",
-    nameEn: "Karim",
-    role: "مسؤول المشتريات",
-    roleEn: "Procurement",
-    emoji: "👨‍🔧",
-    color: "gold" as const,
-    dialogue: [
-      "المشتريات كلها موثقة... تقريباً.",
-      "في شهر مارس كان فيه طلبات كتير مستعجلة.",
-      "أنا... أنا مش فاكر التفاصيل دلوقتي.",
+    id: "karim",
+    dialogues: [
+      {
+        characterId: "karim",
+        text: "المشتريات كلها موثقة! عندي فواتير لكل شيء... تقريباً.",
+        mood: "nervous",
+      },
+      {
+        characterId: "karim",
+        text: "الشركة تحتاج معدات كثيرة. أنا بس بنفذ طلبات الإدارة!",
+        mood: "angry",
+      },
+      {
+        characterId: "karim",
+        text: "لماذا تنظر إلي هكذا؟ أنا... أنا مش فاكر التفاصيل دلوقتي.",
+        mood: "nervous",
+      },
     ],
     suspicious: true,
   },
 ];
 
+const hotspots = [
+  {
+    id: "chair-left",
+    x: 15,
+    y: 40,
+    width: 25,
+    height: 45,
+    label: "اختر مشتبه",
+    icon: "👥",
+  },
+  {
+    id: "table",
+    x: 35,
+    y: 55,
+    width: 30,
+    height: 30,
+    label: "اتخذ قرارك",
+    icon: "⚖️",
+  },
+];
+
 export const InterrogationScreen = ({ onNavigate }: InterrogationScreenProps) => {
-  const [selectedSuspect, setSelectedSuspect] = useState<number | null>(null);
-  const [dialogueIndex, setDialogueIndex] = useState(0);
-  const [accusation, setAccusation] = useState<number | null>(null);
+  const [activePanel, setActivePanel] = useState<string | null>(null);
+  const [selectedSuspect, setSelectedSuspect] = useState<Suspect | null>(null);
+  const [showDialogue, setShowDialogue] = useState(false);
+  const [accusedSuspect, setAccusedSuspect] = useState<string | null>(null);
   const [showResult, setShowResult] = useState(false);
+  const [interrogatedSuspects, setInterrogatedSuspects] = useState<string[]>([]);
 
-  const currentSuspect = suspects.find(s => s.id === selectedSuspect);
-
-  const handleNextDialogue = () => {
-    if (currentSuspect && dialogueIndex < currentSuspect.dialogue.length - 1) {
-      setDialogueIndex(dialogueIndex + 1);
+  const handleHotspotClick = (id: string) => {
+    if (id === "chair-left") {
+      setActivePanel("suspects");
+    } else if (id === "table") {
+      setActivePanel("accuse");
     }
   };
 
-  const handleAccuse = (suspectId: number) => {
-    setAccusation(suspectId);
-    setShowResult(true);
+  const handleSelectSuspect = (suspect: Suspect) => {
+    setSelectedSuspect(suspect);
+    setActivePanel(null);
+    setTimeout(() => setShowDialogue(true), 500);
+    if (!interrogatedSuspects.includes(suspect.id)) {
+      setInterrogatedSuspects([...interrogatedSuspects, suspect.id]);
+    }
   };
 
-  const isCorrect = accusation === 3; // Karim is the culprit
+  const handleDialogueComplete = () => {
+    setShowDialogue(false);
+    setSelectedSuspect(null);
+  };
 
-  return (
-    <div className="min-h-screen bg-background p-6 relative overflow-hidden">
-      {/* Background */}
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_hsl(270,80%,60%,0.03)_0%,_transparent_50%)]" />
+  const handleAccuse = (suspectId: string) => {
+    setAccusedSuspect(suspectId);
+    setActivePanel(null);
+    setTimeout(() => setShowResult(true), 500);
+  };
 
-      {/* Result Overlay */}
-      {showResult && (
-        <div className="fixed inset-0 z-50 bg-background/90 backdrop-blur-sm flex items-center justify-center animate-fade-in">
-          <div className={cn(
-            "max-w-md p-8 rounded-2xl border-2 text-center animate-scale-in",
-            isCorrect 
-              ? "bg-success/10 border-success/50" 
-              : "bg-destructive/10 border-destructive/50"
-          )}>
-            {isCorrect ? (
-              <>
-                <CheckCircle className="w-20 h-20 text-success mx-auto mb-4" />
-                <h2 className="text-3xl font-bold text-success mb-2">Case Solved!</h2>
-                <p className="text-foreground mb-4" dir="rtl">
-                  أحسنت! كريم هو المختلس. تم اكتشاف تلاعبه في سجلات المشتريات.
-                </p>
-                <p className="text-muted-foreground text-sm mb-6">
-                  You correctly identified the embezzler based on the evidence.
-                </p>
-                <div className="flex items-center justify-center gap-4">
-                  <span className="px-4 py-2 rounded-lg bg-accent/20 text-accent font-mono">
-                    +100 XP
-                  </span>
-                  <span className="px-4 py-2 rounded-lg bg-primary/20 text-primary font-mono">
-                    Rank: Junior Detective
-                  </span>
-                </div>
-              </>
-            ) : (
-              <>
-                <XCircle className="w-20 h-20 text-destructive mx-auto mb-4" />
-                <h2 className="text-3xl font-bold text-destructive mb-2">Wrong Accusation</h2>
-                <p className="text-foreground mb-4" dir="rtl">
-                  للأسف اتهمت الشخص الغلط. راجع الأدلة تاني.
-                </p>
-                <p className="text-muted-foreground text-sm mb-6">
-                  Hint: Look at who had direct access to purchase records in March.
-                </p>
-              </>
-            )}
-            <button
-              onClick={() => {
-                setShowResult(false);
-                setAccusation(null);
-                if (!isCorrect) {
-                  setSelectedSuspect(null);
-                  setDialogueIndex(0);
-                }
-              }}
-              className={cn(
-                "px-6 py-3 rounded-lg font-medium transition-all",
-                isCorrect
-                  ? "bg-success text-success-foreground hover:shadow-[0_0_20px_hsl(145,70%,45%,0.3)]"
-                  : "bg-secondary text-foreground hover:bg-secondary/80"
-              )}
-            >
-              {isCorrect ? "Continue to Next Case →" : "Try Again"}
-            </button>
-          </div>
-        </div>
-      )}
+  const isCorrectAccusation = accusedSuspect === "karim";
 
-      {/* Header */}
-      <header className="relative z-10 flex items-center gap-4 mb-8 animate-slide-up">
-        <button
-          onClick={() => onNavigate("office")}
-          className="w-10 h-10 rounded-lg bg-secondary/50 border border-border flex items-center justify-center hover:bg-secondary transition-colors"
-        >
-          <ArrowLeft className="w-5 h-5 text-muted-foreground" />
-        </button>
-        <div className="flex-1">
-          <h1 className="text-xl font-bold text-foreground flex items-center gap-3">
-            <span className="text-2xl">👥</span>
-            Interrogation Room
-          </h1>
-          <p className="text-sm text-muted-foreground">غرفة الاستجواب - Question the suspects</p>
-        </div>
-      </header>
-
-      <div className="relative z-10 grid grid-cols-12 gap-6">
-        {/* Suspects Grid */}
-        <div className="col-span-4 animate-slide-up" style={{ animationDelay: "0.1s" }}>
-          <GameCard title="Suspects" variant="glass">
-            <div className="mt-4 space-y-4">
-              {suspects.map((suspect) => (
-                <div
-                  key={suspect.id}
-                  onClick={() => {
-                    setSelectedSuspect(suspect.id);
-                    setDialogueIndex(0);
-                  }}
-                  className={cn(
-                    "flex items-center gap-4 p-4 rounded-lg border transition-all duration-300 cursor-pointer",
-                    selectedSuspect === suspect.id
-                      ? "bg-primary/10 border-primary/50"
-                      : "bg-background/50 border-border hover:border-primary/30"
-                  )}
-                >
-                  <CharacterAvatar
-                    name={suspect.name}
-                    role={suspect.roleEn}
-                    emoji={suspect.emoji}
-                    color={suspect.color}
-                    size="sm"
-                    isActive={selectedSuspect === suspect.id}
-                  />
-                  <div className="flex-1">
-                    <p className="text-sm text-foreground font-medium">{suspect.nameEn}</p>
-                    <p className="text-xs text-muted-foreground">{suspect.role}</p>
-                  </div>
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleAccuse(suspect.id);
-                    }}
-                    className="px-3 py-1.5 rounded-lg bg-destructive/10 border border-destructive/30 text-destructive text-xs font-medium hover:bg-destructive/20 transition-colors"
+  const renderPanelContent = () => {
+    switch (activePanel) {
+      case "suspects":
+        return (
+          <GameCard title="🧑‍💼 اختر من تريد استجوابه" className="w-full">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 p-4">
+              {suspects.map((suspect, index) => {
+                const wasInterrogated = interrogatedSuspects.includes(suspect.id);
+                return (
+                  <motion.div
+                    key={suspect.id}
+                    className={`
+                      p-6 rounded-xl border-2 text-center transition-all cursor-pointer
+                      ${wasInterrogated 
+                        ? "bg-muted/30 border-muted" 
+                        : "bg-card/50 border-border hover:border-primary hover:bg-primary/10"
+                      }
+                    `}
+                    onClick={() => handleSelectSuspect(suspect)}
+                    initial={{ opacity: 0, y: 50, scale: 0.8 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    transition={{ delay: index * 0.15, type: "spring", damping: 15 }}
+                    whileHover={{ scale: 1.05, y: -5 }}
+                    whileTap={{ scale: 0.95 }}
                   >
-                    Accuse
-                  </button>
-                </div>
-              ))}
+                    <AnimatedCharacter
+                      characterId={suspect.id}
+                      size="lg"
+                      isActive={!wasInterrogated}
+                      mood={suspect.id === "karim" ? "nervous" : "neutral"}
+                      entrance="bounce"
+                    />
+                    {wasInterrogated && (
+                      <motion.span
+                        className="inline-block mt-3 px-3 py-1 bg-primary/20 text-primary text-sm rounded-full"
+                        initial={{ scale: 0 }}
+                        animate={{ scale: 1 }}
+                      >
+                        تم الاستجواب ✓
+                      </motion.span>
+                    )}
+                  </motion.div>
+                );
+              })}
             </div>
           </GameCard>
-        </div>
+        );
 
-        {/* Dialogue Area */}
-        <div className="col-span-8 animate-slide-up" style={{ animationDelay: "0.2s" }}>
-          <GameCard title="Interview" variant="glass" className="min-h-[500px]">
-            {selectedSuspect && currentSuspect ? (
-              <div className="mt-4">
-                {/* Character Display */}
-                <div className="flex justify-center mb-8">
-                  <CharacterAvatar
-                    name={currentSuspect.name}
-                    role={currentSuspect.roleEn}
-                    emoji={currentSuspect.emoji}
-                    color={currentSuspect.color}
-                    size="lg"
-                    isActive
-                  />
-                </div>
-
-                {/* Dialogue */}
-                <div className="space-y-4">
-                  {currentSuspect.dialogue.slice(0, dialogueIndex + 1).map((text, i) => (
-                    <ChatBubble
-                      key={i}
-                      message={text}
-                      sender={currentSuspect.nameEn}
-                      senderEmoji={currentSuspect.emoji}
-                      color={currentSuspect.color === "cyan" ? "cyan" : currentSuspect.color === "purple" ? "purple" : "gold"}
-                      delay={i === dialogueIndex ? 200 : 0}
-                      isTyping={i === dialogueIndex}
-                    />
-                  ))}
-                </div>
-
-                {/* Actions */}
-                <div className="mt-8 flex items-center justify-between">
-                  <button
-                    onClick={handleNextDialogue}
-                    disabled={dialogueIndex >= currentSuspect.dialogue.length - 1}
-                    className={cn(
-                      "px-6 py-3 rounded-lg font-medium transition-all",
-                      dialogueIndex < currentSuspect.dialogue.length - 1
-                        ? "bg-primary text-primary-foreground hover:shadow-[0_0_20px_hsl(175,80%,50%,0.3)]"
-                        : "bg-muted text-muted-foreground cursor-not-allowed"
-                    )}
-                  >
-                    {dialogueIndex < currentSuspect.dialogue.length - 1 ? "Continue →" : "End of Interview"}
-                  </button>
-
-                  {dialogueIndex >= currentSuspect.dialogue.length - 1 && (
-                    <button
-                      onClick={() => handleAccuse(currentSuspect.id)}
-                      className="px-6 py-3 rounded-lg bg-destructive text-destructive-foreground font-medium hover:shadow-[0_0_20px_hsl(0,70%,50%,0.3)] transition-all animate-pulse"
-                    >
-                      ⚖️ Accuse {currentSuspect.nameEn}
-                    </button>
-                  )}
-                </div>
-              </div>
-            ) : (
-              <div className="mt-4 p-12 text-center">
-                <span className="text-6xl mb-6 block">🕵️</span>
-                <h3 className="text-xl font-bold text-foreground mb-2">Select a Suspect</h3>
-                <p className="text-muted-foreground" dir="rtl">
-                  اختر أحد المشتبهين للاستجواب
+      case "accuse":
+        return (
+          <GameCard title="⚖️ اتخذ قرارك النهائي" className="w-full">
+            <div className="space-y-6 p-4">
+              <motion.div
+                className="p-4 rounded-lg bg-amber-900/20 border border-amber-500/50"
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+              >
+                <p className="text-amber-200">
+                  ⚠️ تحذير: هذا قرار نهائي! تأكد من أنك جمعت كل الأدلة واستجوبت المشتبهين.
                 </p>
+              </motion.div>
+
+              <h4 className="font-bold text-lg">من هو المختلس برأيك؟</h4>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                {suspects.map((suspect, index) => (
+                  <motion.button
+                    key={suspect.id}
+                    className="p-6 rounded-xl bg-red-900/20 border-2 border-red-500/50 hover:bg-red-900/40 hover:border-red-500 transition-all"
+                    onClick={() => handleAccuse(suspect.id)}
+                    initial={{ opacity: 0, scale: 0.8 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ delay: index * 0.1 }}
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                  >
+                    <AnimatedCharacter
+                      characterId={suspect.id}
+                      size="md"
+                      showName
+                      mood={suspect.id === "karim" ? "nervous" : "neutral"}
+                    />
+                    <motion.p
+                      className="mt-4 text-red-400 font-bold"
+                      animate={{ scale: [1, 1.1, 1] }}
+                      transition={{ duration: 1, repeat: Infinity }}
+                    >
+                      ⚖️ اتهم!
+                    </motion.p>
+                  </motion.button>
+                ))}
               </div>
-            )}
+            </div>
           </GameCard>
-        </div>
-      </div>
-    </div>
+        );
+
+      default:
+        return null;
+    }
+  };
+
+  return (
+    <>
+      <InteractiveRoom
+        backgroundImage={interrogationRoom}
+        hotspots={hotspots}
+        onHotspotClick={handleHotspotClick}
+        activeHotspot={activePanel}
+        overlayContent={activePanel ? renderPanelContent() : undefined}
+        onCloseOverlay={() => setActivePanel(null)}
+      >
+        {/* Back button */}
+        <motion.button
+          className="absolute top-4 left-4 z-20 flex items-center gap-2 px-4 py-2 rounded-lg bg-background/80 backdrop-blur-sm border border-border hover:bg-background transition-colors"
+          onClick={() => onNavigate("office")}
+          initial={{ x: -50, opacity: 0 }}
+          animate={{ x: 0, opacity: 1 }}
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
+        >
+          <ArrowLeft className="w-4 h-4" />
+          <span>رجوع</span>
+        </motion.button>
+
+        {/* Room title */}
+        <motion.div
+          className="absolute top-4 right-4 z-20 px-6 py-3 rounded-lg bg-background/80 backdrop-blur-sm border border-primary/50"
+          initial={{ y: -50, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          transition={{ delay: 0.3 }}
+        >
+          <h2 className="text-xl font-bold text-primary">🧑‍💼 غرفة الاستجواب</h2>
+        </motion.div>
+
+        {/* Instructions */}
+        {!activePanel && !showDialogue && (
+          <motion.div
+            className="absolute bottom-4 left-1/2 -translate-x-1/2 z-20 px-6 py-3 rounded-lg bg-primary/20 backdrop-blur-sm border border-primary/50 text-center"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.5 }}
+          >
+            <p className="text-primary">
+              👥 انقر على المنطقة اليسرى لاختيار مشتبه • ⚖️ انقر على الطاولة لاتخاذ قرار
+            </p>
+          </motion.div>
+        )}
+
+        {/* Interrogation progress */}
+        <motion.div
+          className="absolute bottom-4 right-4 z-20 px-4 py-2 rounded-lg bg-purple-500/20 backdrop-blur-sm border border-purple-500/50"
+          initial={{ y: 50, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          transition={{ delay: 0.5 }}
+        >
+          <p className="text-purple-400 font-bold text-sm">
+            الاستجوابات: {interrogatedSuspects.length} / {suspects.length}
+          </p>
+        </motion.div>
+      </InteractiveRoom>
+
+      {/* Enhanced Dialogue System */}
+      {selectedSuspect && (
+        <EnhancedDialogue
+          dialogues={selectedSuspect.dialogues}
+          isActive={showDialogue}
+          onComplete={handleDialogueComplete}
+        />
+      )}
+
+      {/* Result Scene */}
+      <SceneTransition
+        isVisible={showResult}
+        type={isCorrectAccusation ? "success" : "failure"}
+        backgroundImage={isCorrectAccusation ? suspectArrested : suspectEscaped}
+        title={isCorrectAccusation ? "القضية محلولة!" : "المجرم هرب!"}
+        subtitle={
+          isCorrectAccusation
+            ? "أحسنت! لقد كشفت المختلس. كريم كان يزوّر فواتير المشتريات."
+            : "للأسف اتهمت الشخص الخطأ. المختلس الحقيقي (كريم) استغل الفرصة وهرب!"
+        }
+      >
+        <motion.button
+          className={`
+            px-8 py-4 rounded-xl font-bold text-lg
+            ${isCorrectAccusation ? "bg-emerald-500 hover:bg-emerald-600" : "bg-red-500 hover:bg-red-600"}
+          `}
+          onClick={() => {
+            setShowResult(false);
+            setAccusedSuspect(null);
+            if (isCorrectAccusation) {
+              onNavigate("intro");
+            }
+          }}
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
+        >
+          {isCorrectAccusation ? "🎉 العودة للقائمة الرئيسية" : "🔄 حاول مرة أخرى"}
+        </motion.button>
+      </SceneTransition>
+    </>
   );
 };
