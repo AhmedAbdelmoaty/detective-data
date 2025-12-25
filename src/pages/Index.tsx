@@ -15,8 +15,8 @@ const Index = () => {
   };
 
   return (
-    <div className="dark">
-      {currentScreen === "intro" && <IntroScreen onStart={() => setCurrentScreen("office")} />}
+    <div className="min-h-screen bg-background">
+      {currentScreen === "intro" && <IntroScreen onNavigate={handleNavigate} />}
       {currentScreen === "office" && <OfficeScreen onNavigate={handleNavigate} />}
       {currentScreen === "evidence" && <EvidenceScreen onNavigate={handleNavigate} />}
       {currentScreen === "analysis" && <AnalysisScreen onNavigate={handleNavigate} />}

@@ -1,224 +1,294 @@
 import { useState } from "react";
-import { FileText, BarChart3, Users, Lightbulb, Clock, Target } from "lucide-react";
+import { motion } from "framer-motion";
+import { ArrowLeft, Briefcase, Target, Star } from "lucide-react";
+import { InteractiveRoom } from "../InteractiveRoom";
+import { EnhancedDialogue } from "../EnhancedDialogue";
 import { GameCard } from "../GameCard";
 import { ProgressBar } from "../ProgressBar";
-import { NavigationButton } from "../NavigationButton";
-import { ChatBubble } from "../ChatBubble";
+import { AnimatedCharacter } from "../AnimatedCharacter";
+import detectiveOffice from "@/assets/rooms/detective-office.png";
 
 interface OfficeScreenProps {
   onNavigate: (screen: string) => void;
 }
 
+const hotspots = [
+  {
+    id: "case-board",
+    x: 20,
+    y: 10,
+    width: 55,
+    height: 45,
+    label: "لوحة القضية",
+    icon: "📋",
+  },
+  {
+    id: "desk",
+    x: 25,
+    y: 60,
+    width: 50,
+    height: 30,
+    label: "مكتب المحقق",
+    icon: "📝",
+  },
+  {
+    id: "filing-cabinet",
+    x: 0,
+    y: 30,
+    width: 18,
+    height: 50,
+    label: "الأرشيف",
+    icon: "🗄️",
+  },
+];
+
+const introDialogues = [
+  {
+    characterId: "detective" as const,
+    text: "أهلاً بك في مكتبي. لدينا قضية جديدة تحتاج لحلها...",
+    mood: "neutral" as const,
+  },
+  {
+    characterId: "detective" as const,
+    text: "شركة صغيرة اكتشفت أن هناك أموال تختفي من حساباتها كل شهر. ثلاثة موظفين تحت الشبهة.",
+    mood: "suspicious" as const,
+  },
+  {
+    characterId: "detective" as const,
+    text: "مهمتك هي تحليل البيانات وكشف المختلس. انقر على لوحة القضية لمعرفة التفاصيل!",
+    mood: "happy" as const,
+  },
+];
+
 export const OfficeScreen = ({ onNavigate }: OfficeScreenProps) => {
-  const [showWelcome, setShowWelcome] = useState(true);
+  const [activePanel, setActivePanel] = useState<string | null>(null);
+  const [showDialogue, setShowDialogue] = useState(true);
+  const [dialogueComplete, setDialogueComplete] = useState(false);
+
+  const handleHotspotClick = (id: string) => {
+    if (!dialogueComplete) return;
+    setActivePanel(id);
+  };
+
+  const renderPanelContent = () => {
+    switch (activePanel) {
+      case "case-board":
+        return (
+          <GameCard title="لوحة القضية" iconEmoji="📋" className="w-full">
+            <div className="space-y-6 p-2">
+              {/* Case Info */}
+              <motion.div
+                className="p-4 rounded-lg bg-primary/10 border border-primary/30"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+              >
+                <h3 className="text-xl font-bold text-primary mb-2 flex items-center gap-2">
+                  <Briefcase className="w-5 h-5" />
+                  القضية: الأموال المفقودة
+                </h3>
+                <p className="text-muted-foreground">
+                  شركة تجارية صغيرة اكتشفت اختفاء مبالغ مالية من حساباتها على مدى 3 أشهر.
+                  المبلغ المفقود: 45,000 ريال
+                </p>
+              </motion.div>
+
+              {/* Objectives */}
+              <motion.div
+                className="space-y-3"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.2 }}
+              >
+                <h4 className="font-bold text-foreground flex items-center gap-2">
+                  <Target className="w-4 h-4 text-primary" />
+                  المهام
+                </h4>
+                <ul className="space-y-2">
+                  {[
+                    { text: "فحص سجلات المعاملات المالية", done: false },
+                    { text: "تحليل أنماط الصرف غير العادية", done: false },
+                    { text: "استجواب المشتبه بهم", done: false },
+                    { text: "تحديد المختلس", done: false },
+                  ].map((task, i) => (
+                    <motion.li
+                      key={i}
+                      className={`flex items-center gap-2 p-2 rounded ${
+                        task.done ? "bg-success/20" : "bg-muted/30"
+                      }`}
+                      initial={{ x: -20, opacity: 0 }}
+                      animate={{ x: 0, opacity: 1 }}
+                      transition={{ delay: 0.3 + i * 0.1 }}
+                    >
+                      <span className={task.done ? "text-success" : "text-muted-foreground"}>
+                        {task.done ? "✅" : "⬜"}
+                      </span>
+                      <span className={task.done ? "line-through text-muted-foreground" : ""}>
+                        {task.text}
+                      </span>
+                    </motion.li>
+                  ))}
+                </ul>
+              </motion.div>
+
+              {/* Suspects Preview with real images */}
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.5 }}
+              >
+                <h4 className="font-bold text-foreground mb-4">المشتبه بهم</h4>
+                <div className="grid grid-cols-3 gap-4">
+                  {(["ahmed", "sara", "karim"] as const).map((id, i) => (
+                    <motion.div
+                      key={id}
+                      initial={{ scale: 0 }}
+                      animate={{ scale: 1 }}
+                      transition={{ delay: 0.6 + i * 0.15, type: "spring" }}
+                    >
+                      <AnimatedCharacter
+                        characterId={id}
+                        size="md"
+                        showName
+                        mood={id === "karim" ? "nervous" : "neutral"}
+                        entrance="bounce"
+                      />
+                    </motion.div>
+                  ))}
+                </div>
+              </motion.div>
+            </div>
+          </GameCard>
+        );
+
+      case "desk":
+        return (
+          <GameCard title="مكتب المحقق - التقدم" iconEmoji="📊" className="w-full">
+            <div className="space-y-6 p-2">
+              <ProgressBar label="تقدم التحقيق" value={15} max={100} color="primary" />
+              <ProgressBar label="الأدلة المجمعة" value={0} max={5} color="accent" />
+              <ProgressBar label="الاستجوابات" value={0} max={3} color="success" />
+
+              <div className="flex flex-col gap-3 mt-6">
+                <motion.button
+                  className="w-full py-3 px-4 rounded-lg bg-primary/20 border border-primary/50 text-primary font-bold hover:bg-primary/30 transition-colors flex items-center justify-center gap-2"
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  onClick={() => onNavigate("evidence")}
+                >
+                  📁 غرفة الأدلة
+                </motion.button>
+                <motion.button
+                  className="w-full py-3 px-4 rounded-lg bg-accent/20 border border-accent/50 text-accent font-bold hover:bg-accent/30 transition-colors flex items-center justify-center gap-2"
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  onClick={() => onNavigate("analysis")}
+                >
+                  📊 غرفة التحليل
+                </motion.button>
+                <motion.button
+                  className="w-full py-3 px-4 rounded-lg bg-success/20 border border-success/50 text-success font-bold hover:bg-success/30 transition-colors flex items-center justify-center gap-2"
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  onClick={() => onNavigate("interrogation")}
+                >
+                  🧑‍💼 غرفة الاستجواب
+                </motion.button>
+              </div>
+            </div>
+          </GameCard>
+        );
+
+      case "filing-cabinet":
+        return (
+          <GameCard title="ملفات القضايا السابقة" iconEmoji="🗄️" className="w-full">
+            <div className="space-y-4 p-2">
+              <div className="p-4 rounded-lg bg-muted/30 border border-border">
+                <div className="flex items-center gap-3">
+                  <Star className="w-6 h-6 text-gold" />
+                  <div>
+                    <h4 className="font-bold">رتبتك الحالية</h4>
+                    <p className="text-2xl font-bold text-gold">محقق مبتدئ</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="text-center text-muted-foreground py-8">
+                <motion.p
+                  className="text-4xl mb-2"
+                  animate={{ rotate: [0, -10, 10, 0] }}
+                  transition={{ duration: 2, repeat: Infinity }}
+                >
+                  📂
+                </motion.p>
+                <p>لم تحل أي قضايا بعد</p>
+                <p className="text-sm">ابدأ بحل القضية الحالية!</p>
+              </div>
+            </div>
+          </GameCard>
+        );
+
+      default:
+        return null;
+    }
+  };
 
   return (
-    <div className="min-h-screen bg-background p-6 relative overflow-hidden">
-      {/* Background Grid */}
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_hsl(175,80%,50%,0.03)_0%,_transparent_50%)]" />
-      
-      {/* Header */}
-      <header className="relative z-10 flex items-center justify-between mb-8 animate-slide-up">
-        <div className="flex items-center gap-4">
-          <div className="w-12 h-12 rounded-xl bg-primary/10 border border-primary/30 flex items-center justify-center">
-            <span className="text-2xl">🕵️</span>
-          </div>
-          <div>
-            <h1 className="text-xl font-bold text-foreground">Detective's Office</h1>
-            <p className="text-sm text-muted-foreground">مكتب المحقق</p>
-          </div>
-        </div>
-        
-        <div className="flex items-center gap-6">
-          <div className="flex items-center gap-2 text-sm">
-            <Clock className="w-4 h-4 text-muted-foreground" />
-            <span className="text-muted-foreground">Day 1</span>
-          </div>
-          <div className="flex items-center gap-2 text-sm">
-            <Target className="w-4 h-4 text-accent" />
-            <span className="text-accent font-mono">Rank: Rookie</span>
-          </div>
-        </div>
-      </header>
+    <>
+      <InteractiveRoom
+        backgroundImage={detectiveOffice}
+        hotspots={hotspots}
+        onHotspotClick={handleHotspotClick}
+        activeHotspot={activePanel}
+        overlayContent={activePanel ? renderPanelContent() : undefined}
+        onCloseOverlay={() => setActivePanel(null)}
+      >
+        {/* Back button */}
+        <motion.button
+          className="absolute top-4 left-4 z-20 flex items-center gap-2 px-4 py-2 rounded-lg bg-background/80 backdrop-blur-sm border border-border hover:bg-background transition-colors"
+          onClick={() => onNavigate("intro")}
+          initial={{ x: -50, opacity: 0 }}
+          animate={{ x: 0, opacity: 1 }}
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
+        >
+          <ArrowLeft className="w-4 h-4" />
+          <span>رجوع</span>
+        </motion.button>
 
-      <div className="relative z-10 grid grid-cols-12 gap-6">
-        {/* Left Column - Case Board */}
-        <div className="col-span-8 space-y-6">
-          {/* Welcome Message */}
-          {showWelcome && (
-            <div className="animate-slide-up">
-              <ChatBubble
-                message="أهلاً بك في أول قضية لك! شركة صغيرة بتشتكي إن فيه فلوس بتختفي كل شهر. 3 موظفين تحت الشبهة. مهمتك تحلل البيانات وتكتشف المختلس."
-                sender="Chief Detective"
-                senderEmoji="👨‍✈️"
-                color="gold"
-                isTyping
-              />
-            </div>
-          )}
+        {/* Room title */}
+        <motion.div
+          className="absolute top-4 right-4 z-20 px-6 py-3 rounded-lg bg-background/80 backdrop-blur-sm border border-primary/50"
+          initial={{ y: -50, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          transition={{ delay: 0.3 }}
+        >
+          <h2 className="text-xl font-bold text-primary">🕵️ مكتب المحقق</h2>
+        </motion.div>
 
-          {/* Case Board */}
-          <GameCard
-            title="Case Board"
-            iconEmoji="📋"
-            variant="glass"
-            className="animate-slide-up"
-            style={{ animationDelay: "0.1s" } as React.CSSProperties}
+        {/* Hint when dialogue is complete */}
+        {dialogueComplete && !activePanel && (
+          <motion.div
+            className="absolute bottom-24 left-1/2 -translate-x-1/2 z-20 px-6 py-3 rounded-lg bg-primary/20 backdrop-blur-sm border border-primary/50"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.5 }}
           >
-            <div className="grid grid-cols-3 gap-4 mt-4">
-              {/* Case Info */}
-              <div className="col-span-2 p-4 rounded-lg bg-background/50 border border-border">
-                <div className="flex items-center gap-2 mb-3">
-                  <span className="px-2 py-1 rounded bg-destructive/20 text-destructive text-xs font-mono">
-                    ACTIVE
-                  </span>
-                  <span className="text-xs text-muted-foreground">Case #001</span>
-                </div>
-                <h3 className="text-lg font-bold text-foreground mb-2" dir="rtl">
-                  🔴 الأموال المفقودة
-                </h3>
-                <p className="text-sm text-muted-foreground" dir="rtl">
-                  شركة "نكسورا" للتقنية اكتشفت اختفاء مبالغ من حساباتها. التحويلات تبدو طبيعية لكن الأرقام مش راكبة.
-                </p>
-              </div>
-
-              {/* Quick Stats */}
-              <div className="space-y-3">
-                <div className="p-3 rounded-lg bg-background/50 border border-border">
-                  <p className="text-xs text-muted-foreground mb-1">Evidence Found</p>
-                  <p className="text-2xl font-bold text-primary">0/5</p>
-                </div>
-                <div className="p-3 rounded-lg bg-background/50 border border-border">
-                  <p className="text-xs text-muted-foreground mb-1">Suspects</p>
-                  <p className="text-2xl font-bold text-accent">3</p>
-                </div>
-              </div>
-            </div>
-
-            {/* Objectives */}
-            <div className="mt-6 p-4 rounded-lg bg-secondary/30 border border-border">
-              <h4 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
-                <Lightbulb className="w-4 h-4 text-accent" />
-                Current Objectives
-              </h4>
-              <ul className="space-y-2">
-                <li className="flex items-center gap-3 text-sm">
-                  <span className="w-5 h-5 rounded border border-border flex items-center justify-center text-xs">
-                    ○
-                  </span>
-                  <span className="text-muted-foreground">Review financial records in Evidence Room</span>
-                </li>
-                <li className="flex items-center gap-3 text-sm">
-                  <span className="w-5 h-5 rounded border border-border flex items-center justify-center text-xs">
-                    ○
-                  </span>
-                  <span className="text-muted-foreground">Analyze transaction patterns</span>
-                </li>
-                <li className="flex items-center gap-3 text-sm">
-                  <span className="w-5 h-5 rounded border border-border flex items-center justify-center text-xs">
-                    ○
-                  </span>
-                  <span className="text-muted-foreground">Interview all suspects</span>
-                </li>
-              </ul>
-            </div>
-          </GameCard>
-
-          {/* Progress */}
-          <GameCard
-            title="Investigation Progress"
-            iconEmoji="📊"
-            variant="glass"
-            className="animate-slide-up"
-            style={{ animationDelay: "0.2s" } as React.CSSProperties}
-          >
-            <div className="space-y-4 mt-4">
-              <ProgressBar
-                label="Evidence Collection"
-                value={0}
-                max={100}
-                showValue
-                color="primary"
-              />
-              <ProgressBar
-                label="Data Analysis"
-                value={0}
-                max={100}
-                showValue
-                color="accent"
-              />
-              <ProgressBar
-                label="Suspect Interviews"
-                value={0}
-                max={100}
-                showValue
-                color="success"
-              />
-            </div>
-          </GameCard>
-        </div>
-
-        {/* Right Column - Navigation & Notebook */}
-        <div className="col-span-4 space-y-6">
-          {/* Room Navigation */}
-          <GameCard
-            title="Navigate"
-            variant="glass"
-            className="animate-slide-up"
-            style={{ animationDelay: "0.3s" } as React.CSSProperties}
-          >
-            <div className="grid grid-cols-2 gap-3 mt-4">
-              <NavigationButton
-                label="Evidence Room"
-                iconEmoji="📁"
-                onClick={() => onNavigate("evidence")}
-              />
-              <NavigationButton
-                label="Analysis Lab"
-                iconEmoji="📊"
-                onClick={() => onNavigate("analysis")}
-              />
-              <NavigationButton
-                label="Interrogation"
-                iconEmoji="👥"
-                onClick={() => onNavigate("interrogation")}
-              />
-              <NavigationButton
-                label="Make Accusation"
-                iconEmoji="⚖️"
-                disabled
-              />
-            </div>
-          </GameCard>
-
-          {/* Notebook */}
-          <GameCard
-            title="Detective's Notebook"
-            iconEmoji="📓"
-            variant="outlined"
-            color="accent"
-            className="animate-slide-up"
-            style={{ animationDelay: "0.4s" } as React.CSSProperties}
-          >
-            <div className="mt-4 space-y-3">
-              <p className="text-sm text-muted-foreground italic" dir="rtl">
-                لسه ما اكتشفت أي ملاحظات...
-              </p>
-              <p className="text-xs text-muted-foreground">
-                Notes will appear here as you find clues.
-              </p>
-            </div>
-          </GameCard>
-
-          {/* Hint */}
-          <div className="p-4 rounded-xl border border-dashed border-primary/30 bg-primary/5 animate-slide-up" style={{ animationDelay: "0.5s" }}>
-            <p className="text-sm text-primary flex items-center gap-2">
-              <span>💡</span>
-              <span>Tip: Start by reviewing evidence in the Evidence Room</span>
+            <p className="text-primary text-center">
+              ✨ انقر على الأماكن المضيئة لاستكشاف المكتب
             </p>
-          </div>
-        </div>
-      </div>
-    </div>
+          </motion.div>
+        )}
+      </InteractiveRoom>
+
+      {/* Enhanced Dialogue System */}
+      <EnhancedDialogue
+        dialogues={introDialogues}
+        isActive={showDialogue && !dialogueComplete}
+        onComplete={() => {
+          setDialogueComplete(true);
+          setShowDialogue(false);
+        }}
+      />
+    </>
   );
 };
