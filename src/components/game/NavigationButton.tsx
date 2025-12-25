@@ -1,5 +1,6 @@
 import { cn } from "@/lib/utils";
 import { LucideIcon } from "lucide-react";
+import { useSound } from "@/hooks/useSoundEffects";
 
 interface NavigationButtonProps {
   label: string;
@@ -20,9 +21,25 @@ export const NavigationButton = ({
   variant = "default",
   onClick,
 }: NavigationButtonProps) => {
+  const { playSound } = useSound();
+
+  const handleClick = () => {
+    if (!disabled) {
+      playSound("navigate");
+      onClick?.();
+    }
+  };
+
+  const handleMouseEnter = () => {
+    if (!disabled) {
+      playSound("hover");
+    }
+  };
+
   return (
     <button
-      onClick={onClick}
+      onClick={handleClick}
+      onMouseEnter={handleMouseEnter}
       disabled={disabled}
       className={cn(
         "flex flex-col items-center gap-2 px-4 py-3 rounded-xl transition-all duration-300",

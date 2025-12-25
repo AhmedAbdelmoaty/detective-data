@@ -4,6 +4,8 @@ import { OfficeScreen } from "@/components/game/screens/OfficeScreen";
 import { EvidenceScreen } from "@/components/game/screens/EvidenceScreen";
 import { AnalysisScreen } from "@/components/game/screens/AnalysisScreen";
 import { InterrogationScreen } from "@/components/game/screens/InterrogationScreen";
+import { SoundProvider } from "@/hooks/useSoundEffects";
+import { SoundToggle } from "@/components/game/SoundToggle";
 
 type Screen = "intro" | "office" | "evidence" | "analysis" | "interrogation";
 
@@ -15,13 +17,16 @@ const Index = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background">
-      {currentScreen === "intro" && <IntroScreen onNavigate={handleNavigate} />}
-      {currentScreen === "office" && <OfficeScreen onNavigate={handleNavigate} />}
-      {currentScreen === "evidence" && <EvidenceScreen onNavigate={handleNavigate} />}
-      {currentScreen === "analysis" && <AnalysisScreen onNavigate={handleNavigate} />}
-      {currentScreen === "interrogation" && <InterrogationScreen onNavigate={handleNavigate} />}
-    </div>
+    <SoundProvider>
+      <div className="min-h-screen bg-background">
+        <SoundToggle />
+        {currentScreen === "intro" && <IntroScreen onNavigate={handleNavigate} />}
+        {currentScreen === "office" && <OfficeScreen onNavigate={handleNavigate} />}
+        {currentScreen === "evidence" && <EvidenceScreen onNavigate={handleNavigate} />}
+        {currentScreen === "analysis" && <AnalysisScreen onNavigate={handleNavigate} />}
+        {currentScreen === "interrogation" && <InterrogationScreen onNavigate={handleNavigate} />}
+      </div>
+    </SoundProvider>
   );
 };
 

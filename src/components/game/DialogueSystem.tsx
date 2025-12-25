@@ -1,5 +1,6 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { useSound } from "@/hooks/useSoundEffects";
 
 interface DialogueLine {
   speaker: string;
@@ -56,11 +57,13 @@ export const DialogueSystem = ({
   const [currentIndex, setCurrentIndex] = useState(0);
   const [displayedText, setDisplayedText] = useState("");
   const [isTyping, setIsTyping] = useState(true);
+  const { playSound, playDialogueTyping } = useSound();
+  const typingSoundRef = useRef<NodeJS.Timeout | null>(null);
 
   const currentDialogue = dialogues[currentIndex];
   const colors = colorClasses[currentDialogue?.color || "cyan"];
 
-  // Typing effect
+  // Typing effect with sound
   useEffect(() => {
     if (!isActive || !currentDialogue) return;
 
@@ -73,6 +76,12 @@ export const DialogueSystem = ({
     const typingInterval = setInterval(() => {
       if (charIndex < text.length) {
         setDisplayedText(text.slice(0, charIndex + 1));
+        
+        // Play typing sound every 3 characters
+        if (charIndex % 3 === 0) {
+          playDialogueTyping();
+        }
+        
         charIndex++;
       } else {
         setIsTyping(false);
@@ -80,8 +89,13 @@ export const DialogueSystem = ({
       }
     }, 30);
 
-    return () => clearInterval(typingInterval);
-  }, [currentIndex, isActive, currentDialogue]);
+    return () => {
+      clearInterval(typingInterval);
+      if (typingSoundRef.current) {
+        clearInterval(typingSoundRef.current);
+      }
+    };
+  }, [currentIndex, isActive, currentDialogue, playDialogueTyping]);
 
   // Auto advance
   useEffect(() => {
@@ -95,8 +109,9 @@ export const DialogueSystem = ({
   }, [isTyping, autoAdvance, autoAdvanceDelay, isActive]);
 
   const handleNext = () => {
+    playSound("click");
+    
     if (isTyping) {
-      // Skip typing animation
       setDisplayedText(currentDialogue.text);
       setIsTyping(false);
       return;
@@ -104,7 +119,9 @@ export const DialogueSystem = ({
 
     if (currentIndex < dialogues.length - 1) {
       setCurrentIndex((prev) => prev + 1);
+      playSound("reveal");
     } else {
+      playSound("success");
       onComplete?.();
     }
   };
