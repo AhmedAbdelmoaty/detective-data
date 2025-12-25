@@ -4,11 +4,12 @@ import { OfficeScreen } from "@/components/game/screens/OfficeScreen";
 import { EvidenceScreen } from "@/components/game/screens/EvidenceScreen";
 import { AnalysisScreen } from "@/components/game/screens/AnalysisScreen";
 import { InterrogationScreen } from "@/components/game/screens/InterrogationScreen";
+import { ResultScreen } from "@/components/game/screens/ResultScreen";
 import { SoundProvider } from "@/hooks/useSoundEffects";
 import { SoundToggle } from "@/components/game/SoundToggle";
 import { GameProvider } from "@/contexts/GameContext";
 
-type Screen = "intro" | "office" | "evidence" | "analysis" | "interrogation";
+type Screen = "intro" | "office" | "evidence" | "analysis" | "interrogation" | "result";
 
 const Index = () => {
   const [currentScreen, setCurrentScreen] = useState<Screen>("intro");
@@ -27,6 +28,7 @@ const Index = () => {
           {currentScreen === "evidence" && <EvidenceScreen onNavigate={handleNavigate} />}
           {currentScreen === "analysis" && <AnalysisScreen onNavigate={handleNavigate} />}
           {currentScreen === "interrogation" && <InterrogationScreen onNavigate={handleNavigate} />}
+          {currentScreen === "result" && <ResultScreen onNavigate={handleNavigate} />}
         </div>
       </SoundProvider>
     </GameProvider>

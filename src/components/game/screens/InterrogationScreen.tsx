@@ -171,18 +171,17 @@ export const InterrogationScreen = ({ onNavigate }: InterrogationScreenProps) =>
       )}
 
       {/* Result */}
-      <SceneTransition isVisible={showResult} type={isCorrectAccusation ? "success" : "failure"} backgroundImage={isCorrectAccusation ? suspectArrested : suspectEscaped} title={isCorrectAccusation ? "🎉 القضية محلولة!" : "💨 المجرم هرب!"} subtitle={isCorrectAccusation ? `أحسنت! كريم كان المختلس. النقاط: ${state.score}` : "اتهمت الشخص الخطأ. حاول مرة أخرى!"}>
+      <SceneTransition isVisible={showResult} type={isCorrectAccusation ? "success" : "failure"} backgroundImage={isCorrectAccusation ? suspectArrested : suspectEscaped} title={isCorrectAccusation ? "🎉 القضية محلولة!" : "💨 المجرم هرب!"} subtitle={isCorrectAccusation ? `أحسنت! كريم كان المختلس.` : "اتهمت الشخص الخطأ."}>
         <div className="space-y-4">
-          {isCorrectAccusation && (
-            <div className="flex flex-wrap justify-center gap-2 mb-4">
-              {state.unlockedConcepts.map(id => {
-                const c = LEARNING_CONCEPTS.find(x => x.id === id);
-                return c && <span key={id} className="px-3 py-1 rounded-full bg-accent/20 text-accent text-sm">{c.icon} {c.title}</span>;
-              })}
-            </div>
-          )}
-          <motion.button className={cn("px-8 py-4 rounded-xl font-bold text-lg", isCorrectAccusation ? "bg-green-500 text-white" : "bg-destructive text-white")} onClick={() => { setShowResult(false); onNavigate("intro"); }} whileHover={{ scale: 1.05 }}>
-            {isCorrectAccusation ? "🎉 العودة للقائمة" : "🔄 حاول مرة أخرى"}
+          <motion.button 
+            className={cn("px-8 py-4 rounded-xl font-bold text-lg", isCorrectAccusation ? "bg-green-500 text-white" : "bg-destructive text-white")} 
+            onClick={() => { 
+              setShowResult(false); 
+              onNavigate("result"); 
+            }} 
+            whileHover={{ scale: 1.05 }}
+          >
+            {isCorrectAccusation ? "📊 عرض النتائج" : "📊 عرض الملخص"}
           </motion.button>
         </div>
       </SceneTransition>
