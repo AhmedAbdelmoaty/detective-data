@@ -1,13 +1,14 @@
 import { useState, ReactNode } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X } from "lucide-react";
+import { useSound } from "@/hooks/useSoundEffects";
 
 interface Hotspot {
   id: string;
-  x: number; // percentage from left
-  y: number; // percentage from top
-  width: number; // percentage
-  height: number; // percentage
+  x: number;
+  y: number;
+  width: number;
+  height: number;
   label: string;
   icon?: string;
   glowColor?: string;
@@ -33,6 +34,22 @@ export const InteractiveRoom = ({
   onCloseOverlay,
 }: InteractiveRoomProps) => {
   const [hoveredHotspot, setHoveredHotspot] = useState<string | null>(null);
+  const { playSound } = useSound();
+
+  const handleHotspotClick = (hotspotId: string) => {
+    playSound("click");
+    onHotspotClick(hotspotId);
+  };
+
+  const handleHover = (hotspotId: string) => {
+    setHoveredHotspot(hotspotId);
+    playSound("hover");
+  };
+
+  const handleCloseOverlay = () => {
+    playSound("click");
+    onCloseOverlay?.();
+  };
 
   return (
     <div className="relative w-full h-screen overflow-hidden">
@@ -60,8 +77,8 @@ export const InteractiveRoom = ({
             width: `${hotspot.width}%`,
             height: `${hotspot.height}%`,
           }}
-          onClick={() => onHotspotClick(hotspot.id)}
-          onMouseEnter={() => setHoveredHotspot(hotspot.id)}
+          onClick={() => handleHotspotClick(hotspot.id)}
+          onMouseEnter={() => handleHover(hotspot.id)}
           onMouseLeave={() => setHoveredHotspot(null)}
           whileHover={{ scale: 1.02 }}
           whileTap={{ scale: 0.98 }}
@@ -147,7 +164,7 @@ export const InteractiveRoom = ({
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              onClick={onCloseOverlay}
+              onClick={handleCloseOverlay}
             />
 
             {/* Content */}
@@ -161,7 +178,7 @@ export const InteractiveRoom = ({
               {/* Close button */}
               {onCloseOverlay && (
                 <button
-                  onClick={onCloseOverlay}
+                  onClick={handleCloseOverlay}
                   className="absolute -top-2 -right-2 z-20 w-10 h-10 rounded-full bg-destructive/90 flex items-center justify-center text-destructive-foreground hover:bg-destructive transition-colors shadow-lg"
                 >
                   <X className="w-5 h-5" />

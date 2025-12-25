@@ -6,6 +6,7 @@ import { EnhancedDialogue } from "../EnhancedDialogue";
 import { SceneTransition } from "../SceneTransition";
 import { AnimatedCharacter } from "../AnimatedCharacter";
 import { NavigationButton } from "../NavigationButton";
+import { useSound } from "@/hooks/useSoundEffects";
 import { cn } from "@/lib/utils";
 import interrogationRoom from "@/assets/rooms/interrogation-room.png";
 import suspectArrested from "@/assets/scenes/suspect-arrested.png";
@@ -122,9 +123,11 @@ export const InterrogationScreen = ({ onNavigate }: InterrogationScreenProps) =>
   const [accusedSuspect, setAccusedSuspect] = useState<string | null>(null);
   const [showResult, setShowResult] = useState(false);
   const [interrogatedSuspects, setInterrogatedSuspects] = useState<string[]>([]);
+  const { playSound } = useSound();
 
   const handleHotspotClick = (id: string) => {
     setActiveHotspot(id);
+    playSound("reveal");
     
     const suspectMap: Record<string, Suspect> = {
       "suspect-1": suspects[0],
@@ -138,6 +141,7 @@ export const InterrogationScreen = ({ onNavigate }: InterrogationScreenProps) =>
       setTimeout(() => setShowDialogue(true), 300);
       if (!interrogatedSuspects.includes(suspect.id)) {
         setInterrogatedSuspects([...interrogatedSuspects, suspect.id]);
+        playSound("collect");
       }
     }
   };
@@ -149,9 +153,17 @@ export const InterrogationScreen = ({ onNavigate }: InterrogationScreenProps) =>
   };
 
   const handleAccuse = (suspectId: string) => {
+    playSound("accuse");
     setAccusedSuspect(suspectId);
     setShowAccusePanel(false);
-    setTimeout(() => setShowResult(true), 500);
+    setTimeout(() => {
+      setShowResult(true);
+      if (suspectId === "karim") {
+        playSound("success");
+      } else {
+        playSound("error");
+      }
+    }, 500);
   };
 
   const isCorrectAccusation = accusedSuspect === "karim";
