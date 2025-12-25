@@ -1,7 +1,10 @@
 import { useState } from "react";
-import { ArrowLeft, FileSpreadsheet, Mail, FileText, Download } from "lucide-react";
-import { GameCard } from "../GameCard";
+import { motion, AnimatePresence } from "framer-motion";
+import { FileSpreadsheet, Mail, FileText, Download, X, FolderOpen, Archive, Lock } from "lucide-react";
+import { InteractiveRoom } from "../InteractiveRoom";
+import { NavigationButton } from "../NavigationButton";
 import { cn } from "@/lib/utils";
+import evidenceRoomBg from "@/assets/rooms/evidence-room.png";
 
 interface EvidenceScreenProps {
   onNavigate: (screen: string) => void;
@@ -16,6 +19,11 @@ const evidenceFiles = [
     icon: FileSpreadsheet,
     status: "new",
     description: "3 months of company transactions",
+    preview: [
+      { date: "2024-01-15", desc: "Office Supplies", amount: -2500 },
+      { date: "2024-01-18", desc: "Client Payment", amount: 15000 },
+      { date: "2024-01-20", desc: "Misc. Expense", amount: -8750, suspicious: true },
+    ],
   },
   {
     id: 2,
@@ -25,6 +33,11 @@ const evidenceFiles = [
     icon: FileSpreadsheet,
     status: "new",
     description: "All purchases made this quarter",
+    preview: [
+      { date: "2024-02-01", desc: "Equipment", amount: -12000 },
+      { date: "2024-02-05", desc: "Contractor Fee", amount: -25000, suspicious: true },
+      { date: "2024-02-10", desc: "Software License", amount: -3500 },
+    ],
   },
   {
     id: 3,
@@ -34,6 +47,10 @@ const evidenceFiles = [
     icon: Mail,
     status: "new",
     description: "Internal communications",
+    preview: [
+      { date: "2024-01-25", desc: "RE: Urgent Transfer", amount: 0 },
+      { date: "2024-02-02", desc: "FWD: Payment Request", amount: 0, suspicious: true },
+    ],
   },
   {
     id: 4,
@@ -43,6 +60,7 @@ const evidenceFiles = [
     icon: FileText,
     status: "locked",
     description: "Requires 2 evidence pieces",
+    preview: [],
   },
   {
     id: 5,
@@ -52,12 +70,22 @@ const evidenceFiles = [
     icon: FileSpreadsheet,
     status: "locked",
     description: "System access records",
+    preview: [],
   },
+];
+
+const hotspots = [
+  { id: "cabinet-1", x: 10, y: 30, width: 18, height: 35, label: "📁 ملفات البنك", icon: "🏦" },
+  { id: "cabinet-2", x: 32, y: 25, width: 18, height: 40, label: "📊 سجلات المشتريات", icon: "📊" },
+  { id: "desk", x: 55, y: 45, width: 22, height: 30, label: "📧 الإيميلات", icon: "💻" },
+  { id: "safe", x: 80, y: 35, width: 15, height: 25, label: "🔒 الخزنة", icon: "🔐" },
 ];
 
 export const EvidenceScreen = ({ onNavigate }: EvidenceScreenProps) => {
   const [selectedFile, setSelectedFile] = useState<number | null>(null);
   const [collectedEvidence, setCollectedEvidence] = useState<number[]>([]);
+  const [activeHotspot, setActiveHotspot] = useState<string | null>(null);
+  const [showOverlay, setShowOverlay] = useState(false);
 
   const handleCollect = (id: number) => {
     if (!collectedEvidence.includes(id)) {
@@ -65,190 +93,238 @@ export const EvidenceScreen = ({ onNavigate }: EvidenceScreenProps) => {
     }
   };
 
-  return (
-    <div className="min-h-screen bg-background p-6 relative overflow-hidden">
-      {/* Background */}
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom_left,_hsl(45,90%,55%,0.03)_0%,_transparent_50%)]" />
+  const handleHotspotClick = (hotspotId: string) => {
+    setActiveHotspot(hotspotId);
+    setShowOverlay(true);
+    
+    // Map hotspot to file
+    const fileMap: Record<string, number> = {
+      "cabinet-1": 1,
+      "cabinet-2": 2,
+      "desk": 3,
+      "safe": 4,
+    };
+    
+    if (fileMap[hotspotId]) {
+      setSelectedFile(fileMap[hotspotId]);
+    }
+  };
 
-      {/* Header */}
-      <header className="relative z-10 flex items-center gap-4 mb-8 animate-slide-up">
-        <button
-          onClick={() => onNavigate("office")}
-          className="w-10 h-10 rounded-lg bg-secondary/50 border border-border flex items-center justify-center hover:bg-secondary transition-colors"
+  const closeOverlay = () => {
+    setShowOverlay(false);
+    setActiveHotspot(null);
+  };
+
+  const currentFile = evidenceFiles.find(f => f.id === selectedFile);
+  const isFileLocked = currentFile?.status === "locked";
+  const isFileCollected = selectedFile ? collectedEvidence.includes(selectedFile) : false;
+
+  return (
+    <InteractiveRoom
+      backgroundImage={evidenceRoomBg}
+      hotspots={hotspots}
+      onHotspotClick={handleHotspotClick}
+      activeHotspot={activeHotspot}
+      overlayContent={showOverlay && currentFile ? (
+        <motion.div
+          className="bg-background/95 backdrop-blur-xl border border-primary/30 rounded-2xl p-6 max-w-2xl w-full"
+          style={{ boxShadow: "0 0 60px hsl(var(--primary) / 0.2)" }}
         >
-          <ArrowLeft className="w-5 h-5 text-muted-foreground" />
-        </button>
-        <div className="flex-1">
-          <h1 className="text-xl font-bold text-foreground flex items-center gap-3">
-            <span className="text-2xl">📁</span>
-            Evidence Room
-          </h1>
-          <p className="text-sm text-muted-foreground">غرفة الأدلة - Browse and collect evidence files</p>
-        </div>
-        <div className="px-4 py-2 rounded-lg bg-primary/10 border border-primary/30">
-          <span className="text-sm text-primary font-mono">
-            Collected: {collectedEvidence.length}/5
+          {/* Header */}
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center gap-4">
+              <motion.div
+                className={cn(
+                  "w-16 h-16 rounded-xl flex items-center justify-center",
+                  isFileLocked ? "bg-muted" : "bg-primary/20"
+                )}
+                animate={{ rotate: [0, -5, 5, 0] }}
+                transition={{ duration: 0.5 }}
+              >
+                {isFileLocked ? (
+                  <Lock className="w-8 h-8 text-muted-foreground" />
+                ) : (
+                  <currentFile.icon className="w-8 h-8 text-primary" />
+                )}
+              </motion.div>
+              <div>
+                <h3 className="text-xl font-bold text-foreground">{currentFile.nameEn}</h3>
+                <p className="text-sm text-muted-foreground" dir="rtl">{currentFile.name}</p>
+                <p className="text-xs text-muted-foreground mt-1">{currentFile.description}</p>
+              </div>
+            </div>
+            
+            {!isFileLocked && !isFileCollected && (
+              <motion.button
+                onClick={() => handleCollect(currentFile.id)}
+                className="flex items-center gap-2 px-4 py-2 rounded-lg bg-primary text-primary-foreground font-medium"
+                whileHover={{ scale: 1.05, boxShadow: "0 0 20px hsl(var(--primary) / 0.5)" }}
+                whileTap={{ scale: 0.95 }}
+              >
+                <Download className="w-4 h-4" />
+                جمع الدليل
+              </motion.button>
+            )}
+            
+            {isFileCollected && (
+              <span className="px-4 py-2 rounded-lg bg-green-500/20 text-green-400 font-medium border border-green-500/30">
+                ✓ تم الجمع
+              </span>
+            )}
+          </div>
+
+          {/* Preview */}
+          {isFileLocked ? (
+            <div className="text-center py-12">
+              <motion.div
+                animate={{ scale: [1, 1.1, 1] }}
+                transition={{ duration: 2, repeat: Infinity }}
+              >
+                <Lock className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
+              </motion.div>
+              <p className="text-muted-foreground">هذا الملف مقفل</p>
+              <p className="text-sm text-muted-foreground mt-2">اجمع المزيد من الأدلة لفتحه</p>
+            </div>
+          ) : (
+            <div className="rounded-lg border border-border overflow-hidden">
+              <div className="bg-secondary/50 px-4 py-2 border-b border-border flex items-center gap-2">
+                <FolderOpen className="w-4 h-4 text-muted-foreground" />
+                <span className="text-sm text-muted-foreground font-mono">معاينة الملف</span>
+              </div>
+              <div className="p-4 bg-background/50 max-h-64 overflow-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-border">
+                      <th className="text-left py-2 text-muted-foreground font-mono">التاريخ</th>
+                      <th className="text-left py-2 text-muted-foreground font-mono">الوصف</th>
+                      {currentFile.type !== "email" && (
+                        <th className="text-right py-2 text-muted-foreground font-mono">المبلغ</th>
+                      )}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {currentFile.preview.map((row, i) => (
+                      <motion.tr
+                        key={i}
+                        className={cn(
+                          "border-b border-border/50",
+                          row.suspicious && "bg-destructive/10"
+                        )}
+                        initial={{ opacity: 0, x: -20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: i * 0.1 }}
+                      >
+                        <td className="py-2 text-foreground font-mono">{row.date}</td>
+                        <td className="py-2 text-foreground flex items-center gap-2">
+                          {row.desc}
+                          {row.suspicious && (
+                            <span className="px-2 py-0.5 rounded text-[10px] bg-destructive/20 text-destructive font-mono animate-pulse">
+                              مريب!
+                            </span>
+                          )}
+                        </td>
+                        {currentFile.type !== "email" && (
+                          <td className={cn(
+                            "py-2 text-right font-mono",
+                            row.amount >= 0 ? "text-green-400" : "text-destructive"
+                          )}>
+                            {row.amount >= 0 ? "+" : ""}{row.amount.toLocaleString()}$
+                          </td>
+                        )}
+                      </motion.tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          {/* Hint */}
+          {!isFileLocked && (
+            <motion.div
+              className="mt-4 p-4 rounded-lg bg-accent/10 border border-accent/30"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.3 }}
+            >
+              <p className="text-sm text-accent flex items-center gap-2">
+                <span className="text-lg">💡</span>
+                <span>لاحظ أي شيء غريب؟ خذ هذا إلى غرفة التحليل!</span>
+              </p>
+            </motion.div>
+          )}
+        </motion.div>
+      ) : null}
+      onCloseOverlay={closeOverlay}
+    >
+      {/* Status Bar */}
+      <motion.div
+        className="absolute top-6 left-1/2 -translate-x-1/2 z-20"
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+      >
+        <div className="flex items-center gap-4 px-6 py-3 rounded-full bg-background/90 backdrop-blur-xl border border-primary/30">
+          <Archive className="w-5 h-5 text-primary" />
+          <span className="text-foreground font-bold">غرفة الأدلة</span>
+          <div className="w-px h-6 bg-border" />
+          <span className="text-primary font-mono">
+            الأدلة المجمعة: {collectedEvidence.length}/{evidenceFiles.length}
           </span>
         </div>
-      </header>
+      </motion.div>
 
-      <div className="relative z-10 grid grid-cols-12 gap-6">
-        {/* File Browser */}
-        <div className="col-span-7 space-y-4 animate-slide-up" style={{ animationDelay: "0.1s" }}>
-          <GameCard title="Evidence Files" variant="glass">
-            <div className="mt-4 space-y-3">
-              {evidenceFiles.map((file, index) => {
-                const Icon = file.icon;
-                const isCollected = collectedEvidence.includes(file.id);
-                const isLocked = file.status === "locked";
-                const isSelected = selectedFile === file.id;
-
+      {/* Collected Evidence Mini Display */}
+      <AnimatePresence>
+        {collectedEvidence.length > 0 && (
+          <motion.div
+            className="absolute top-24 right-6 z-20"
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: 20 }}
+          >
+            <div className="flex flex-col gap-2 p-4 rounded-xl bg-background/90 backdrop-blur-xl border border-green-500/30">
+              <span className="text-xs text-green-400 font-bold mb-1">✓ الأدلة المجمعة</span>
+              {collectedEvidence.map(id => {
+                const file = evidenceFiles.find(f => f.id === id);
+                if (!file) return null;
                 return (
-                  <div
-                    key={file.id}
-                    onClick={() => !isLocked && setSelectedFile(file.id)}
-                    className={cn(
-                      "flex items-center gap-4 p-4 rounded-lg border transition-all duration-300 cursor-pointer",
-                      "animate-slide-up",
-                      isSelected
-                        ? "bg-primary/10 border-primary/50 shadow-[0_0_15px_hsl(175,80%,50%,0.1)]"
-                        : "bg-background/50 border-border hover:border-primary/30",
-                      isLocked && "opacity-50 cursor-not-allowed",
-                      isCollected && "border-success/50"
-                    )}
-                    style={{ animationDelay: `${index * 0.1}s` }}
+                  <motion.div
+                    key={id}
+                    className="flex items-center gap-2 text-sm text-foreground"
+                    initial={{ opacity: 0, scale: 0.8 }}
+                    animate={{ opacity: 1, scale: 1 }}
                   >
-                    {/* Icon */}
-                    <div className={cn(
-                      "w-12 h-12 rounded-lg flex items-center justify-center",
-                      isLocked ? "bg-muted" : "bg-accent/10"
-                    )}>
-                      {isLocked ? (
-                        <span className="text-xl">🔒</span>
-                      ) : (
-                        <Icon className={cn(
-                          "w-6 h-6",
-                          isCollected ? "text-success" : "text-accent"
-                        )} />
-                      )}
-                    </div>
-
-                    {/* Info */}
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2">
-                        <h4 className="font-medium text-foreground">{file.nameEn}</h4>
-                        {file.status === "new" && !isCollected && (
-                          <span className="px-2 py-0.5 rounded text-[10px] bg-destructive/20 text-destructive font-mono">
-                            NEW
-                          </span>
-                        )}
-                        {isCollected && (
-                          <span className="px-2 py-0.5 rounded text-[10px] bg-success/20 text-success font-mono">
-                            ✓ COLLECTED
-                          </span>
-                        )}
-                      </div>
-                      <p className="text-sm text-muted-foreground" dir="rtl">{file.name}</p>
-                      <p className="text-xs text-muted-foreground mt-1">{file.description}</p>
-                    </div>
-
-                    {/* Action */}
-                    {!isLocked && !isCollected && (
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleCollect(file.id);
-                        }}
-                        className="p-2 rounded-lg bg-primary/10 border border-primary/30 hover:bg-primary/20 transition-colors"
-                      >
-                        <Download className="w-4 h-4 text-primary" />
-                      </button>
-                    )}
-                  </div>
+                    <file.icon className="w-4 h-4 text-green-400" />
+                    <span>{file.nameEn}</span>
+                  </motion.div>
                 );
               })}
+              
+              {collectedEvidence.length >= 2 && (
+                <motion.button
+                  onClick={() => onNavigate("analysis")}
+                  className="mt-2 px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-medium"
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                >
+                  انتقل للتحليل →
+                </motion.button>
+              )}
             </div>
-          </GameCard>
-        </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
-        {/* File Preview */}
-        <div className="col-span-5 animate-slide-up" style={{ animationDelay: "0.2s" }}>
-          <GameCard title="File Preview" variant="glass" className="sticky top-6">
-            {selectedFile ? (
-              <div className="mt-4">
-                {/* Preview Header */}
-                <div className="flex items-center gap-3 mb-4 pb-4 border-b border-border">
-                  <FileSpreadsheet className="w-8 h-8 text-accent" />
-                  <div>
-                    <h4 className="font-semibold text-foreground">
-                      {evidenceFiles.find(f => f.id === selectedFile)?.nameEn}
-                    </h4>
-                    <p className="text-xs text-muted-foreground">
-                      {evidenceFiles.find(f => f.id === selectedFile)?.description}
-                    </p>
-                  </div>
-                </div>
-
-                {/* Mock Spreadsheet Preview */}
-                <div className="rounded-lg border border-border overflow-hidden">
-                  <div className="bg-secondary/50 px-3 py-2 border-b border-border">
-                    <p className="text-xs text-muted-foreground font-mono">Preview</p>
-                  </div>
-                  <div className="p-4 bg-background/50">
-                    <table className="w-full text-xs">
-                      <thead>
-                        <tr className="border-b border-border">
-                          <th className="text-left py-2 text-muted-foreground font-mono">Date</th>
-                          <th className="text-left py-2 text-muted-foreground font-mono">Description</th>
-                          <th className="text-right py-2 text-muted-foreground font-mono">Amount</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        <tr className="border-b border-border/50">
-                          <td className="py-2 text-foreground font-mono">2024-01-15</td>
-                          <td className="py-2 text-foreground">Office Supplies</td>
-                          <td className="py-2 text-right text-destructive font-mono">-$2,500</td>
-                        </tr>
-                        <tr className="border-b border-border/50">
-                          <td className="py-2 text-foreground font-mono">2024-01-18</td>
-                          <td className="py-2 text-foreground">Client Payment</td>
-                          <td className="py-2 text-right text-success font-mono">+$15,000</td>
-                        </tr>
-                        <tr className="border-b border-border/50 bg-destructive/10">
-                          <td className="py-2 text-foreground font-mono">2024-01-20</td>
-                          <td className="py-2 text-foreground">Misc. Expense</td>
-                          <td className="py-2 text-right text-destructive font-mono">-$8,750</td>
-                        </tr>
-                        <tr>
-                          <td className="py-2 text-muted-foreground" colSpan={3}>
-                            ... more rows
-                          </td>
-                        </tr>
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-
-                {/* Hint */}
-                <div className="mt-4 p-3 rounded-lg bg-accent/10 border border-accent/30">
-                  <p className="text-sm text-accent flex items-center gap-2">
-                    <span>💡</span>
-                    <span>Notice anything unusual? Take this to Analysis Lab.</span>
-                  </p>
-                </div>
-              </div>
-            ) : (
-              <div className="mt-4 p-8 text-center">
-                <span className="text-4xl mb-4 block">📂</span>
-                <p className="text-muted-foreground">Select a file to preview</p>
-                <p className="text-sm text-muted-foreground mt-2" dir="rtl">
-                  اختر ملف لعرضه
-                </p>
-              </div>
-            )}
-          </GameCard>
-        </div>
+      {/* Navigation */}
+      <div className="absolute bottom-8 left-8 z-20">
+        <NavigationButton
+          iconEmoji="🏢"
+          label="مكتب المحقق"
+          onClick={() => onNavigate("office")}
+        />
       </div>
-    </div>
+    </InteractiveRoom>
   );
 };
