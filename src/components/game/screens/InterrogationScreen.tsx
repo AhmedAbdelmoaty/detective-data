@@ -75,6 +75,7 @@ export const InterrogationScreen = ({ onNavigate }: InterrogationScreenProps) =>
         backgroundImage={interrogationRoom}
         hotspots={[]}
         onHotspotClick={() => {}}
+        activeHotspot={selectedSuspect?.id || null}
         overlayContent={showQuestions && selectedSuspect ? (
           <motion.div className="bg-background/95 backdrop-blur-xl border border-primary/30 rounded-2xl p-6 max-w-3xl w-full max-h-[80vh] overflow-auto">
             {/* Suspect header */}

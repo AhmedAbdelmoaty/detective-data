@@ -1,10 +1,10 @@
 import { motion } from "framer-motion";
 import { 
-  Trophy, Star, Award, Target, BookOpen, RotateCcw, 
-  CheckCircle, XCircle, Clock, Brain, TrendingUp
+  Trophy, Star, Award, Target, RotateCcw, 
+  CheckCircle, XCircle, Shield
 } from "lucide-react";
 import { useGame } from "@/contexts/GameContext";
-import { CASE_INFO, LEARNING_CONCEPTS, ANALYSIS_CHALLENGES, CASE_SOLUTION } from "@/data/case1";
+import { CASE_INFO, CASE_SOLUTION } from "@/data/case1";
 import { cn } from "@/lib/utils";
 
 interface ResultScreenProps {
@@ -12,13 +12,12 @@ interface ResultScreenProps {
 }
 
 export const ResultScreen = ({ onNavigate }: ResultScreenProps) => {
-  const { state, resetGame } = useGame();
+  const { state, resetGame, getInterrogationProgress } = useGame();
 
   const isWin = state.accusation === CASE_SOLUTION.culprit;
-  const totalPossibleScore = 500 + ANALYSIS_CHALLENGES.reduce((sum, c) => sum + c.points, 0);
+  const totalPossibleScore = 1500;
   const scorePercentage = Math.round((state.score / totalPossibleScore) * 100);
   
-  // حساب الرتبة
   const getRank = () => {
     if (scorePercentage >= 90) return { title: "محقق أسطوري", titleEn: "Legendary Detective", icon: "🏆", color: "text-yellow-400" };
     if (scorePercentage >= 75) return { title: "محقق خبير", titleEn: "Expert Detective", icon: "🥇", color: "text-gold" };
@@ -28,6 +27,8 @@ export const ResultScreen = ({ onNavigate }: ResultScreenProps) => {
   };
   
   const rank = getRank();
+  const interrogationProgress = getInterrogationProgress();
+  const suspectsInterrogated = state.interrogations.filter(i => i.questionsAsked.length > 0).length;
 
   const handleReplay = () => {
     resetGame();
@@ -36,10 +37,10 @@ export const ResultScreen = ({ onNavigate }: ResultScreenProps) => {
 
   const stats = [
     { label: "الأدلة المجمعة", value: state.collectedEvidence.length, max: 5, icon: "📁" },
-    { label: "التحديات المحلولة", value: state.puzzlesSolved.length, max: ANALYSIS_CHALLENGES.length, icon: "🧩" },
-    { label: "الاستجوابات", value: state.interrogatedSuspects.length, max: 3, icon: "🗣️" },
-    { label: "الاستنتاجات", value: state.insights.length, max: 10, icon: "💡" },
-    { label: "المفاهيم المكتسبة", value: state.unlockedConcepts.length, max: LEARNING_CONCEPTS.length, icon: "📚" },
+    { label: "الاستجوابات", value: suspectsInterrogated, max: 3, icon: "🗣️" },
+    { label: "الأسئلة المطروحة", value: interrogationProgress.asked, max: interrogationProgress.total, icon: "❓" },
+    { label: "الملاحظات", value: state.investigationNotes.length, max: 15, icon: "📝" },
+    { label: "المفاتيح المكتشفة", value: state.keysDiscovered.length, max: 5, icon: "🔑" },
   ];
 
   return (
@@ -147,11 +148,14 @@ export const ResultScreen = ({ onNavigate }: ResultScreenProps) => {
               <p className="text-sm text-muted-foreground">{rank.titleEn}</p>
             </div>
 
-            {/* Case Info */}
+            {/* Trust & Case */}
             <div className="text-center md:text-left">
+              <div className="flex items-center gap-2 mb-2">
+                <Shield className="w-5 h-5 text-primary" />
+                <span className="font-bold">{state.trust}% ثقة</span>
+              </div>
               <p className="text-muted-foreground text-sm mb-1">القضية</p>
               <p className="text-xl font-bold text-foreground">{CASE_INFO.title}</p>
-              <p className="text-sm text-muted-foreground">{CASE_INFO.titleEn}</p>
             </div>
           </div>
         </motion.div>
@@ -180,63 +184,13 @@ export const ResultScreen = ({ onNavigate }: ResultScreenProps) => {
           ))}
         </motion.div>
 
-        {/* Concepts Learned */}
-        <motion.div
-          className="p-6 rounded-2xl bg-accent/10 border border-accent/30 mb-6"
-          initial={{ y: 20, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          transition={{ delay: 0.6 }}
-        >
-          <h3 className="text-xl font-bold text-accent mb-4 flex items-center gap-2">
-            <BookOpen className="w-6 h-6" />
-            المفاهيم التي تعلمتها ({state.unlockedConcepts.length}/{LEARNING_CONCEPTS.length})
-          </h3>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            {LEARNING_CONCEPTS.map((concept, i) => {
-              const isUnlocked = state.unlockedConcepts.includes(concept.id);
-              return (
-                <motion.div
-                  key={concept.id}
-                  className={cn(
-                    "p-4 rounded-xl border flex items-center gap-4",
-                    isUnlocked 
-                      ? "bg-accent/10 border-accent/30" 
-                      : "bg-muted/20 border-border opacity-50"
-                  )}
-                  initial={{ x: -20, opacity: 0 }}
-                  animate={{ x: 0, opacity: isUnlocked ? 1 : 0.5 }}
-                  transition={{ delay: 0.7 + i * 0.05 }}
-                >
-                  <div className={cn(
-                    "w-12 h-12 rounded-xl flex items-center justify-center text-2xl",
-                    isUnlocked ? "bg-accent/20" : "bg-muted"
-                  )}>
-                    {isUnlocked ? concept.icon : "🔒"}
-                  </div>
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2">
-                      <p className="font-bold text-foreground">{concept.title}</p>
-                      {isUnlocked && <CheckCircle className="w-4 h-4 text-green-400" />}
-                    </div>
-                    <p className="text-xs text-muted-foreground">{concept.titleEn}</p>
-                    {isUnlocked && (
-                      <p className="text-sm text-accent mt-1">{concept.description}</p>
-                    )}
-                  </div>
-                </motion.div>
-              );
-            })}
-          </div>
-        </motion.div>
-
         {/* Case Summary (if won) */}
         {isWin && (
           <motion.div
             className="p-6 rounded-2xl bg-primary/10 border border-primary/30 mb-6"
             initial={{ y: 20, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
-            transition={{ delay: 0.8 }}
+            transition={{ delay: 0.6 }}
           >
             <h3 className="text-xl font-bold text-primary mb-4 flex items-center gap-2">
               <Target className="w-6 h-6" />
@@ -262,7 +216,7 @@ export const ResultScreen = ({ onNavigate }: ResultScreenProps) => {
               <div className="p-4 rounded-lg bg-background/50">
                 <p className="text-sm text-muted-foreground mb-2">الأدلة الرئيسية</p>
                 <ul className="space-y-1">
-                  {CASE_SOLUTION.evidence.map((e, i) => (
+                  {CASE_SOLUTION.keyEvidence.map((e, i) => (
                     <li key={i} className="text-sm text-foreground flex items-center gap-2">
                       <CheckCircle className="w-4 h-4 text-green-400 flex-shrink-0" />
                       {e}
@@ -270,6 +224,51 @@ export const ResultScreen = ({ onNavigate }: ResultScreenProps) => {
                   ))}
                 </ul>
               </div>
+
+              {/* Misleading Clues Explained */}
+              <div className="p-4 rounded-lg bg-orange-500/10 border border-orange-500/30">
+                <p className="text-sm text-orange-400 mb-2 font-bold">الأدلة المضللة التي تجاوزتها:</p>
+                <ul className="space-y-2">
+                  {CASE_SOLUTION.misleadingClues.map((mc, i) => (
+                    <li key={i} className="text-sm">
+                      <p className="text-foreground font-medium">{mc.clue}</p>
+                      <p className="text-muted-foreground text-xs">{mc.explanation}</p>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+          </motion.div>
+        )}
+
+        {/* What you missed (if lost) */}
+        {!isWin && (
+          <motion.div
+            className="p-6 rounded-2xl bg-destructive/10 border border-destructive/30 mb-6"
+            initial={{ y: 20, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ delay: 0.6 }}
+          >
+            <h3 className="text-xl font-bold text-destructive mb-4 flex items-center gap-2">
+              <XCircle className="w-6 h-6" />
+              ما الذي فاتك؟
+            </h3>
+            
+            <div className="space-y-3">
+              <p className="text-foreground">
+                المختلس الحقيقي كان <span className="font-bold text-destructive">كريم الحسن</span>
+              </p>
+              <p className="text-muted-foreground text-sm">
+                كان يجب الانتباه إلى:
+              </p>
+              <ul className="space-y-1">
+                {CASE_SOLUTION.keyEvidence.slice(0, 3).map((e, i) => (
+                  <li key={i} className="text-sm text-foreground flex items-center gap-2">
+                    <span className="text-destructive">•</span>
+                    {e}
+                  </li>
+                ))}
+              </ul>
             </div>
           </motion.div>
         )}
@@ -279,7 +278,7 @@ export const ResultScreen = ({ onNavigate }: ResultScreenProps) => {
           className="flex flex-col sm:flex-row gap-4 justify-center"
           initial={{ y: 20, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
-          transition={{ delay: 1 }}
+          transition={{ delay: 0.8 }}
         >
           <motion.button
             onClick={handleReplay}
@@ -306,7 +305,7 @@ export const ResultScreen = ({ onNavigate }: ResultScreenProps) => {
           className="text-center text-muted-foreground text-sm mt-8"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          transition={{ delay: 1.2 }}
+          transition={{ delay: 1 }}
         >
           🎮 Data Detective - تعلم تحليل البيانات بطريقة ممتعة
         </motion.p>

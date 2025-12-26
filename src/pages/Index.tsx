@@ -22,7 +22,11 @@ const GameContent = () => {
   };
 
   useEffect(() => {
-    setCurrentRoom(currentScreen);
+    // Only set room for valid room types
+    const roomTypes = ["intro", "office", "evidence", "analysis", "interrogation", "result"];
+    if (roomTypes.includes(currentScreen)) {
+      setCurrentRoom(currentScreen as "intro" | "office" | "evidence" | "analysis" | "interrogation" | "result");
+    }
   }, [currentScreen, setCurrentRoom]);
 
   return (
