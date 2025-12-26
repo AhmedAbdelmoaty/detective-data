@@ -36,11 +36,11 @@ export const ResultScreen = ({ onNavigate }: ResultScreenProps) => {
   };
 
   const stats = [
-    { label: "الأدلة المجمعة", value: state.collectedEvidence.length, max: 5, icon: "📁" },
+    { label: "الأدلة المجمعة", value: state.collectedEvidence.length, max: 4, icon: "📁" },
     { label: "الاستجوابات", value: suspectsInterrogated, max: 3, icon: "🗣️" },
     { label: "الأسئلة المطروحة", value: interrogationProgress.asked, max: interrogationProgress.total, icon: "❓" },
-    { label: "الملاحظات", value: state.investigationNotes.length, max: 15, icon: "📝" },
-    { label: "المفاتيح المكتشفة", value: state.keysDiscovered.length, max: 5, icon: "🔑" },
+    { label: "الأنماط المكتشفة", value: state.patternsDiscovered.length, max: 4, icon: "🔍" },
+    { label: "محاولات الاتهام", value: state.accusationAttempts, max: 3, icon: "⚖️" },
   ];
 
   return (
@@ -287,11 +287,11 @@ export const ResultScreen = ({ onNavigate }: ResultScreenProps) => {
             whileTap={{ scale: 0.95 }}
           >
             <RotateCcw className="w-6 h-6" />
-            العب مرة أخرى
+            🔄 العب مرة أخرى
           </motion.button>
           
           <motion.button
-            onClick={() => onNavigate("intro")}
+            onClick={() => { resetGame(); onNavigate("intro"); }}
             className="flex items-center justify-center gap-3 px-8 py-4 rounded-xl bg-secondary text-foreground font-bold text-lg border border-border"
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
