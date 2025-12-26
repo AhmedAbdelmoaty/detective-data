@@ -2,13 +2,17 @@ import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
   Filter, BarChart2, Calculator, GitCompare, Lightbulb, Microscope, 
-  AlertTriangle, TrendingUp, TrendingDown, CheckCircle, XCircle, Star
+  AlertTriangle, TrendingUp, TrendingDown, CheckCircle, XCircle, Star,
+  Clock, Shield, FileWarning, Receipt, Database
 } from "lucide-react";
 import { InteractiveRoom } from "../InteractiveRoom";
 import { NavigationButton } from "../NavigationButton";
 import { useGame } from "@/contexts/GameContext";
 import { useSound } from "@/hooks/useSoundEffects";
-import { FINANCIAL_DATA, ANALYSIS_CHALLENGES, LEARNING_CONCEPTS } from "@/data/case1";
+import { 
+  FINANCIAL_DATA, ANALYSIS_CHALLENGES, LEARNING_CONCEPTS, 
+  PURCHASE_INVOICES, SYSTEM_ACCESS_LOGS 
+} from "@/data/case1";
 import { cn } from "@/lib/utils";
 import analysisRoomBg from "@/assets/rooms/analysis-room.png";
 
@@ -104,6 +108,189 @@ export const AnalysisScreen = ({ onNavigate }: AnalysisScreenProps) => {
     }
   };
 
+  // Render data tables for advanced challenges
+  const renderChallengeDataTable = () => {
+    if (!currentChallenge) return null;
+
+    // Challenge 6: Invoice verification - show purchase invoices
+    if (currentChallenge.id === "challenge-6") {
+      return (
+        <div className="p-4 rounded-xl bg-secondary/20 border border-border overflow-auto max-h-64">
+          <h4 className="font-bold text-accent mb-3 flex items-center gap-2">
+            <Receipt className="w-4 h-4" />
+            سجل الفواتير
+          </h4>
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b border-border">
+                <th className="text-right p-2 text-muted-foreground">التاريخ</th>
+                <th className="text-right p-2 text-muted-foreground">المورد</th>
+                <th className="text-right p-2 text-muted-foreground">المبلغ</th>
+                <th className="text-right p-2 text-muted-foreground">إيصال</th>
+              </tr>
+            </thead>
+            <tbody>
+              {PURCHASE_INVOICES.map((inv) => (
+                <tr 
+                  key={inv.id} 
+                  className={cn(
+                    "border-b border-border/50",
+                    !inv.hasReceipt && "bg-destructive/10"
+                  )}
+                >
+                  <td className="p-2 font-mono text-xs">{inv.date}</td>
+                  <td className="p-2">{inv.vendor}</td>
+                  <td className="p-2 font-mono">{inv.amount.toLocaleString()}</td>
+                  <td className="p-2">
+                    {inv.hasReceipt ? (
+                      <CheckCircle className="w-4 h-4 text-green-400" />
+                    ) : (
+                      <XCircle className="w-4 h-4 text-destructive" />
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          <div className="mt-3 p-2 rounded-lg bg-accent/10 text-sm text-accent">
+            💡 اجمع مبالغ الفواتير التي بدون إيصال (❌)
+          </div>
+        </div>
+      );
+    }
+
+    // Challenge 7: Access logs analysis
+    if (currentChallenge.id === "challenge-7") {
+      return (
+        <div className="p-4 rounded-xl bg-secondary/20 border border-border overflow-auto max-h-64">
+          <h4 className="font-bold text-accent mb-3 flex items-center gap-2">
+            <Clock className="w-4 h-4" />
+            سجلات الدخول للنظام
+          </h4>
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b border-border">
+                <th className="text-right p-2 text-muted-foreground">التاريخ</th>
+                <th className="text-right p-2 text-muted-foreground">الوقت</th>
+                <th className="text-right p-2 text-muted-foreground">المستخدم</th>
+                <th className="text-right p-2 text-muted-foreground">الإجراء</th>
+                <th className="text-right p-2 text-muted-foreground">خارج الدوام</th>
+              </tr>
+            </thead>
+            <tbody>
+              {SYSTEM_ACCESS_LOGS.map((log) => (
+                <tr 
+                  key={log.id} 
+                  className={cn(
+                    "border-b border-border/50",
+                    log.afterHours && log.user === "karim" && "bg-destructive/10"
+                  )}
+                >
+                  <td className="p-2 font-mono text-xs">{log.date}</td>
+                  <td className="p-2 font-mono text-xs">{log.time}</td>
+                  <td className={cn(
+                    "p-2 font-bold",
+                    log.user === "karim" ? "text-purple-400" : "text-blue-400"
+                  )}>
+                    {log.user}
+                  </td>
+                  <td className="p-2 text-xs">{log.action}</td>
+                  <td className="p-2">
+                    {log.afterHours ? (
+                      <span className="flex items-center gap-1 text-destructive">
+                        <AlertTriangle className="w-3 h-3" />
+                        نعم
+                      </span>
+                    ) : (
+                      <span className="text-green-400">لا</span>
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          <div className="mt-3 p-2 rounded-lg bg-accent/10 text-sm text-accent">
+            💡 عد سجلات كريم التي تمت بعد ساعات العمل (afterHours = نعم)
+          </div>
+        </div>
+      );
+    }
+
+    // Challenge 3: Counting invoices without receipts
+    if (currentChallenge.id === "challenge-3") {
+      return (
+        <div className="p-4 rounded-xl bg-secondary/20 border border-border overflow-auto max-h-64">
+          <h4 className="font-bold text-accent mb-3 flex items-center gap-2">
+            <FileWarning className="w-4 h-4" />
+            سجل الفواتير - حالة التوثيق
+          </h4>
+          <div className="grid grid-cols-2 gap-2">
+            {PURCHASE_INVOICES.map((inv) => (
+              <div 
+                key={inv.id} 
+                className={cn(
+                  "p-2 rounded-lg border text-sm flex items-center justify-between",
+                  inv.hasReceipt 
+                    ? "bg-green-500/10 border-green-500/30" 
+                    : "bg-destructive/10 border-destructive/30"
+                )}
+              >
+                <span>{inv.vendor.slice(0, 15)}...</span>
+                {inv.hasReceipt ? (
+                  <CheckCircle className="w-4 h-4 text-green-400" />
+                ) : (
+                  <XCircle className="w-4 h-4 text-destructive" />
+                )}
+              </div>
+            ))}
+          </div>
+          <div className="mt-3 p-2 rounded-lg bg-accent/10 text-sm text-accent">
+            💡 عد الفواتير التي تظهر بعلامة ❌ (بدون إيصال)
+          </div>
+        </div>
+      );
+    }
+
+    // Challenge 8: Cross-reference calculation
+    if (currentChallenge.id === "challenge-8") {
+      return (
+        <div className="p-4 rounded-xl bg-secondary/20 border border-border">
+          <h4 className="font-bold text-accent mb-3 flex items-center gap-2">
+            <Database className="w-4 h-4" />
+            ملخص مصروفات كريم
+          </h4>
+          <div className="grid grid-cols-3 gap-4 mb-4">
+            {FINANCIAL_DATA.monthlySummary.map((month) => (
+              <div 
+                key={month.month} 
+                className={cn(
+                  "p-3 rounded-lg border text-center",
+                  month.anomaly 
+                    ? "bg-destructive/10 border-destructive/30" 
+                    : "bg-secondary/30 border-border"
+                )}
+              >
+                <div className="text-sm text-muted-foreground">{month.month}</div>
+                <div className="text-lg font-mono font-bold text-foreground">
+                  {month.karimExpenses.toLocaleString()}
+                </div>
+              </div>
+            ))}
+          </div>
+          <div className="p-3 rounded-lg bg-primary/10 border border-primary/30 text-center">
+            <div className="text-sm text-muted-foreground">المبلغ المفقود</div>
+            <div className="text-2xl font-mono font-bold text-primary">45,000 ريال</div>
+          </div>
+          <div className="mt-3 p-2 rounded-lg bg-accent/10 text-sm text-accent">
+            💡 اجمع مصروفات كريم الثلاثة واطرح منها المبلغ المفقود
+          </div>
+        </div>
+      );
+    }
+
+    return null;
+  };
+
   const renderChallengeContent = () => {
     if (!currentChallenge) return null;
 
@@ -129,8 +316,11 @@ export const AnalysisScreen = ({ onNavigate }: AnalysisScreenProps) => {
           <p className="text-foreground text-lg">{currentChallenge.description}</p>
         </div>
 
-        {/* بيانات مساعدة للتحديات الحسابية */}
-        {currentChallenge.data && (
+        {/* بيانات تفاعلية للتحديات المتقدمة */}
+        {renderChallengeDataTable()}
+
+        {/* بيانات مساعدة للتحديات الحسابية البسيطة */}
+        {currentChallenge.data && !["challenge-6", "challenge-7", "challenge-3", "challenge-8"].includes(currentChallenge.id) && (
           <div className="p-4 rounded-xl bg-accent/10 border border-accent/30">
             <h4 className="font-bold text-accent mb-2 flex items-center gap-2">
               <Lightbulb className="w-4 h-4" />
@@ -374,6 +564,13 @@ export const AnalysisScreen = ({ onNavigate }: AnalysisScreenProps) => {
         );
 
       case "computer":
+        const basicChallenges = ANALYSIS_CHALLENGES.filter(c => 
+          ["challenge-1", "challenge-2", "challenge-4", "challenge-5"].includes(c.id)
+        );
+        const advancedChallenges = ANALYSIS_CHALLENGES.filter(c => 
+          ["challenge-3", "challenge-6", "challenge-7", "challenge-8"].includes(c.id)
+        );
+
         return (
           <div className="space-y-6">
             <h3 className="text-xl font-bold text-foreground flex items-center gap-3">
@@ -382,45 +579,133 @@ export const AnalysisScreen = ({ onNavigate }: AnalysisScreenProps) => {
             </h3>
             <p className="text-muted-foreground">حل التحديات لكسب النقاط وفتح مفاهيم جديدة!</p>
 
-            <div className="grid gap-4">
-              {ANALYSIS_CHALLENGES.map((challenge, i) => {
-                const isSolved = state.puzzlesSolved.includes(challenge.id);
-                return (
-                  <motion.button
-                    key={challenge.id}
-                    onClick={() => !isSolved && handleChallengeSelect(challenge)}
-                    className={cn(
-                      "p-4 rounded-xl border text-right transition-all",
-                      isSolved
-                        ? "bg-green-500/10 border-green-500/30"
-                        : "bg-secondary/30 border-border hover:border-primary/50"
-                    )}
-                    initial={{ opacity: 0, x: -20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: i * 0.1 }}
-                    whileHover={!isSolved ? { scale: 1.02, x: 5 } : {}}
-                    disabled={isSolved}
-                  >
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        {isSolved ? (
-                          <CheckCircle className="w-6 h-6 text-green-400" />
-                        ) : (
-                          <div className="w-6 h-6 rounded-full border-2 border-primary/50" />
-                        )}
-                        <div>
-                          <h4 className="font-bold text-foreground">{challenge.title}</h4>
-                          <p className="text-sm text-muted-foreground">{challenge.description.slice(0, 50)}...</p>
+            {/* شريط الثقة */}
+            <div className="p-3 rounded-xl bg-secondary/30 border border-border">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-sm text-muted-foreground flex items-center gap-2">
+                  <Shield className="w-4 h-4" />
+                  مستوى الثقة
+                </span>
+                <span className={cn(
+                  "font-mono font-bold",
+                  state.trust > 70 ? "text-green-400" :
+                  state.trust > 40 ? "text-yellow-400" : "text-destructive"
+                )}>
+                  {state.trust}%
+                </span>
+              </div>
+              <div className="h-2 rounded-full bg-muted overflow-hidden">
+                <motion.div
+                  className={cn(
+                    "h-full rounded-full",
+                    state.trust > 70 ? "bg-green-500" :
+                    state.trust > 40 ? "bg-yellow-500" : "bg-destructive"
+                  )}
+                  initial={{ width: 0 }}
+                  animate={{ width: `${state.trust}%` }}
+                  transition={{ duration: 0.5 }}
+                />
+              </div>
+            </div>
+
+            {/* التحديات الأساسية */}
+            <div className="space-y-3">
+              <h4 className="text-sm font-bold text-muted-foreground flex items-center gap-2">
+                <BarChart2 className="w-4 h-4" />
+                التحديات الأساسية
+              </h4>
+              <div className="grid gap-3">
+                {basicChallenges.map((challenge, i) => {
+                  const isSolved = state.puzzlesSolved.includes(challenge.id);
+                  return (
+                    <motion.button
+                      key={challenge.id}
+                      onClick={() => !isSolved && handleChallengeSelect(challenge)}
+                      className={cn(
+                        "p-3 rounded-xl border text-right transition-all",
+                        isSolved
+                          ? "bg-green-500/10 border-green-500/30"
+                          : "bg-secondary/30 border-border hover:border-primary/50"
+                      )}
+                      initial={{ opacity: 0, x: -20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: i * 0.05 }}
+                      whileHover={!isSolved ? { scale: 1.01, x: 3 } : {}}
+                      disabled={isSolved}
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          {isSolved ? (
+                            <CheckCircle className="w-5 h-5 text-green-400" />
+                          ) : (
+                            <div className="w-5 h-5 rounded-full border-2 border-primary/50" />
+                          )}
+                          <div>
+                            <h4 className="font-bold text-foreground text-sm">{challenge.title}</h4>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Star className="w-4 h-4 text-gold" />
+                          <span className="font-mono text-gold text-sm">{challenge.points}</span>
                         </div>
                       </div>
-                      <div className="flex items-center gap-2">
-                        <Star className="w-4 h-4 text-gold" />
-                        <span className="font-mono text-gold">{challenge.points}</span>
+                    </motion.button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* التحديات المتقدمة */}
+            <div className="space-y-3">
+              <h4 className="text-sm font-bold text-accent flex items-center gap-2">
+                <Database className="w-4 h-4" />
+                التحديات المتقدمة (تحليل البيانات)
+              </h4>
+              <div className="grid gap-3">
+                {advancedChallenges.map((challenge, i) => {
+                  const isSolved = state.puzzlesSolved.includes(challenge.id);
+                  return (
+                    <motion.button
+                      key={challenge.id}
+                      onClick={() => !isSolved && handleChallengeSelect(challenge)}
+                      className={cn(
+                        "p-3 rounded-xl border text-right transition-all",
+                        isSolved
+                          ? "bg-green-500/10 border-green-500/30"
+                          : "bg-accent/10 border-accent/30 hover:border-accent"
+                      )}
+                      initial={{ opacity: 0, x: -20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: 0.2 + i * 0.05 }}
+                      whileHover={!isSolved ? { scale: 1.01, x: 3 } : {}}
+                      disabled={isSolved}
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          {isSolved ? (
+                            <CheckCircle className="w-5 h-5 text-green-400" />
+                          ) : (
+                            <div className="w-5 h-5 rounded-full border-2 border-accent/50" />
+                          )}
+                          <div>
+                            <h4 className="font-bold text-foreground text-sm">{challenge.title}</h4>
+                            <p className="text-xs text-accent">{
+                              challenge.id === "challenge-3" ? "تحليل الفواتير" :
+                              challenge.id === "challenge-6" ? "حساب مالي" :
+                              challenge.id === "challenge-7" ? "تحليل سجلات الدخول" :
+                              "ربط البيانات"
+                            }</p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Star className="w-4 h-4 text-accent" />
+                          <span className="font-mono text-accent text-sm">{challenge.points}</span>
+                        </div>
                       </div>
-                    </div>
-                  </motion.button>
-                );
-              })}
+                    </motion.button>
+                  );
+                })}
+              </div>
             </div>
 
             <div className="p-4 rounded-xl bg-primary/10 border border-primary/30 text-center">
