@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { MessageSquare, Scale, Users, ShieldAlert } from "lucide-react";
+import { MessageSquare, Scale, Users, AlertTriangle } from "lucide-react";
 import { InteractiveRoom } from "../InteractiveRoom";
 import { SceneTransition } from "../SceneTransition";
 import { NavigationButton } from "../NavigationButton";
@@ -8,6 +8,7 @@ import { useGame } from "@/contexts/GameContext";
 import { useSound } from "@/hooks/useSoundEffects";
 import { SUSPECTS, CASE_SOLUTION } from "@/data/case1";
 import { cn } from "@/lib/utils";
+import { toast } from "sonner";
 import interrogationRoom from "@/assets/rooms/interrogation-room.png";
 import suspectArrested from "@/assets/scenes/suspect-arrested.png";
 import suspectEscaped from "@/assets/scenes/suspect-escaped.png";
@@ -22,7 +23,7 @@ interface InterrogationScreenProps {
 const suspectImages: Record<string, string> = { ahmed: ahmedImg, sara: saraImg, karim: karimImg };
 
 export const InterrogationScreen = ({ onNavigate }: InterrogationScreenProps) => {
-  const { state, askQuestion, getQuestionsAskedForSuspect, canAskMoreQuestions, makeAccusation, canAccuse, addNote } = useGame();
+  const { state, askQuestion, getQuestionsAskedForSuspect, canAskMoreQuestions, makeAccusation, canAccuse, addNote, getRemainingAttempts } = useGame();
   const { playSound } = useSound();
   const [selectedSuspect, setSelectedSuspect] = useState<typeof SUSPECTS[0] | null>(null);
   const [showQuestions, setShowQuestions] = useState(false);
@@ -30,6 +31,8 @@ export const InterrogationScreen = ({ onNavigate }: InterrogationScreenProps) =>
   const [showAccusePanel, setShowAccusePanel] = useState(false);
   const [showResult, setShowResult] = useState(false);
   const [isCorrectAccusation, setIsCorrectAccusation] = useState(false);
+
+  const remainingAttempts = getRemainingAttempts();
 
   const handleSelectSuspect = (suspect: typeof SUSPECTS[0]) => {
     setSelectedSuspect(suspect);
@@ -58,13 +61,33 @@ export const InterrogationScreen = ({ onNavigate }: InterrogationScreenProps) =>
 
   const handleAccuse = (suspectId: string) => {
     playSound("click");
-    const correct = makeAccusation(suspectId);
-    setIsCorrectAccusation(correct);
-    setShowAccusePanel(false);
-    setTimeout(() => {
-      setShowResult(true);
-      playSound(correct ? "success" : "error");
-    }, 500);
+    const result = makeAccusation(suspectId);
+    
+    if (result.correct) {
+      // نجاح!
+      setIsCorrectAccusation(true);
+      setShowAccusePanel(false);
+      setTimeout(() => {
+        setShowResult(true);
+        playSound("success");
+      }, 500);
+    } else if (result.gameOver) {
+      // فشل نهائي - استنفذ كل المحاولات
+      setIsCorrectAccusation(false);
+      setShowAccusePanel(false);
+      setTimeout(() => {
+        setShowResult(true);
+        playSound("error");
+      }, 500);
+    } else {
+      // محاولة خاطئة - لكن لا يزال لديه محاولات
+      setShowAccusePanel(false);
+      toast.error(`اتهام خاطئ! تبقى لك ${result.attemptsLeft} محاولة`, {
+        description: "فكر جيداً قبل الاتهام التالي. الثقة انخفضت 25%.",
+        duration: 5000,
+      });
+      playSound("error");
+    }
   };
 
   const questionsAsked = selectedSuspect ? getQuestionsAskedForSuspect(selectedSuspect.id) : [];
@@ -141,6 +164,23 @@ export const InterrogationScreen = ({ onNavigate }: InterrogationScreenProps) =>
               </div>
             </div>
 
+            {/* Attempts Warning */}
+            <motion.div
+              className="p-4 rounded-xl bg-destructive/10 border border-destructive/30 mb-6"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+            >
+              <div className="flex items-center gap-3">
+                <AlertTriangle className="w-6 h-6 text-destructive" />
+                <div>
+                  <p className="font-bold text-destructive">المحاولات المتبقية: {remainingAttempts}</p>
+                  <p className="text-sm text-muted-foreground">
+                    كل اتهام خاطئ يقلل الثقة 25%. إذا استنفدت المحاولات أو وصلت الثقة للصفر، تفشل القضية.
+                  </p>
+                </div>
+              </div>
+            </motion.div>
+
             <div className="grid grid-cols-3 gap-6">
               {SUSPECTS.map((suspect, i) => (
                 <motion.button
@@ -175,6 +215,8 @@ export const InterrogationScreen = ({ onNavigate }: InterrogationScreenProps) =>
             <Users className="w-5 h-5 text-primary" />
             <span className="font-bold">غرفة الاستجواب</span>
             <span className="text-primary font-mono">{state.totalQuestionsAsked}/9</span>
+            <span className="text-muted-foreground">|</span>
+            <span className="text-destructive font-bold">محاولات: {remainingAttempts}/3</span>
           </div>
         </motion.div>
 
@@ -221,6 +263,7 @@ export const InterrogationScreen = ({ onNavigate }: InterrogationScreenProps) =>
         {/* Navigation */}
         <div className="absolute bottom-8 left-8 z-20"><NavigationButton iconEmoji="🏢" label="المكتب" onClick={() => onNavigate("office")} /></div>
         <div className="absolute bottom-8 right-8 z-20"><NavigationButton iconEmoji="📁" label="الأدلة" onClick={() => onNavigate("evidence")} /></div>
+        <div className="absolute bottom-8 left-1/2 -translate-x-1/2 z-20"><NavigationButton iconEmoji="📊" label="التحليل" onClick={() => onNavigate("analysis")} /></div>
       </InteractiveRoom>
 
       {/* Result */}

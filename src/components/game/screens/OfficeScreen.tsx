@@ -29,11 +29,11 @@ const introDialogues = [
 ];
 
 export const OfficeScreen = ({ onNavigate }: OfficeScreenProps) => {
-  const { state, getProgress, getTrustLevel, getInterrogationProgress } = useGame();
+  const { state, getProgress, getTrustLevel, getInterrogationProgress, getRemainingAttempts, markIntroSeen } = useGame();
   const { playSound } = useSound();
   const [activePanel, setActivePanel] = useState<string | null>(null);
-  const [showDialogue, setShowDialogue] = useState(true);
-  const [dialogueComplete, setDialogueComplete] = useState(false);
+  const [showDialogue, setShowDialogue] = useState(!state.hasSeenIntroDialogue);
+  const [dialogueComplete, setDialogueComplete] = useState(state.hasSeenIntroDialogue);
 
   const handleHotspotClick = (id: string) => {
     if (!dialogueComplete) return;
@@ -41,10 +41,17 @@ export const OfficeScreen = ({ onNavigate }: OfficeScreenProps) => {
     playSound("click");
   };
 
+  const handleDialogueComplete = () => {
+    setDialogueComplete(true);
+    setShowDialogue(false);
+    markIntroSeen();
+  };
+
   const progress = getProgress();
   const trustLevel = getTrustLevel();
   const interrogationProgress = getInterrogationProgress();
   const suspectsInterrogated = state.interrogations.filter(i => i.questionsAsked.length > 0).length;
+  const remainingAttempts = getRemainingAttempts();
 
   const getTrustColor = () => {
     switch (trustLevel) {
@@ -128,7 +135,7 @@ export const OfficeScreen = ({ onNavigate }: OfficeScreenProps) => {
                           characterId={id}
                           size="md"
                           showName={false}
-                          mood={id === "karim" ? "nervous" : "neutral"}
+                          mood="neutral"
                           entrance="bounce"
                         />
                         <p className="text-sm font-bold mt-2">{suspect?.name}</p>
@@ -173,6 +180,28 @@ export const OfficeScreen = ({ onNavigate }: OfficeScreenProps) => {
                 )}
               </motion.div>
 
+              {/* Accusation Attempts */}
+              <motion.div
+                className="p-4 rounded-xl bg-destructive/10 border border-destructive/30 text-center"
+                initial={{ scale: 0.9, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+              >
+                <p className="text-sm text-muted-foreground mb-1">محاولات الاتهام المتبقية</p>
+                <div className="flex items-center justify-center gap-2">
+                  {[1, 2, 3].map((i) => (
+                    <div
+                      key={i}
+                      className={cn(
+                        "w-8 h-8 rounded-full flex items-center justify-center font-bold",
+                        i <= remainingAttempts ? "bg-destructive text-destructive-foreground" : "bg-secondary text-muted-foreground"
+                      )}
+                    >
+                      {i <= remainingAttempts ? "⚖️" : "✗"}
+                    </div>
+                  ))}
+                </div>
+              </motion.div>
+
               {/* Progress Bars */}
               <div className="space-y-4">
                 <ProgressBar 
@@ -184,7 +213,7 @@ export const OfficeScreen = ({ onNavigate }: OfficeScreenProps) => {
                 <ProgressBar 
                   label="الأدلة المجمعة" 
                   value={state.collectedEvidence.length} 
-                  max={5} 
+                  max={4} 
                   color="accent" 
                 />
                 <ProgressBar
@@ -208,33 +237,6 @@ export const OfficeScreen = ({ onNavigate }: OfficeScreenProps) => {
                 <p className="text-sm text-muted-foreground">النقاط المكتسبة</p>
               </motion.div>
 
-              {/* Investigation Notes Summary */}
-              <div className="space-y-2">
-                <h4 className="font-bold text-foreground flex items-center gap-2">
-                  <FileText className="w-4 h-4 text-primary" />
-                  دفتر التحقيق ({state.investigationNotes.length} ملاحظات)
-                </h4>
-                {state.investigationNotes.length === 0 ? (
-                  <p className="text-sm text-muted-foreground text-center py-4">
-                    لم تسجل أي ملاحظات بعد. ابدأ التحقيق!
-                  </p>
-                ) : (
-                  <div className="space-y-2 max-h-32 overflow-auto">
-                    {state.investigationNotes.slice(-3).map((note, i) => (
-                      <div key={note.id} className="p-2 rounded bg-secondary/50 text-sm text-muted-foreground">
-                        <span className={cn(
-                          "inline-block w-2 h-2 rounded-full mr-2",
-                          note.type === "key" ? "bg-green-400" :
-                          note.type === "clue" ? "bg-primary" :
-                          "bg-muted-foreground"
-                        )} />
-                        {note.text}
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-
               {/* Navigation Buttons */}
               <div className="flex flex-col gap-3 mt-6">
                 <motion.button
@@ -256,7 +258,12 @@ export const OfficeScreen = ({ onNavigate }: OfficeScreenProps) => {
                   whileTap={{ scale: 0.98 }}
                   onClick={() => onNavigate("analysis")}
                 >
-                  📊 دفتر التحقيق
+                  📊 غرفة التحليل
+                  {state.patternsDiscovered.length > 0 && (
+                    <span className="px-2 py-0.5 rounded bg-accent/30 text-xs">
+                      {state.patternsDiscovered.length} أنماط
+                    </span>
+                  )}
                 </motion.button>
                 <motion.button
                   className="w-full py-3 px-4 rounded-lg bg-purple-500/20 border border-purple-500/50 text-purple-400 font-bold hover:bg-purple-500/30 transition-colors flex items-center justify-center gap-2"
@@ -297,14 +304,14 @@ export const OfficeScreen = ({ onNavigate }: OfficeScreenProps) => {
                 </div>
               </motion.div>
 
-              {/* Keys Discovered */}
+              {/* Patterns Discovered */}
               <div className="space-y-3">
                 <h4 className="font-bold text-foreground flex items-center gap-2">
                   <Target className="w-4 h-4 text-accent" />
-                  المفاتيح المكتشفة ({state.keysDiscovered.length})
+                  الأنماط المكتشفة ({state.patternsDiscovered.length})
                 </h4>
                 
-                {state.keysDiscovered.length === 0 ? (
+                {state.patternsDiscovered.length === 0 ? (
                   <div className="text-center py-8 text-muted-foreground">
                     <motion.p
                       className="text-4xl mb-2"
@@ -313,25 +320,24 @@ export const OfficeScreen = ({ onNavigate }: OfficeScreenProps) => {
                     >
                       🔍
                     </motion.p>
-                    <p>لم تكتشف أي مفاتيح بعد</p>
-                    <p className="text-sm">افحص الأدلة واستجوب المشتبهين!</p>
+                    <p>لم تكتشف أي أنماط بعد</p>
+                    <p className="text-sm">استخدم غرفة التحليل لربط الأدلة!</p>
                   </div>
                 ) : (
-                  <div className="grid gap-3">
-                    {state.keysDiscovered.map((key, i) => (
-                      <motion.div
-                        key={key}
-                        className="p-3 rounded-lg bg-accent/10 border border-accent/30"
-                        initial={{ opacity: 0, x: -20 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{ delay: i * 0.1 }}
-                      >
-                        <div className="flex items-center gap-3">
-                          <span className="text-2xl">🔑</span>
-                          <p className="font-bold text-foreground text-sm">{key}</p>
-                        </div>
-                      </motion.div>
-                    ))}
+                  <div className="grid gap-3 max-h-32 overflow-auto">
+                    {state.investigationNotes
+                      .filter(n => n.type === "pattern")
+                      .map((note, i) => (
+                        <motion.div
+                          key={note.id}
+                          className="p-3 rounded-lg bg-accent/10 border border-accent/30"
+                          initial={{ opacity: 0, x: -20 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          transition={{ delay: i * 0.1 }}
+                        >
+                          <p className="text-foreground text-sm">{note.text}</p>
+                        </motion.div>
+                      ))}
                   </div>
                 )}
               </div>
@@ -381,72 +387,38 @@ export const OfficeScreen = ({ onNavigate }: OfficeScreenProps) => {
           initial={{ opacity: 0, x: -20 }}
           animate={{ opacity: 1, x: 0 }}
           whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
         >
-          <ArrowLeft className="w-5 h-5" />
-          <span className="text-sm font-medium">رجوع</span>
+          <ArrowLeft className="w-4 h-4" />
+          <span>رجوع</span>
         </motion.button>
 
-        {/* Room title and score */}
+        {/* Trust & Score */}
         <motion.div
           className="absolute top-4 right-4 z-20 flex items-center gap-4"
-          initial={{ opacity: 0, x: 20 }}
-          animate={{ opacity: 1, x: 0 }}
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
         >
-          <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-background/80 backdrop-blur-sm border border-border">
-            <Shield className={cn("w-5 h-5", getTrustColor())} />
+          <div className={cn(
+            "px-4 py-2 rounded-full backdrop-blur-sm border",
+            trustLevel === "high" ? "bg-green-500/20 border-green-500/30" :
+            trustLevel === "medium" ? "bg-amber-500/20 border-amber-500/30" :
+            "bg-destructive/20 border-destructive/30"
+          )}>
             <span className={cn("font-bold", getTrustColor())}>{state.trust}%</span>
           </div>
-          <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-background/80 backdrop-blur-sm border border-border">
-            <Star className="w-5 h-5 text-gold" />
-            <span className="font-bold text-gold">{state.score}</span>
+          <div className="px-4 py-2 rounded-full bg-gold/20 backdrop-blur-sm border border-gold/30">
+            <span className="font-bold text-gold">⭐ {state.score}</span>
           </div>
-        </motion.div>
-
-        {/* Navigation buttons at bottom */}
-        <motion.div
-          className="absolute bottom-4 left-1/2 -translate-x-1/2 z-20 flex gap-3"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.3 }}
-        >
-          <motion.button
-            className="px-4 py-3 rounded-lg bg-primary/90 text-primary-foreground font-bold flex items-center gap-2 border border-primary/50"
-            whileHover={{ scale: 1.05, y: -2 }}
-            whileTap={{ scale: 0.95 }}
-            onClick={() => onNavigate("evidence")}
-          >
-            📁 الأدلة
-          </motion.button>
-          <motion.button
-            className="px-4 py-3 rounded-lg bg-accent/90 text-accent-foreground font-bold flex items-center gap-2 border border-accent/50"
-            whileHover={{ scale: 1.05, y: -2 }}
-            whileTap={{ scale: 0.95 }}
-            onClick={() => onNavigate("analysis")}
-          >
-            📊 الدفتر
-          </motion.button>
-          <motion.button
-            className="px-4 py-3 rounded-lg bg-purple-600/90 text-white font-bold flex items-center gap-2 border border-purple-500/50"
-            whileHover={{ scale: 1.05, y: -2 }}
-            whileTap={{ scale: 0.95 }}
-            onClick={() => onNavigate("interrogation")}
-          >
-            🧑‍💼 الاستجواب
-          </motion.button>
         </motion.div>
       </InteractiveRoom>
 
-      {/* Initial dialogue */}
+      {/* Intro Dialogue - Only shows once */}
       <AnimatePresence>
-        {showDialogue && !dialogueComplete && (
+      {showDialogue && (
           <EnhancedDialogue
             dialogues={introDialogues}
-            isActive={showDialogue && !dialogueComplete}
-            onComplete={() => {
-              setDialogueComplete(true);
-              setShowDialogue(false);
-            }}
+            isActive={showDialogue}
+            onComplete={handleDialogueComplete}
           />
         )}
       </AnimatePresence>

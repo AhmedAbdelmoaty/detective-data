@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import { FileSpreadsheet, Mail, Lock, CheckCircle, AlertTriangle, Clock, Receipt, Shield, X } from "lucide-react";
 import { InteractiveRoom } from "../InteractiveRoom";
 import { NavigationButton } from "../NavigationButton";
@@ -28,7 +28,7 @@ const locationToEvidence: Record<string, string> = {
 };
 
 export const EvidenceScreen = ({ onNavigate }: EvidenceScreenProps) => {
-  const { state, collectEvidence, addNote, discoverKey, getTrustLevel } = useGame();
+  const { state, collectEvidence, getTrustLevel } = useGame();
   const { playSound } = useSound();
   const [showOverlay, setShowOverlay] = useState(false);
   const [selectedEvidence, setSelectedEvidence] = useState<typeof EVIDENCE_ITEMS[0] | null>(null);
@@ -70,21 +70,22 @@ export const EvidenceScreen = ({ onNavigate }: EvidenceScreenProps) => {
           <option value="all">الكل</option>
           <option value="karim">كريم فقط</option>
           <option value="sara">سارة فقط</option>
+          <option value="ahmed">أحمد فقط</option>
         </select>
       </div>
 
+      {/* Monthly Summary Cards */}
       <div className="grid grid-cols-3 gap-4">
         {MONTHLY_SUMMARY.map((month, i) => (
           <motion.div
             key={month.month}
-            className={cn("p-4 rounded-xl border", month.anomaly ? "bg-destructive/10 border-destructive/30" : "bg-secondary/30 border-border")}
+            className="p-4 rounded-xl border bg-secondary/30 border-border"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: i * 0.1 }}
           >
             <div className="flex items-center justify-between mb-2">
               <span className="font-bold text-foreground">{month.month}</span>
-              {month.anomaly && <AlertTriangle className="w-4 h-4 text-destructive" />}
             </div>
             <div className="space-y-1 text-sm">
               <div className="flex justify-between">
@@ -106,30 +107,38 @@ export const EvidenceScreen = ({ onNavigate }: EvidenceScreenProps) => {
         ))}
       </div>
 
+      {/* Transactions Table */}
       <div className="max-h-48 overflow-auto rounded-xl border border-border">
         <table className="w-full text-sm">
           <thead className="bg-secondary/30 sticky top-0">
             <tr>
-              <th className="text-right p-2 text-muted-foreground">التاريخ</th>
+              <th className="text-right p-2 text-muted-foreground w-24">التاريخ</th>
               <th className="text-right p-2 text-muted-foreground">الوصف</th>
-              <th className="text-right p-2 text-muted-foreground">المبلغ</th>
-              <th className="text-right p-2 text-muted-foreground">المسؤول</th>
+              <th className="text-right p-2 text-muted-foreground w-24">المبلغ</th>
+              <th className="text-right p-2 text-muted-foreground w-20">المسؤول</th>
+              <th className="text-right p-2 text-muted-foreground w-16">موثق</th>
             </tr>
           </thead>
           <tbody>
             {BANK_TRANSACTIONS
               .filter(t => filterBy === "all" || t.enteredBy === filterBy)
               .map((t) => (
-                <tr key={t.id} className={cn("border-b border-border/50", t.suspicious && "bg-destructive/10")}>
+                <tr key={t.id} className="border-b border-border/50">
                   <td className="p-2 font-mono text-foreground text-xs">{t.date}</td>
-                  <td className="p-2 text-foreground">
-                    {t.description}
-                    {t.suspicious && <span className="mr-2 text-destructive text-xs">⚠️</span>}
-                  </td>
+                  <td className="p-2 text-foreground">{t.description}</td>
                   <td className={cn("p-2 font-mono", t.amount >= 0 ? "text-green-400" : "text-destructive")}>
                     {t.amount.toLocaleString()}
                   </td>
-                  <td className="p-2 text-foreground">{t.enteredBy === "karim" ? "كريم" : "سارة"}</td>
+                  <td className="p-2 text-foreground">
+                    {t.enteredBy === "karim" ? "كريم" : t.enteredBy === "sara" ? "سارة" : "أحمد"}
+                  </td>
+                  <td className="p-2 text-center">
+                    {t.verified ? (
+                      <CheckCircle className="w-4 h-4 text-green-400 inline" />
+                    ) : (
+                      <span className="text-muted-foreground">-</span>
+                    )}
+                  </td>
                 </tr>
               ))}
           </tbody>
@@ -147,23 +156,22 @@ export const EvidenceScreen = ({ onNavigate }: EvidenceScreenProps) => {
 
       <div className="space-y-3 max-h-64 overflow-auto">
         {PURCHASE_INVOICES.map((inv) => (
-          <div key={inv.id} className={cn("p-3 rounded-xl border", inv.suspicious ? "bg-destructive/10 border-destructive/30" : "bg-secondary/30 border-border")}>
+          <div key={inv.id} className="p-3 rounded-xl border bg-secondary/30 border-border">
             <div className="flex items-start justify-between">
               <div>
                 <span className="font-bold text-foreground">{inv.vendor}</span>
-                {inv.suspicious && <span className="mr-2 text-xs text-destructive">مشبوه</span>}
-                <p className="text-xs text-muted-foreground">{inv.date}</p>
+                <p className="text-xs text-muted-foreground">{inv.date} • طلب من: {inv.requestedBy === "karim" ? "كريم" : inv.requestedBy === "sara" ? "سارة" : "أحمد"}</p>
+                <p className="text-sm text-muted-foreground mt-1">{inv.items}</p>
               </div>
               <div className="text-right">
                 <p className="font-mono font-bold text-foreground">{inv.amount.toLocaleString()} ريال</p>
                 {inv.hasReceipt ? (
-                  <span className="text-xs text-green-400 flex items-center gap-1"><CheckCircle className="w-3 h-3" /> إيصال</span>
+                  <span className="text-xs text-green-400 flex items-center gap-1 justify-end"><CheckCircle className="w-3 h-3" /> إيصال</span>
                 ) : (
-                  <span className="text-xs text-destructive flex items-center gap-1"><AlertTriangle className="w-3 h-3" /> بدون إيصال</span>
+                  <span className="text-xs text-muted-foreground flex items-center gap-1 justify-end">بدون إيصال</span>
                 )}
               </div>
             </div>
-            {inv.note && <p className="mt-2 text-xs text-destructive">⚠️ {inv.note}</p>}
           </div>
         ))}
       </div>
@@ -181,17 +189,10 @@ export const EvidenceScreen = ({ onNavigate }: EvidenceScreenProps) => {
         {INTERNAL_EMAILS.map((email) => (
           <motion.div 
             key={email.id} 
-            className={cn("p-4 rounded-xl border", email.isKey ? "bg-primary/10 border-primary/30" : "bg-secondary/30 border-border")}
-            onClick={() => {
-              if (email.isKey) {
-                discoverKey(email.id);
-                addNote({ type: "key", text: `إيميل مهم: ${email.subject}`, source: "emails" });
-              }
-            }}
+            className="p-4 rounded-xl border bg-secondary/30 border-border"
           >
             <div className="flex items-center justify-between mb-2">
               <span className="font-bold text-foreground">{email.subject}</span>
-              {email.isKey && <span className="text-xs text-primary">🔑 مفتاح</span>}
             </div>
             <p className="text-xs text-muted-foreground mb-2">من: {email.from} → إلى: {email.to} • {email.date}</p>
             <p className="text-sm text-foreground">{email.body}</p>
@@ -209,25 +210,29 @@ export const EvidenceScreen = ({ onNavigate }: EvidenceScreenProps) => {
       </h4>
 
       <div className="max-h-64 overflow-auto rounded-xl border border-border">
-        <table className="w-full text-sm">
+        <table className="w-full text-sm table-fixed">
           <thead className="bg-secondary/30 sticky top-0">
             <tr>
-              <th className="text-right p-2 text-muted-foreground">التاريخ</th>
-              <th className="text-right p-2 text-muted-foreground">الوقت</th>
-              <th className="text-right p-2 text-muted-foreground">المستخدم</th>
+              <th className="text-right p-2 text-muted-foreground w-24">التاريخ</th>
+              <th className="text-right p-2 text-muted-foreground w-16">الوقت</th>
+              <th className="text-right p-2 text-muted-foreground w-16">المستخدم</th>
               <th className="text-right p-2 text-muted-foreground">الإجراء</th>
-              <th className="text-right p-2 text-muted-foreground">خارج الدوام</th>
+              <th className="text-right p-2 text-muted-foreground w-20">خارج الدوام</th>
             </tr>
           </thead>
           <tbody>
             {SYSTEM_ACCESS_LOGS.map((log) => (
-              <tr key={log.id} className={cn("border-b border-border/50", log.afterHours && "bg-destructive/10")}>
+              <tr key={log.id} className="border-b border-border/50">
                 <td className="p-2 font-mono text-xs text-foreground">{log.date}</td>
                 <td className="p-2 font-mono text-xs text-foreground">{log.time}</td>
                 <td className="p-2 text-foreground font-bold">{log.user}</td>
                 <td className="p-2 text-foreground text-xs">{log.action}</td>
-                <td className="p-2">
-                  {log.afterHours ? <Clock className="w-4 h-4 text-destructive" /> : <span className="text-green-400">-</span>}
+                <td className="p-2 text-center">
+                  {log.afterHours ? (
+                    <Clock className="w-4 h-4 text-amber-400 inline" />
+                  ) : (
+                    <span className="text-green-400">-</span>
+                  )}
                 </td>
               </tr>
             ))}
@@ -297,6 +302,7 @@ export const EvidenceScreen = ({ onNavigate }: EvidenceScreenProps) => {
       {/* Navigation */}
       <div className="absolute bottom-8 left-8 z-20"><NavigationButton iconEmoji="🏢" label="المكتب" onClick={() => onNavigate("office")} /></div>
       <div className="absolute bottom-8 right-8 z-20"><NavigationButton iconEmoji="👥" label="الاستجواب" onClick={() => onNavigate("interrogation")} /></div>
+      <div className="absolute bottom-8 left-1/2 -translate-x-1/2 z-20"><NavigationButton iconEmoji="📊" label="التحليل" onClick={() => onNavigate("analysis")} /></div>
     </InteractiveRoom>
   );
 };
