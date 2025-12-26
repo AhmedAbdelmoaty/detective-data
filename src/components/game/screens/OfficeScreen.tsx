@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowLeft, Briefcase, Target, Star, CheckCircle, Circle, Trophy, Lightbulb } from "lucide-react";
+import { ArrowLeft, Briefcase, Target, Star, Trophy, FileText, Shield, Users } from "lucide-react";
 import { InteractiveRoom } from "../InteractiveRoom";
 import { EnhancedDialogue } from "../EnhancedDialogue";
 import { GameCard } from "../GameCard";
@@ -8,7 +8,7 @@ import { ProgressBar } from "../ProgressBar";
 import { AnimatedCharacter } from "../AnimatedCharacter";
 import { useGame } from "@/contexts/GameContext";
 import { useSound } from "@/hooks/useSoundEffects";
-import { CASE_INFO, SUSPECTS, LEARNING_CONCEPTS, ANALYSIS_CHALLENGES } from "@/data/case1";
+import { CASE_INFO, SUSPECTS } from "@/data/case1";
 import { cn } from "@/lib/utils";
 import detectiveOffice from "@/assets/rooms/detective-office.png";
 
@@ -29,7 +29,7 @@ const introDialogues = [
 ];
 
 export const OfficeScreen = ({ onNavigate }: OfficeScreenProps) => {
-  const { state, getProgress } = useGame();
+  const { state, getProgress, getTrustLevel, getInterrogationProgress } = useGame();
   const { playSound } = useSound();
   const [activePanel, setActivePanel] = useState<string | null>(null);
   const [showDialogue, setShowDialogue] = useState(true);
@@ -42,7 +42,18 @@ export const OfficeScreen = ({ onNavigate }: OfficeScreenProps) => {
   };
 
   const progress = getProgress();
-  const completedTasks = state.tasks.filter(t => t.completed).length;
+  const trustLevel = getTrustLevel();
+  const interrogationProgress = getInterrogationProgress();
+  const suspectsInterrogated = state.interrogations.filter(i => i.questionsAsked.length > 0).length;
+
+  const getTrustColor = () => {
+    switch (trustLevel) {
+      case "critical": return "text-destructive";
+      case "low": return "text-orange-400";
+      case "medium": return "text-yellow-400";
+      case "high": return "text-green-400";
+    }
+  };
 
   const renderPanelContent = () => {
     switch (activePanel) {
@@ -71,31 +82,20 @@ export const OfficeScreen = ({ onNavigate }: OfficeScreenProps) => {
                 </div>
               </motion.div>
 
-              {/* Learning Objectives */}
+              {/* Briefing */}
               <motion.div
-                className="space-y-2"
+                className="p-4 rounded-lg bg-secondary/50 border border-border"
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ delay: 0.1 }}
               >
-                <h4 className="font-bold text-foreground flex items-center gap-2">
-                  <Lightbulb className="w-4 h-4 text-accent" />
-                  ما ستتعلمه
+                <h4 className="font-bold text-foreground flex items-center gap-2 mb-3">
+                  <FileText className="w-4 h-4 text-primary" />
+                  ملخص القضية
                 </h4>
-                <div className="grid grid-cols-1 gap-2">
-                  {CASE_INFO.learningObjectives.map((obj, i) => (
-                    <motion.div
-                      key={i}
-                      className="flex items-center gap-2 p-2 rounded bg-accent/5 border border-accent/20"
-                      initial={{ x: -20, opacity: 0 }}
-                      animate={{ x: 0, opacity: 1 }}
-                      transition={{ delay: 0.2 + i * 0.05 }}
-                    >
-                      <span className="text-accent">📚</span>
-                      <span className="text-sm text-foreground">{obj}</span>
-                    </motion.div>
-                  ))}
-                </div>
+                <p className="text-sm text-muted-foreground whitespace-pre-line leading-relaxed">
+                  {CASE_INFO.briefing}
+                </p>
               </motion.div>
 
               {/* Suspects Preview */}
@@ -111,7 +111,8 @@ export const OfficeScreen = ({ onNavigate }: OfficeScreenProps) => {
                 <div className="grid grid-cols-3 gap-4">
                   {(["ahmed", "sara", "karim"] as const).map((id, i) => {
                     const suspect = SUSPECTS.find(s => s.id === id);
-                    const isInterrogated = state.interrogatedSuspects.includes(id);
+                    const interrogation = state.interrogations.find(int => int.suspectId === id);
+                    const isInterrogated = interrogation && interrogation.questionsAsked.length > 0;
                     return (
                       <motion.div
                         key={id}
@@ -150,6 +151,28 @@ export const OfficeScreen = ({ onNavigate }: OfficeScreenProps) => {
         return (
           <GameCard title="تقدم التحقيق" iconEmoji="📊" className="w-full">
             <div className="space-y-6 p-2">
+              {/* Trust Level */}
+              <motion.div
+                className={cn(
+                  "p-4 rounded-xl border text-center",
+                  trustLevel === "critical" ? "bg-destructive/10 border-destructive/30" :
+                  trustLevel === "low" ? "bg-orange-500/10 border-orange-500/30" :
+                  trustLevel === "medium" ? "bg-yellow-500/10 border-yellow-500/30" :
+                  "bg-green-500/10 border-green-500/30"
+                )}
+                initial={{ scale: 0.9, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+              >
+                <div className="flex items-center justify-center gap-2 mb-1">
+                  <Shield className="w-6 h-6" />
+                  <span className={cn("text-3xl font-bold", getTrustColor())}>{state.trust}%</span>
+                </div>
+                <p className="text-sm text-muted-foreground">مستوى الثقة</p>
+                {trustLevel === "critical" && (
+                  <p className="text-xs text-destructive mt-1">تحذير: الثقة منخفضة جداً!</p>
+                )}
+              </motion.div>
+
               {/* Progress Bars */}
               <div className="space-y-4">
                 <ProgressBar 
@@ -164,15 +187,9 @@ export const OfficeScreen = ({ onNavigate }: OfficeScreenProps) => {
                   max={5} 
                   color="accent" 
                 />
-                <ProgressBar 
-                  label="التحديات المحلولة" 
-                  value={state.puzzlesSolved.length} 
-                  max={ANALYSIS_CHALLENGES.length} 
-                  color="warning" 
-                />
                 <ProgressBar
                   label="الاستجوابات" 
-                  value={state.interrogatedSuspects.length} 
+                  value={suspectsInterrogated} 
                   max={3} 
                   color="success" 
                 />
@@ -191,40 +208,31 @@ export const OfficeScreen = ({ onNavigate }: OfficeScreenProps) => {
                 <p className="text-sm text-muted-foreground">النقاط المكتسبة</p>
               </motion.div>
 
-              {/* Tasks Checklist */}
+              {/* Investigation Notes Summary */}
               <div className="space-y-2">
                 <h4 className="font-bold text-foreground flex items-center gap-2">
-                  <Target className="w-4 h-4 text-primary" />
-                  المهام ({completedTasks}/{state.tasks.length})
+                  <FileText className="w-4 h-4 text-primary" />
+                  دفتر التحقيق ({state.investigationNotes.length} ملاحظات)
                 </h4>
-                <div className="space-y-2 max-h-48 overflow-auto">
-                  {state.tasks.map((task, i) => (
-                    <motion.div
-                      key={task.id}
-                      className={cn(
-                        "flex items-center gap-3 p-3 rounded-lg border transition-all",
-                        task.completed 
-                          ? "bg-green-500/10 border-green-500/30" 
-                          : "bg-muted/30 border-border"
-                      )}
-                      initial={{ x: -20, opacity: 0 }}
-                      animate={{ x: 0, opacity: 1 }}
-                      transition={{ delay: i * 0.05 }}
-                    >
-                      {task.completed ? (
-                        <CheckCircle className="w-5 h-5 text-green-400 flex-shrink-0" />
-                      ) : (
-                        <Circle className="w-5 h-5 text-muted-foreground flex-shrink-0" />
-                      )}
-                      <span className={cn(
-                        "text-sm",
-                        task.completed ? "text-green-400 line-through" : "text-foreground"
-                      )}>
-                        {task.text}
-                      </span>
-                    </motion.div>
-                  ))}
-                </div>
+                {state.investigationNotes.length === 0 ? (
+                  <p className="text-sm text-muted-foreground text-center py-4">
+                    لم تسجل أي ملاحظات بعد. ابدأ التحقيق!
+                  </p>
+                ) : (
+                  <div className="space-y-2 max-h-32 overflow-auto">
+                    {state.investigationNotes.slice(-3).map((note, i) => (
+                      <div key={note.id} className="p-2 rounded bg-secondary/50 text-sm text-muted-foreground">
+                        <span className={cn(
+                          "inline-block w-2 h-2 rounded-full mr-2",
+                          note.type === "key" ? "bg-green-400" :
+                          note.type === "clue" ? "bg-primary" :
+                          "bg-muted-foreground"
+                        )} />
+                        {note.text}
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
 
               {/* Navigation Buttons */}
@@ -248,12 +256,7 @@ export const OfficeScreen = ({ onNavigate }: OfficeScreenProps) => {
                   whileTap={{ scale: 0.98 }}
                   onClick={() => onNavigate("analysis")}
                 >
-                  📊 غرفة التحليل
-                  {state.puzzlesSolved.length > 0 && (
-                    <span className="px-2 py-0.5 rounded bg-accent/30 text-xs">
-                      {state.puzzlesSolved.length} تحديات
-                    </span>
-                  )}
+                  📊 دفتر التحقيق
                 </motion.button>
                 <motion.button
                   className="w-full py-3 px-4 rounded-lg bg-purple-500/20 border border-purple-500/50 text-purple-400 font-bold hover:bg-purple-500/30 transition-colors flex items-center justify-center gap-2"
@@ -262,9 +265,9 @@ export const OfficeScreen = ({ onNavigate }: OfficeScreenProps) => {
                   onClick={() => onNavigate("interrogation")}
                 >
                   🧑‍💼 غرفة الاستجواب
-                  {state.interrogatedSuspects.length > 0 && (
+                  {suspectsInterrogated > 0 && (
                     <span className="px-2 py-0.5 rounded bg-purple-500/30 text-xs">
-                      {state.interrogatedSuspects.length}/3
+                      {suspectsInterrogated}/3
                     </span>
                   )}
                 </motion.button>
@@ -294,48 +297,41 @@ export const OfficeScreen = ({ onNavigate }: OfficeScreenProps) => {
                 </div>
               </motion.div>
 
-              {/* Unlocked Concepts */}
+              {/* Keys Discovered */}
               <div className="space-y-3">
                 <h4 className="font-bold text-foreground flex items-center gap-2">
-                  <Lightbulb className="w-4 h-4 text-accent" />
-                  المفاهيم المكتسبة ({state.unlockedConcepts.length}/{LEARNING_CONCEPTS.length})
+                  <Target className="w-4 h-4 text-accent" />
+                  المفاتيح المكتشفة ({state.keysDiscovered.length})
                 </h4>
                 
-                {state.unlockedConcepts.length === 0 ? (
+                {state.keysDiscovered.length === 0 ? (
                   <div className="text-center py-8 text-muted-foreground">
                     <motion.p
                       className="text-4xl mb-2"
                       animate={{ rotate: [0, -10, 10, 0] }}
                       transition={{ duration: 2, repeat: Infinity }}
                     >
-                      📚
+                      🔍
                     </motion.p>
-                    <p>لم تكتسب أي مفاهيم بعد</p>
-                    <p className="text-sm">حل التحديات في غرفة التحليل!</p>
+                    <p>لم تكتشف أي مفاتيح بعد</p>
+                    <p className="text-sm">افحص الأدلة واستجوب المشتبهين!</p>
                   </div>
                 ) : (
                   <div className="grid gap-3">
-                    {state.unlockedConcepts.map((id, i) => {
-                      const concept = LEARNING_CONCEPTS.find(c => c.id === id);
-                      if (!concept) return null;
-                      return (
-                        <motion.div
-                          key={id}
-                          className="p-3 rounded-lg bg-accent/10 border border-accent/30"
-                          initial={{ opacity: 0, x: -20 }}
-                          animate={{ opacity: 1, x: 0 }}
-                          transition={{ delay: i * 0.1 }}
-                        >
-                          <div className="flex items-center gap-3">
-                            <span className="text-2xl">{concept.icon}</span>
-                            <div>
-                              <p className="font-bold text-foreground">{concept.title}</p>
-                              <p className="text-xs text-muted-foreground">{concept.titleEn}</p>
-                            </div>
-                          </div>
-                        </motion.div>
-                      );
-                    })}
+                    {state.keysDiscovered.map((key, i) => (
+                      <motion.div
+                        key={key}
+                        className="p-3 rounded-lg bg-accent/10 border border-accent/30"
+                        initial={{ opacity: 0, x: -20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: i * 0.1 }}
+                      >
+                        <div className="flex items-center gap-3">
+                          <span className="text-2xl">🔑</span>
+                          <p className="font-bold text-foreground text-sm">{key}</p>
+                        </div>
+                      </motion.div>
+                    ))}
                   </div>
                 )}
               </div>
@@ -347,16 +343,16 @@ export const OfficeScreen = ({ onNavigate }: OfficeScreenProps) => {
                   <p className="text-xs text-muted-foreground">أدلة مجمعة</p>
                 </div>
                 <div className="p-3 rounded-lg bg-accent/10 border border-accent/30 text-center">
-                  <p className="text-2xl font-bold text-accent">{state.puzzlesSolved.length}</p>
-                  <p className="text-xs text-muted-foreground">تحديات محلولة</p>
+                  <p className="text-2xl font-bold text-accent">{state.investigationNotes.length}</p>
+                  <p className="text-xs text-muted-foreground">ملاحظات</p>
                 </div>
                 <div className="p-3 rounded-lg bg-purple-500/10 border border-purple-500/30 text-center">
-                  <p className="text-2xl font-bold text-purple-400">{state.interrogatedSuspects.length}</p>
+                  <p className="text-2xl font-bold text-purple-400">{suspectsInterrogated}</p>
                   <p className="text-xs text-muted-foreground">استجوابات</p>
                 </div>
                 <div className="p-3 rounded-lg bg-green-500/10 border border-green-500/30 text-center">
-                  <p className="text-2xl font-bold text-green-400">{state.insights.length}</p>
-                  <p className="text-xs text-muted-foreground">استنتاجات</p>
+                  <p className="text-2xl font-bold text-green-400">{interrogationProgress.asked}</p>
+                  <p className="text-xs text-muted-foreground">أسئلة مطروحة</p>
                 </div>
               </div>
             </div>
@@ -382,63 +378,78 @@ export const OfficeScreen = ({ onNavigate }: OfficeScreenProps) => {
         <motion.button
           className="absolute top-4 left-4 z-20 flex items-center gap-2 px-4 py-2 rounded-lg bg-background/80 backdrop-blur-sm border border-border hover:bg-background transition-colors"
           onClick={() => onNavigate("intro")}
-          initial={{ x: -50, opacity: 0 }}
-          animate={{ x: 0, opacity: 1 }}
+          initial={{ opacity: 0, x: -20 }}
+          animate={{ opacity: 1, x: 0 }}
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
         >
-          <ArrowLeft className="w-4 h-4" />
-          <span>رجوع</span>
+          <ArrowLeft className="w-5 h-5" />
+          <span className="text-sm font-medium">رجوع</span>
         </motion.button>
 
-        {/* Room title with score */}
+        {/* Room title and score */}
         <motion.div
-          className="absolute top-4 right-4 z-20 flex items-center gap-3"
-          initial={{ y: -50, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          transition={{ delay: 0.3 }}
+          className="absolute top-4 right-4 z-20 flex items-center gap-4"
+          initial={{ opacity: 0, x: 20 }}
+          animate={{ opacity: 1, x: 0 }}
         >
-          <div className="px-4 py-2 rounded-lg bg-gold/20 backdrop-blur-sm border border-gold/50 flex items-center gap-2">
+          <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-background/80 backdrop-blur-sm border border-border">
+            <Shield className={cn("w-5 h-5", getTrustColor())} />
+            <span className={cn("font-bold", getTrustColor())}>{state.trust}%</span>
+          </div>
+          <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-background/80 backdrop-blur-sm border border-border">
             <Star className="w-5 h-5 text-gold" />
             <span className="font-bold text-gold">{state.score}</span>
           </div>
-          <div className="px-6 py-3 rounded-lg bg-background/80 backdrop-blur-sm border border-primary/50">
-            <h2 className="text-xl font-bold text-primary">🕵️ مكتب المحقق</h2>
-          </div>
         </motion.div>
 
-        {/* Progress indicator */}
-        <AnimatePresence>
-          {dialogueComplete && !activePanel && (
-            <motion.div
-              className="absolute bottom-24 left-1/2 -translate-x-1/2 z-20 px-6 py-3 rounded-lg bg-primary/20 backdrop-blur-sm border border-primary/50"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: 20 }}
-              transition={{ delay: 0.5 }}
-            >
-              <div className="flex items-center gap-4">
-                <p className="text-primary text-center">
-                  ✨ انقر على الأماكن المضيئة لاستكشاف المكتب
-                </p>
-                <span className="text-sm text-muted-foreground">
-                  التقدم: {progress}%
-                </span>
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
+        {/* Navigation buttons at bottom */}
+        <motion.div
+          className="absolute bottom-4 left-1/2 -translate-x-1/2 z-20 flex gap-3"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.3 }}
+        >
+          <motion.button
+            className="px-4 py-3 rounded-lg bg-primary/90 text-primary-foreground font-bold flex items-center gap-2 border border-primary/50"
+            whileHover={{ scale: 1.05, y: -2 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={() => onNavigate("evidence")}
+          >
+            📁 الأدلة
+          </motion.button>
+          <motion.button
+            className="px-4 py-3 rounded-lg bg-accent/90 text-accent-foreground font-bold flex items-center gap-2 border border-accent/50"
+            whileHover={{ scale: 1.05, y: -2 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={() => onNavigate("analysis")}
+          >
+            📊 الدفتر
+          </motion.button>
+          <motion.button
+            className="px-4 py-3 rounded-lg bg-purple-600/90 text-white font-bold flex items-center gap-2 border border-purple-500/50"
+            whileHover={{ scale: 1.05, y: -2 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={() => onNavigate("interrogation")}
+          >
+            🧑‍💼 الاستجواب
+          </motion.button>
+        </motion.div>
       </InteractiveRoom>
 
-      {/* Enhanced Dialogue System */}
-      <EnhancedDialogue
-        dialogues={introDialogues}
-        isActive={showDialogue && !dialogueComplete}
-        onComplete={() => {
-          setDialogueComplete(true);
-          setShowDialogue(false);
-        }}
-      />
+      {/* Initial dialogue */}
+      <AnimatePresence>
+        {showDialogue && !dialogueComplete && (
+          <EnhancedDialogue
+            dialogues={introDialogues}
+            isActive={showDialogue && !dialogueComplete}
+            onComplete={() => {
+              setDialogueComplete(true);
+              setShowDialogue(false);
+            }}
+          />
+        )}
+      </AnimatePresence>
     </>
   );
 };

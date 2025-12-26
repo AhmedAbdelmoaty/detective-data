@@ -242,6 +242,7 @@ export const EvidenceScreen = ({ onNavigate }: EvidenceScreenProps) => {
       backgroundImage={evidenceRoomBg}
       hotspots={hotspots}
       onHotspotClick={handleHotspotClick}
+      activeHotspot={selectedEvidence?.id || null}
       overlayContent={showOverlay && selectedEvidence ? (
         <motion.div className="bg-background/95 backdrop-blur-xl border border-primary/30 rounded-2xl p-6 max-w-4xl w-full max-h-[85vh] overflow-auto">
           <div className="flex items-center justify-between mb-6 pb-4 border-b border-border">
