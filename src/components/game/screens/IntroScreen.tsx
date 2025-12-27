@@ -1,6 +1,6 @@
-import { useState } from "react";
 import { motion } from "framer-motion";
 import { AnimatedCharacter } from "../AnimatedCharacter";
+import { CASE_INFO, CHARACTERS } from "@/data/case1";
 
 interface IntroScreenProps {
   onStart?: () => void;
@@ -15,6 +15,9 @@ export const IntroScreen = ({ onStart, onNavigate }: IntroScreenProps) => {
       onStart();
     }
   };
+
+  // Get the 4 characters for preview (excluding detective)
+  const previewCharacters = CHARACTERS.slice(0, 4);
 
   return (
     <div className="relative min-h-screen overflow-hidden bg-gradient-to-b from-gray-900 via-gray-800 to-black">
@@ -99,7 +102,7 @@ export const IntroScreen = ({ onStart, onNavigate }: IntroScreenProps) => {
           >
             Data Detective
           </h1>
-          <h2 className="text-2xl md:text-3xl text-gold font-bold mb-2">وكالة المحققين</h2>
+          <h2 className="text-2xl md:text-3xl text-gold font-bold mb-2">محقق البيانات</h2>
           <p className="text-muted-foreground text-lg">حل اللغز بالأرقام</p>
         </motion.div>
 
@@ -147,7 +150,7 @@ export const IntroScreen = ({ onStart, onNavigate }: IntroScreenProps) => {
           <span className="relative z-10 flex items-center gap-3">🚀 ابدأ التحقيق</span>
         </motion.button>
 
-        {/* Case teaser */}
+        {/* Case teaser - NEW CASE INFO */}
         <motion.div
           className="mt-12 max-w-md text-center"
           initial={{ opacity: 0 }}
@@ -155,27 +158,30 @@ export const IntroScreen = ({ onStart, onNavigate }: IntroScreenProps) => {
           transition={{ delay: 1.5 }}
         >
           <div className="p-4 rounded-lg bg-card/30 backdrop-blur-sm border border-primary/30">
-            <h3 className="text-primary font-bold mb-2">📁 القضية الجديدة</h3>
+            <h3 className="text-primary font-bold mb-2">📁 {CASE_INFO.title}</h3>
             <p className="text-sm text-muted-foreground">
-              "الأموال المفقودة" - شركة تجارية اكتشفت اختفاء 45,000 ريال. ثلاثة مشتبهين. أدلة مالية.
-              مهمتك: كشف الحقيقة.
+              {CASE_INFO.description}
+              <br />
+              <span className="text-amber-400">مهمتك: اكتشف مين بيسحب فلوس الشركة... بالدليل!</span>
             </p>
 
-            {/* Mini suspect preview */}
-            <div className="flex justify-center gap-4 mt-4">
-              {(["ahmed", "sara", "karim"] as const).map((id, i) => (
+            {/* Characters preview */}
+            <div className="flex justify-center gap-3 mt-4">
+              {previewCharacters.map((char, i) => (
                 <motion.div
-                  key={id}
+                  key={char.id}
+                  className="text-center"
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 1.8 + i * 0.2 }}
+                  transition={{ delay: 1.8 + i * 0.15 }}
                 >
-                  <AnimatedCharacter
-                    characterId={id}
-                    size="sm"
-                    showName={false}
-                    mood={id === "karim" ? "nervous" : "neutral"}
-                  />
+                  <div className="w-12 h-12 rounded-full bg-primary/20 border border-primary/30 flex items-center justify-center text-2xl">
+                    {char.id === "moataz" && "👔"}
+                    {char.id === "sara" && "👩‍💼"}
+                    {char.id === "mahmoud" && "👷"}
+                    {char.id === "fadi" && "📋"}
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-1">{char.name}</p>
                 </motion.div>
               ))}
             </div>
