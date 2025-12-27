@@ -259,9 +259,9 @@ export const OfficeScreen = ({ onNavigate }: OfficeScreenProps) => {
                   onClick={() => onNavigate("analysis")}
                 >
                   📊 غرفة التحليل
-                  {state.patternsDiscovered.length > 0 && (
+                  {state.discoveredInsights.length > 0 && (
                     <span className="px-2 py-0.5 rounded bg-accent/30 text-xs">
-                      {state.patternsDiscovered.length} أنماط
+                      {state.discoveredInsights.length} insights
                     </span>
                   )}
                 </motion.button>
@@ -308,10 +308,10 @@ export const OfficeScreen = ({ onNavigate }: OfficeScreenProps) => {
               <div className="space-y-3">
                 <h4 className="font-bold text-foreground flex items-center gap-2">
                   <Target className="w-4 h-4 text-accent" />
-                  الأنماط المكتشفة ({state.patternsDiscovered.length})
+                  الـ Insights المكتشفة ({state.discoveredInsights.length})
                 </h4>
                 
-                {state.patternsDiscovered.length === 0 ? (
+                {state.discoveredInsights.length === 0 ? (
                   <div className="text-center py-8 text-muted-foreground">
                     <motion.p
                       className="text-4xl mb-2"
@@ -320,24 +320,23 @@ export const OfficeScreen = ({ onNavigate }: OfficeScreenProps) => {
                     >
                       🔍
                     </motion.p>
-                    <p>لم تكتشف أي أنماط بعد</p>
-                    <p className="text-sm">استخدم غرفة التحليل لربط الأدلة!</p>
+                    <p>لم تكتشف أي insights بعد</p>
+                    <p className="text-sm">استخدم غرفة التحليل!</p>
                   </div>
                 ) : (
                   <div className="grid gap-3 max-h-32 overflow-auto">
-                    {state.investigationNotes
-                      .filter(n => n.type === "pattern")
-                      .map((note, i) => (
-                        <motion.div
-                          key={note.id}
-                          className="p-3 rounded-lg bg-accent/10 border border-accent/30"
-                          initial={{ opacity: 0, x: -20 }}
-                          animate={{ opacity: 1, x: 0 }}
-                          transition={{ delay: i * 0.1 }}
-                        >
-                          <p className="text-foreground text-sm">{note.text}</p>
-                        </motion.div>
-                      ))}
+                    {state.discoveredInsights.map((insight, i) => (
+                      <motion.div
+                        key={insight.id}
+                        className="p-3 rounded-lg bg-accent/10 border border-accent/30"
+                        initial={{ opacity: 0, x: -20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: i * 0.1 }}
+                      >
+                        <p className="text-foreground text-sm font-bold">{insight.name}</p>
+                        <p className="text-muted-foreground text-xs">{insight.description}</p>
+                      </motion.div>
+                    ))}
                   </div>
                 )}
               </div>
