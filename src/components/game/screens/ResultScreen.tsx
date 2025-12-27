@@ -39,7 +39,7 @@ export const ResultScreen = ({ onNavigate }: ResultScreenProps) => {
     { label: "الأدلة المجمعة", value: state.collectedEvidence.length, max: 4, icon: "📁" },
     { label: "الاستجوابات", value: suspectsInterrogated, max: 3, icon: "🗣️" },
     { label: "الأسئلة المطروحة", value: interrogationProgress.asked, max: interrogationProgress.total, icon: "❓" },
-    { label: "الأنماط المكتشفة", value: state.patternsDiscovered.length, max: 4, icon: "🔍" },
+    { label: "الـ Insights المكتشفة", value: state.discoveredInsights.length, max: 3, icon: "🔍" },
     { label: "محاولات الاتهام", value: state.accusationAttempts, max: 3, icon: "⚖️" },
   ];
 
@@ -210,7 +210,7 @@ export const ResultScreen = ({ onNavigate }: ResultScreenProps) => {
               
               <div className="p-4 rounded-lg bg-background/50">
                 <p className="text-sm text-muted-foreground mb-1">المبلغ المختلس</p>
-                <p className="text-2xl font-bold text-destructive">{CASE_SOLUTION.totalAmount.toLocaleString()} ريال</p>
+                <p className="text-2xl font-bold text-destructive">{CASE_SOLUTION.totalStolen.toLocaleString()} ريال</p>
               </div>
               
               <div className="p-4 rounded-lg bg-background/50">
@@ -225,14 +225,14 @@ export const ResultScreen = ({ onNavigate }: ResultScreenProps) => {
                 </ul>
               </div>
 
-              {/* Misleading Clues Explained */}
+              {/* Misleading Elements Explained */}
               <div className="p-4 rounded-lg bg-orange-500/10 border border-orange-500/30">
-                <p className="text-sm text-orange-400 mb-2 font-bold">الأدلة المضللة التي تجاوزتها:</p>
+                <p className="text-sm text-orange-400 mb-2 font-bold">العناصر المضللة التي تجاوزتها:</p>
                 <ul className="space-y-2">
-                  {CASE_SOLUTION.misleadingClues.map((mc, i) => (
+                  {CASE_SOLUTION.misleadingElements.map((me, i) => (
                     <li key={i} className="text-sm">
-                      <p className="text-foreground font-medium">{mc.clue}</p>
-                      <p className="text-muted-foreground text-xs">{mc.explanation}</p>
+                      <p className="text-foreground font-medium">{me.suspectId === "sara" ? "سارة" : "أحمد"}</p>
+                      <p className="text-muted-foreground text-xs">{me.reason}</p>
                     </li>
                   ))}
                 </ul>
