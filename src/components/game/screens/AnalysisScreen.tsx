@@ -1,6 +1,6 @@
 import { useState, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Filter, BarChart3, Link2, Lightbulb, ArrowLeft, Calculator, SortAsc, Hash, Layers, CheckCircle, Clock, Shield } from "lucide-react";
+import { Filter, BarChart3, Link2, Lightbulb, Calculator, SortAsc, Hash, Layers, CheckCircle, Clock, Shield, Lock, Table2 } from "lucide-react";
 import { NavigationButton } from "../NavigationButton";
 import { useGame } from "@/contexts/GameContext";
 import { BANK_TRANSACTIONS, PURCHASE_INVOICES, ACTIVITY_LOG, HYPOTHESES, SUSPECTS } from "@/data/case1";
@@ -22,7 +22,7 @@ export const AnalysisScreen = ({ onNavigate }: AnalysisScreenProps) => {
   
   // Tool state
   const [activeTool, setActiveTool] = useState<ToolType | null>(null);
-  const [dataSource, setDataSource] = useState<DataSource>("transactions");
+  const [dataSource, setDataSource] = useState<DataSource | null>(null);
   
   // Filter state
   const [filterColumn, setFilterColumn] = useState<string>("");
@@ -39,7 +39,6 @@ export const AnalysisScreen = ({ onNavigate }: AnalysisScreenProps) => {
   // Match state
   const [matchSource1, setMatchSource1] = useState<DataSource>("transactions");
   const [matchSource2, setMatchSource2] = useState<DataSource>("invoices");
-  const [matchColumn, setMatchColumn] = useState<string>("");
   
   // Results
   const [showResults, setShowResults] = useState(false);
@@ -51,12 +50,43 @@ export const AnalysisScreen = ({ onNavigate }: AnalysisScreenProps) => {
 
   const tools = [
     { id: "filter" as const, name: "فلترة", icon: Filter, description: "تصفية البيانات حسب شرط" },
-    { id: "sort" as const, name: "ترتيب", icon: SortAsc, description: "ترتيب البيانات تصاعدياً/تنازلياً" },
-    { id: "sum" as const, name: "مجموع", icon: Calculator, description: "حساب مجموع عمود" },
+    { id: "sort" as const, name: "ترتيب", icon: SortAsc, description: "ترتيب البيانات" },
+    { id: "sum" as const, name: "مجموع", icon: Calculator, description: "حساب المجموع" },
     { id: "count" as const, name: "عدد", icon: Hash, description: "عدد الصفوف" },
-    { id: "groupby" as const, name: "تجميع", icon: Layers, description: "تجميع + Sum/Count" },
+    { id: "groupby" as const, name: "تجميع", icon: Layers, description: "تجميع البيانات" },
     { id: "match" as const, name: "مطابقة", icon: Link2, description: "مقارنة جدولين" },
   ];
+
+  // Data sources based on collected evidence
+  const availableDataSources = useMemo(() => {
+    const sources: { id: DataSource; name: string; locked: boolean }[] = [];
+    
+    // البنك يظهر لو جمعت "bank_summary" أو "bank_detailed"
+    const hasBankEvidence = state.collectedEvidence.some(e => e.includes("bank"));
+    sources.push({ 
+      id: "transactions", 
+      name: "المعاملات البنكية", 
+      locked: !hasBankEvidence 
+    });
+    
+    // السجلات تظهر لو جمعت "system_log" أو "activity_log"
+    const hasLogEvidence = state.collectedEvidence.some(e => e.includes("log"));
+    sources.push({ 
+      id: "logs", 
+      name: "سجلات النظام", 
+      locked: !hasLogEvidence 
+    });
+    
+    // الفواتير تظهر فقط في Pack 2 أو بعده
+    const hasInvoiceEvidence = state.collectedEvidence.some(e => e.includes("invoice"));
+    sources.push({ 
+      id: "invoices", 
+      name: "الفواتير", 
+      locked: !hasInvoiceEvidence 
+    });
+    
+    return sources;
+  }, [state.collectedEvidence]);
 
   const getDataColumns = (source: DataSource) => {
     switch (source) {
@@ -89,10 +119,18 @@ export const AnalysisScreen = ({ onNavigate }: AnalysisScreenProps) => {
     time: "الوقت",
     user: "المستخدم",
     action: "الإجراء",
+    count: "العدد",
+    sum: "المجموع",
+    total: "المجموع",
   };
 
   // Execute tool
   const executeTool = () => {
+    if (!dataSource) {
+      toast.error("اختر جدول البيانات أولاً");
+      return;
+    }
+    
     const data = getData(dataSource);
     let results: any[] = [];
     let summary = "";
@@ -107,7 +145,7 @@ export const AnalysisScreen = ({ onNavigate }: AnalysisScreenProps) => {
           const val = String(row[filterColumn]).toLowerCase();
           return val.includes(filterValue.toLowerCase());
         });
-        summary = `تم فلترة ${results.length} صف من ${data.length}`;
+        summary = `تم فلترة ${results.length} صف من ${data.length} (${columnLabels[filterColumn]} يحتوي "${filterValue}")`;
         break;
 
       case "sort":
@@ -121,7 +159,7 @@ export const AnalysisScreen = ({ onNavigate }: AnalysisScreenProps) => {
           }
           return a[sortColumn] < b[sortColumn] ? 1 : -1;
         });
-        summary = `تم ترتيب ${results.length} صف حسب ${columnLabels[sortColumn]}`;
+        summary = `تم ترتيب ${results.length} صف حسب ${columnLabels[sortColumn]} (${sortDirection === "asc" ? "تصاعدي" : "تنازلي"})`;
         break;
 
       case "sum":
@@ -130,12 +168,12 @@ export const AnalysisScreen = ({ onNavigate }: AnalysisScreenProps) => {
           return acc + val;
         }, 0);
         results = [{ total: sumTotal }];
-        summary = `المجموع: ${sumTotal.toLocaleString()} ريال`;
+        summary = `المجموع الكلي: ${sumTotal.toLocaleString()} ريال`;
         break;
 
       case "count":
         results = [{ count: data.length }];
-        summary = `العدد: ${data.length} صف`;
+        summary = `إجمالي عدد الصفوف: ${data.length}`;
         break;
 
       case "groupby":
@@ -160,83 +198,26 @@ export const AnalysisScreen = ({ onNavigate }: AnalysisScreenProps) => {
           sum: val.sum,
         }));
         results.sort((a, b) => b.sum - a.sum);
-        summary = `تم تجميع ${results.length} مجموعة حسب ${columnLabels[groupByColumn]}`;
-        
-        // Check for insights
-        checkForInsights(results, groupByColumn);
+        summary = `تم تجميع البيانات إلى ${results.length} مجموعة حسب ${columnLabels[groupByColumn]}`;
         break;
 
       case "match":
-        // Simple match between two sources
-        const data1 = getData(matchSource1);
-        const data2 = getData(matchSource2);
-        
-        // Find items in data1 that don't have matching items in data2
-        if (matchSource1 === "invoices" && matchSource2 === "transactions") {
-          const invoicesWithoutReceipt = PURCHASE_INVOICES.filter(inv => !inv.hasReceipt);
-          results = invoicesWithoutReceipt.map(inv => ({
-            vendor: inv.vendor,
-            amount: inv.amount,
-            requestedBy: inv.requestedBy,
-            hasReceipt: inv.hasReceipt,
-          }));
-          summary = `فواتير بدون إيصال: ${results.length} من ${PURCHASE_INVOICES.length}`;
-          
-          // Check for no-receipt insight
-          if (results.length >= 4) {
-            checkNoReceiptInsight(results);
-          }
-        } else {
-          summary = "اختر الفواتير والمعاملات للمقارنة";
-        }
+        // Find invoices without receipts
+        const invoicesWithoutReceipt = PURCHASE_INVOICES.filter(inv => !inv.hasReceipt);
+        results = invoicesWithoutReceipt.map(inv => ({
+          date: inv.date,
+          vendor: inv.vendor,
+          amount: inv.amount,
+          requestedBy: inv.requestedBy,
+          hasReceipt: "لا",
+        }));
+        summary = `فواتير بدون إيصال: ${results.length} من ${PURCHASE_INVOICES.length}`;
         break;
     }
 
     setResultData(results);
     setResultSummary(summary);
     setShowResults(true);
-  };
-
-  const checkForInsights = (groupedData: any[], column: string) => {
-    // Check for after-hours pattern in logs
-    if (dataSource === "logs" && column === "user") {
-      const afterHoursLogs = ACTIVITY_LOG.filter(log => {
-        const hour = parseInt(log.time.split(":")[0]);
-        return hour >= 18 || hour < 8;
-      });
-      
-      const userCounts: Record<string, number> = {};
-      afterHoursLogs.forEach(log => {
-        userCounts[log.user] = (userCounts[log.user] || 0) + 1;
-      });
-      
-      const maxUser = Object.entries(userCounts).sort((a, b) => b[1] - a[1])[0];
-      if (maxUser && maxUser[1] >= 3) {
-        // Potential insight!
-      }
-    }
-    
-    // Check for same requester pattern
-    if (dataSource === "invoices" && column === "requestedBy") {
-      const noReceiptInvoices = PURCHASE_INVOICES.filter(inv => !inv.hasReceipt);
-      const requesterCounts: Record<string, number> = {};
-      noReceiptInvoices.forEach(inv => {
-        requesterCounts[inv.requestedBy] = (requesterCounts[inv.requestedBy] || 0) + 1;
-      });
-      
-      const maxRequester = Object.entries(requesterCounts).sort((a, b) => b[1] - a[1])[0];
-      if (maxRequester && maxRequester[1] >= 3) {
-        // Potential insight!
-      }
-    }
-  };
-
-  const checkNoReceiptInsight = (invoicesWithoutReceipt: any[]) => {
-    // Check if all are from same person
-    const requesters = [...new Set(invoicesWithoutReceipt.map(inv => inv.requestedBy))];
-    if (requesters.length === 1) {
-      // Potential insight!
-    }
   };
 
   // Register insight
@@ -270,263 +251,24 @@ export const AnalysisScreen = ({ onNavigate }: AnalysisScreenProps) => {
     }
   };
 
-  const renderToolPanel = () => {
-    if (!activeTool) return null;
-
-    return (
-      <motion.div
-        className="bg-card/50 rounded-xl p-4 border border-border"
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-      >
-        {/* Data Source Selector */}
-        <div className="mb-4">
-          <label className="text-sm text-muted-foreground mb-2 block">مصدر البيانات</label>
-          <div className="flex gap-2">
-            {(["transactions", "invoices", "logs"] as DataSource[]).map(source => (
-              <button
-                key={source}
-                onClick={() => setDataSource(source)}
-                className={cn(
-                  "px-3 py-2 rounded-lg text-sm transition-all",
-                  dataSource === source 
-                    ? "bg-primary text-primary-foreground" 
-                    : "bg-secondary text-foreground hover:bg-secondary/80"
-                )}
-              >
-                {source === "transactions" ? "المعاملات" : source === "invoices" ? "الفواتير" : "السجلات"}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* Tool-specific options */}
-        {activeTool === "filter" && (
-          <div className="space-y-3">
-            <div>
-              <label className="text-sm text-muted-foreground mb-2 block">العمود</label>
-              <select
-                value={filterColumn}
-                onChange={(e) => setFilterColumn(e.target.value)}
-                className="w-full px-3 py-2 rounded-lg bg-secondary border border-border text-foreground"
-              >
-                <option value="">اختر...</option>
-                {getDataColumns(dataSource).map(col => (
-                  <option key={col} value={col}>{columnLabels[col]}</option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label className="text-sm text-muted-foreground mb-2 block">القيمة</label>
-              <input
-                type="text"
-                value={filterValue}
-                onChange={(e) => setFilterValue(e.target.value)}
-                placeholder="مثال: karim أو > 18:00"
-                className="w-full px-3 py-2 rounded-lg bg-secondary border border-border text-foreground"
-              />
-            </div>
-          </div>
-        )}
-
-        {activeTool === "sort" && (
-          <div className="space-y-3">
-            <div>
-              <label className="text-sm text-muted-foreground mb-2 block">العمود</label>
-              <select
-                value={sortColumn}
-                onChange={(e) => setSortColumn(e.target.value)}
-                className="w-full px-3 py-2 rounded-lg bg-secondary border border-border text-foreground"
-              >
-                <option value="">اختر...</option>
-                {getDataColumns(dataSource).map(col => (
-                  <option key={col} value={col}>{columnLabels[col]}</option>
-                ))}
-              </select>
-            </div>
-            <div className="flex gap-2">
-              <button
-                onClick={() => setSortDirection("asc")}
-                className={cn(
-                  "flex-1 py-2 rounded-lg",
-                  sortDirection === "asc" ? "bg-primary text-primary-foreground" : "bg-secondary"
-                )}
-              >
-                تصاعدي ↑
-              </button>
-              <button
-                onClick={() => setSortDirection("desc")}
-                className={cn(
-                  "flex-1 py-2 rounded-lg",
-                  sortDirection === "desc" ? "bg-primary text-primary-foreground" : "bg-secondary"
-                )}
-              >
-                تنازلي ↓
-              </button>
-            </div>
-          </div>
-        )}
-
-        {activeTool === "groupby" && (
-          <div className="space-y-3">
-            <div>
-              <label className="text-sm text-muted-foreground mb-2 block">التجميع حسب</label>
-              <select
-                value={groupByColumn}
-                onChange={(e) => setGroupByColumn(e.target.value)}
-                className="w-full px-3 py-2 rounded-lg bg-secondary border border-border text-foreground"
-              >
-                <option value="">اختر...</option>
-                {getDataColumns(dataSource).map(col => (
-                  <option key={col} value={col}>{columnLabels[col]}</option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label className="text-sm text-muted-foreground mb-2 block">العملية</label>
-              <div className="flex gap-2">
-                <button
-                  onClick={() => setAggregateType("count")}
-                  className={cn(
-                    "flex-1 py-2 rounded-lg",
-                    aggregateType === "count" ? "bg-primary text-primary-foreground" : "bg-secondary"
-                  )}
-                >
-                  عدد (Count)
-                </button>
-                <button
-                  onClick={() => setAggregateType("sum")}
-                  className={cn(
-                    "flex-1 py-2 rounded-lg",
-                    aggregateType === "sum" ? "bg-primary text-primary-foreground" : "bg-secondary"
-                  )}
-                >
-                  مجموع (Sum)
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {activeTool === "match" && (
-          <div className="space-y-3">
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="text-sm text-muted-foreground mb-2 block">الجدول الأول</label>
-                <select
-                  value={matchSource1}
-                  onChange={(e) => setMatchSource1(e.target.value as DataSource)}
-                  className="w-full px-3 py-2 rounded-lg bg-secondary border border-border text-foreground"
-                >
-                  <option value="transactions">المعاملات</option>
-                  <option value="invoices">الفواتير</option>
-                  <option value="logs">السجلات</option>
-                </select>
-              </div>
-              <div>
-                <label className="text-sm text-muted-foreground mb-2 block">الجدول الثاني</label>
-                <select
-                  value={matchSource2}
-                  onChange={(e) => setMatchSource2(e.target.value as DataSource)}
-                  className="w-full px-3 py-2 rounded-lg bg-secondary border border-border text-foreground"
-                >
-                  <option value="transactions">المعاملات</option>
-                  <option value="invoices">الفواتير</option>
-                  <option value="logs">السجلات</option>
-                </select>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Execute Button */}
-        <motion.button
-          onClick={executeTool}
-          className="w-full mt-4 py-3 rounded-xl bg-primary text-primary-foreground font-bold"
-          whileHover={{ scale: 1.02 }}
-        >
-          ⚡ تنفيذ
-        </motion.button>
-      </motion.div>
-    );
+  const handleSelectDataSource = (source: DataSource) => {
+    const sourceInfo = availableDataSources.find(s => s.id === source);
+    if (sourceInfo?.locked) {
+      toast.error("يجب جمع الأدلة المرتبطة أولاً");
+      return;
+    }
+    setDataSource(source);
+    setShowResults(false);
+    // Reset filters when changing source
+    setFilterColumn("");
+    setFilterValue("");
+    setSortColumn("");
+    setGroupByColumn("");
   };
 
-  const renderResults = () => {
-    if (!showResults) return null;
-
-    return (
-      <motion.div
-        className="bg-card/50 rounded-xl p-4 border border-border mt-4"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-      >
-        <div className="flex items-center justify-between mb-4">
-          <h4 className="font-bold text-foreground">النتائج</h4>
-          <span className="text-sm text-muted-foreground">{resultSummary}</span>
-        </div>
-
-        {resultData.length > 0 && (
-          <div className="max-h-48 overflow-auto rounded-lg border border-border">
-            <table className="w-full text-sm">
-              <thead className="bg-secondary/30 sticky top-0">
-                <tr>
-                  {Object.keys(resultData[0]).map(key => (
-                    <th key={key} className="text-right p-2 text-muted-foreground">
-                      {columnLabels[key] || key}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {resultData.slice(0, 20).map((row, i) => (
-                  <tr key={i} className="border-b border-border/50">
-                    {Object.values(row).map((val, j) => (
-                      <td key={j} className="p-2 text-foreground">
-                        {typeof val === "number" ? val.toLocaleString() : String(val)}
-                      </td>
-                    ))}
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-
-        {/* Register Insight Button */}
-        <div className="mt-4 p-3 rounded-lg bg-accent/10 border border-accent/30">
-          <p className="text-sm text-muted-foreground mb-2">
-            هل اكتشفت نمطاً مهماً في هذه النتائج؟
-          </p>
-          <div className="flex flex-wrap gap-2">
-            {!hasInsight("after-hours") && (
-              <button
-                onClick={() => registerInsight("after-hours", "نشاط بعد الدوام", "شخص واحد يتكرر دخوله بعد ساعات العمل")}
-                className="px-3 py-2 rounded-lg bg-accent/20 text-accent text-sm hover:bg-accent/30 transition-all"
-              >
-                🌙 نشاط بعد الدوام
-              </button>
-            )}
-            {!hasInsight("no-receipt") && (
-              <button
-                onClick={() => registerInsight("no-receipt", "فواتير بدون إيصالات", "مبالغ كبيرة بدون توثيق من نفس الشخص")}
-                className="px-3 py-2 rounded-lg bg-accent/20 text-accent text-sm hover:bg-accent/30 transition-all"
-              >
-                📄 فواتير بدون إيصال
-              </button>
-            )}
-            {!hasInsight("same-requester") && (
-              <button
-                onClick={() => registerInsight("same-requester", "طالب واحد للمشتريات", "جميع الفواتير المشبوهة من نفس الشخص")}
-                className="px-3 py-2 rounded-lg bg-accent/20 text-accent text-sm hover:bg-accent/30 transition-all"
-              >
-                👤 نفس الطالب
-              </button>
-            )}
-          </div>
-        </div>
-      </motion.div>
-    );
-  };
+  // Current data for the grid
+  const currentData = dataSource ? getData(dataSource) : [];
+  const currentColumns = dataSource ? getDataColumns(dataSource) : [];
 
   return (
     <InteractiveRoom
@@ -538,92 +280,411 @@ export const AnalysisScreen = ({ onNavigate }: AnalysisScreenProps) => {
       onCloseOverlay={() => {}}
     >
       {/* Objective Bar */}
-      <motion.div className="absolute top-6 left-1/2 -translate-x-1/2 z-20">
-        <div className="px-6 py-3 rounded-full bg-background/90 backdrop-blur-xl border border-primary/30">
-          <span className="text-muted-foreground text-sm ml-2">📋 الهدف:</span>
-          <span className="font-bold text-foreground">{state.currentObjective}</span>
+      <motion.div className="absolute top-4 left-1/2 -translate-x-1/2 z-20">
+        <div className="px-4 py-2 rounded-full bg-background/90 backdrop-blur-xl border border-primary/30">
+          <span className="text-muted-foreground text-xs ml-2">📋</span>
+          <span className="font-bold text-foreground text-sm">{state.currentObjective}</span>
         </div>
       </motion.div>
 
       {/* Trust & Time */}
-      <motion.div className="absolute top-20 left-1/2 -translate-x-1/2 z-20">
+      <motion.div className="absolute top-14 left-1/2 -translate-x-1/2 z-20">
         <div className={cn(
-          "px-6 py-2 rounded-full backdrop-blur-xl border flex items-center gap-4",
+          "px-4 py-1 rounded-full backdrop-blur-xl border flex items-center gap-3 text-xs",
           trustLevel === "high" ? "bg-green-500/20 border-green-500/30" :
           trustLevel === "medium" ? "bg-amber-500/20 border-amber-500/30" :
           "bg-destructive/20 border-destructive/30"
         )}>
           <span className="flex items-center gap-1">
-            <Shield className="w-4 h-4" />
-            الثقة: {state.trust}%
+            <Shield className="w-3 h-3" />
+            {state.trust}%
           </span>
           <span className="flex items-center gap-1">
-            <Clock className="w-4 h-4" />
-            الوقت: {state.timeRemaining}/{state.maxTime}
+            <Clock className="w-3 h-3" />
+            {state.timeRemaining}/{state.maxTime}
           </span>
           <span className="flex items-center gap-1 text-accent">
-            🔍 Insights: {state.discoveredInsights.length}/3
+            🔍 {state.discoveredInsights.length}/3
           </span>
         </div>
       </motion.div>
 
-      {/* Main Analysis Panel */}
-      <div className="absolute inset-0 flex items-center justify-center z-10 p-8">
+      {/* Main Analysis Panel - Excel-like Design */}
+      <div className="absolute inset-0 flex items-center justify-center z-10 p-4 pt-24">
         <motion.div 
-          className="bg-background/95 backdrop-blur-xl border border-primary/30 rounded-2xl p-6 max-w-5xl w-full max-h-[75vh] overflow-auto"
+          className="bg-background/95 backdrop-blur-xl border border-primary/30 rounded-2xl p-4 max-w-6xl w-full max-h-[80vh] overflow-hidden flex flex-col"
           initial={{ opacity: 0, y: 50 }}
           animate={{ opacity: 1, y: 0 }}
         >
-          <h2 className="text-2xl font-bold text-foreground mb-6 flex items-center gap-3">
-            <BarChart3 className="w-8 h-8 text-primary" />
+          <h2 className="text-xl font-bold text-foreground mb-4 flex items-center gap-2">
+            <BarChart3 className="w-6 h-6 text-primary" />
             غرفة التحليل
           </h2>
 
-          {/* Tools Grid */}
-          <div className="grid grid-cols-6 gap-3 mb-6">
-            {tools.map((tool) => (
-              <motion.button
-                key={tool.id}
-                onClick={() => {
-                  setActiveTool(tool.id);
-                  setShowResults(false);
-                }}
-                className={cn(
-                  "p-4 rounded-xl border transition-all flex flex-col items-center gap-2",
-                  activeTool === tool.id
-                    ? "bg-primary text-primary-foreground border-primary"
-                    : "bg-secondary/30 border-border hover:border-primary"
-                )}
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-              >
-                <tool.icon className="w-6 h-6" />
-                <span className="text-sm font-bold">{tool.name}</span>
-              </motion.button>
-            ))}
+          {/* Section 1: Data Source Selection */}
+          <div className="mb-4">
+            <label className="text-sm text-muted-foreground mb-2 block">📊 اختر الجدول:</label>
+            <div className="flex gap-2 flex-wrap">
+              {availableDataSources.map((source) => (
+                <button
+                  key={source.id}
+                  onClick={() => handleSelectDataSource(source.id)}
+                  disabled={source.locked}
+                  className={cn(
+                    "px-4 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-2",
+                    source.locked 
+                      ? "bg-muted/30 text-muted-foreground cursor-not-allowed opacity-60"
+                      : dataSource === source.id 
+                        ? "bg-primary text-primary-foreground" 
+                        : "bg-secondary text-foreground hover:bg-secondary/80"
+                  )}
+                >
+                  {source.locked ? <Lock className="w-3 h-3" /> : <Table2 className="w-3 h-3" />}
+                  {source.name}
+                  {source.locked && <span className="text-xs">(اجمع الأدلة أولاً)</span>}
+                </button>
+              ))}
+            </div>
           </div>
 
-          {/* Tool Panel */}
-          {renderToolPanel()}
+          {/* Section 2: Data Grid (Excel-like) */}
+          {dataSource ? (
+            <div className="flex-1 flex flex-col min-h-0 mb-4">
+              <label className="text-sm text-muted-foreground mb-2 block">
+                📋 البيانات ({currentData.length} صف):
+              </label>
+              <div className="flex-1 overflow-auto border border-border rounded-lg bg-card/50">
+                <table className="w-full text-sm border-collapse">
+                  <thead className="bg-secondary/50 sticky top-0 z-10">
+                    <tr>
+                      <th className="p-2 text-right border-l border-border text-muted-foreground font-bold w-10">#</th>
+                      {currentColumns.map(col => (
+                        <th key={col} className="p-2 text-right border-l border-border text-muted-foreground font-bold">
+                          {columnLabels[col]}
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {currentData.map((row: any, i) => (
+                      <tr 
+                        key={i} 
+                        className={cn(
+                          "border-b border-border/50 hover:bg-primary/5 transition-colors",
+                          i % 2 === 0 ? "bg-background" : "bg-secondary/20"
+                        )}
+                      >
+                        <td className="p-2 text-right border-l border-border text-muted-foreground">{i + 1}</td>
+                        {currentColumns.map(col => (
+                          <td key={col} className="p-2 text-right border-l border-border text-foreground">
+                            {col === "hasReceipt" 
+                              ? (row[col] ? "✅ نعم" : "❌ لا")
+                              : col === "amount" 
+                                ? `${Number(row[col]).toLocaleString()} ريال`
+                                : String(row[col])
+                            }
+                          </td>
+                        ))}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          ) : (
+            <div className="flex-1 flex items-center justify-center bg-secondary/20 rounded-lg border border-dashed border-border mb-4">
+              <div className="text-center text-muted-foreground">
+                <Table2 className="w-12 h-12 mx-auto mb-2 opacity-50" />
+                <p>اختر جدول من الأعلى لعرض البيانات</p>
+              </div>
+            </div>
+          )}
 
-          {/* Results */}
-          {renderResults()}
+          {/* Section 3: Tools */}
+          {dataSource && (
+            <div className="mb-4 p-3 bg-secondary/30 rounded-lg border border-border">
+              <label className="text-sm text-muted-foreground mb-2 block">🔧 الأدوات:</label>
+              <div className="flex gap-2 flex-wrap mb-3">
+                {tools.map((tool) => (
+                  <motion.button
+                    key={tool.id}
+                    onClick={() => {
+                      setActiveTool(activeTool === tool.id ? null : tool.id);
+                      setShowResults(false);
+                    }}
+                    className={cn(
+                      "px-3 py-2 rounded-lg border transition-all flex items-center gap-2 text-sm",
+                      activeTool === tool.id
+                        ? "bg-primary text-primary-foreground border-primary"
+                        : "bg-background border-border hover:border-primary"
+                    )}
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                  >
+                    <tool.icon className="w-4 h-4" />
+                    {tool.name}
+                  </motion.button>
+                ))}
+              </div>
+
+              {/* Tool Options */}
+              <AnimatePresence mode="wait">
+                {activeTool && (
+                  <motion.div
+                    key={activeTool}
+                    className="flex items-end gap-3 flex-wrap"
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: "auto" }}
+                    exit={{ opacity: 0, height: 0 }}
+                  >
+                    {activeTool === "filter" && (
+                      <>
+                        <div className="flex-1 min-w-[150px]">
+                          <label className="text-xs text-muted-foreground mb-1 block">العمود</label>
+                          <select
+                            value={filterColumn}
+                            onChange={(e) => setFilterColumn(e.target.value)}
+                            className="w-full px-3 py-2 rounded-lg bg-background border border-border text-foreground text-sm"
+                          >
+                            <option value="">اختر...</option>
+                            {currentColumns.map(col => (
+                              <option key={col} value={col}>{columnLabels[col]}</option>
+                            ))}
+                          </select>
+                        </div>
+                        <div className="flex-1 min-w-[150px]">
+                          <label className="text-xs text-muted-foreground mb-1 block">يحتوي على</label>
+                          <input
+                            type="text"
+                            value={filterValue}
+                            onChange={(e) => setFilterValue(e.target.value)}
+                            placeholder="مثال: karim"
+                            className="w-full px-3 py-2 rounded-lg bg-background border border-border text-foreground text-sm"
+                          />
+                        </div>
+                      </>
+                    )}
+
+                    {activeTool === "sort" && (
+                      <>
+                        <div className="flex-1 min-w-[150px]">
+                          <label className="text-xs text-muted-foreground mb-1 block">العمود</label>
+                          <select
+                            value={sortColumn}
+                            onChange={(e) => setSortColumn(e.target.value)}
+                            className="w-full px-3 py-2 rounded-lg bg-background border border-border text-foreground text-sm"
+                          >
+                            <option value="">اختر...</option>
+                            {currentColumns.map(col => (
+                              <option key={col} value={col}>{columnLabels[col]}</option>
+                            ))}
+                          </select>
+                        </div>
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => setSortDirection("asc")}
+                            className={cn(
+                              "px-3 py-2 rounded-lg text-sm",
+                              sortDirection === "asc" ? "bg-primary text-primary-foreground" : "bg-background border border-border"
+                            )}
+                          >
+                            تصاعدي ↑
+                          </button>
+                          <button
+                            onClick={() => setSortDirection("desc")}
+                            className={cn(
+                              "px-3 py-2 rounded-lg text-sm",
+                              sortDirection === "desc" ? "bg-primary text-primary-foreground" : "bg-background border border-border"
+                            )}
+                          >
+                            تنازلي ↓
+                          </button>
+                        </div>
+                      </>
+                    )}
+
+                    {activeTool === "groupby" && (
+                      <>
+                        <div className="flex-1 min-w-[150px]">
+                          <label className="text-xs text-muted-foreground mb-1 block">تجميع حسب</label>
+                          <select
+                            value={groupByColumn}
+                            onChange={(e) => setGroupByColumn(e.target.value)}
+                            className="w-full px-3 py-2 rounded-lg bg-background border border-border text-foreground text-sm"
+                          >
+                            <option value="">اختر...</option>
+                            {currentColumns.map(col => (
+                              <option key={col} value={col}>{columnLabels[col]}</option>
+                            ))}
+                          </select>
+                        </div>
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => setAggregateType("count")}
+                            className={cn(
+                              "px-3 py-2 rounded-lg text-sm",
+                              aggregateType === "count" ? "bg-primary text-primary-foreground" : "bg-background border border-border"
+                            )}
+                          >
+                            عدد
+                          </button>
+                          <button
+                            onClick={() => setAggregateType("sum")}
+                            className={cn(
+                              "px-3 py-2 rounded-lg text-sm",
+                              aggregateType === "sum" ? "bg-primary text-primary-foreground" : "bg-background border border-border"
+                            )}
+                          >
+                            مجموع
+                          </button>
+                        </div>
+                      </>
+                    )}
+
+                    {activeTool === "match" && (
+                      <>
+                        <div className="flex-1 min-w-[120px]">
+                          <label className="text-xs text-muted-foreground mb-1 block">الجدول الأول</label>
+                          <select
+                            value={matchSource1}
+                            onChange={(e) => setMatchSource1(e.target.value as DataSource)}
+                            className="w-full px-3 py-2 rounded-lg bg-background border border-border text-foreground text-sm"
+                          >
+                            <option value="transactions">المعاملات</option>
+                            <option value="invoices">الفواتير</option>
+                            <option value="logs">السجلات</option>
+                          </select>
+                        </div>
+                        <div className="flex-1 min-w-[120px]">
+                          <label className="text-xs text-muted-foreground mb-1 block">الجدول الثاني</label>
+                          <select
+                            value={matchSource2}
+                            onChange={(e) => setMatchSource2(e.target.value as DataSource)}
+                            className="w-full px-3 py-2 rounded-lg bg-background border border-border text-foreground text-sm"
+                          >
+                            <option value="transactions">المعاملات</option>
+                            <option value="invoices">الفواتير</option>
+                            <option value="logs">السجلات</option>
+                          </select>
+                        </div>
+                      </>
+                    )}
+
+                    {(activeTool === "sum" || activeTool === "count") && (
+                      <p className="text-sm text-muted-foreground py-2">
+                        {activeTool === "sum" ? "سيتم حساب مجموع عمود المبلغ" : "سيتم عد جميع الصفوف"}
+                      </p>
+                    )}
+
+                    <motion.button
+                      onClick={executeTool}
+                      className="px-6 py-2 rounded-lg bg-primary text-primary-foreground font-bold text-sm"
+                      whileHover={{ scale: 1.02 }}
+                    >
+                      ⚡ تنفيذ
+                    </motion.button>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+          )}
+
+          {/* Section 4: Results */}
+          <AnimatePresence>
+            {showResults && (
+              <motion.div
+                className="p-3 bg-accent/10 rounded-lg border border-accent/30"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0 }}
+              >
+                <div className="flex items-center justify-between mb-3">
+                  <h4 className="font-bold text-foreground flex items-center gap-2">
+                    📊 النتيجة
+                  </h4>
+                  <span className="text-sm text-accent font-medium">{resultSummary}</span>
+                </div>
+
+                {resultData.length > 0 && resultData.length <= 20 && (
+                  <div className="max-h-40 overflow-auto rounded-lg border border-border bg-background mb-3">
+                    <table className="w-full text-sm border-collapse">
+                      <thead className="bg-secondary/50 sticky top-0">
+                        <tr>
+                          {Object.keys(resultData[0]).map(key => (
+                            <th key={key} className="p-2 text-right border-l border-border text-muted-foreground font-bold">
+                              {columnLabels[key] || key}
+                            </th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {resultData.map((row, i) => (
+                          <tr key={i} className={cn(
+                            "border-b border-border/50",
+                            i % 2 === 0 ? "bg-background" : "bg-secondary/20"
+                          )}>
+                            {Object.entries(row).map(([key, val], j) => (
+                              <td key={j} className="p-2 text-right border-l border-border text-foreground">
+                                {key === "sum" || key === "total" || key === "amount"
+                                  ? `${Number(val).toLocaleString()} ريال`
+                                  : String(val)
+                                }
+                              </td>
+                            ))}
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+
+                {/* Register Insight */}
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="text-sm text-muted-foreground">اكتشفت نمطاً؟</span>
+                  {!hasInsight("after-hours") && (
+                    <button
+                      onClick={() => registerInsight("after-hours", "نشاط بعد الدوام", "شخص واحد يتكرر دخوله بعد ساعات العمل")}
+                      className="px-3 py-1 rounded-lg bg-accent/20 text-accent text-xs hover:bg-accent/30 transition-all"
+                    >
+                      🌙 نشاط بعد الدوام
+                    </button>
+                  )}
+                  {!hasInsight("no-receipt") && (
+                    <button
+                      onClick={() => registerInsight("no-receipt", "فواتير بدون إيصالات", "مبالغ كبيرة بدون توثيق")}
+                      className="px-3 py-1 rounded-lg bg-accent/20 text-accent text-xs hover:bg-accent/30 transition-all"
+                    >
+                      📄 فواتير بدون إيصال
+                    </button>
+                  )}
+                  {!hasInsight("same-requester") && (
+                    <button
+                      onClick={() => registerInsight("same-requester", "طالب واحد للمشتريات", "جميع الفواتير المشبوهة من نفس الشخص")}
+                      className="px-3 py-1 rounded-lg bg-accent/20 text-accent text-xs hover:bg-accent/30 transition-all"
+                    >
+                      👤 نفس الطالب
+                    </button>
+                  )}
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
 
           {/* Discovered Insights */}
           {state.discoveredInsights.length > 0 && (
-            <div className="mt-6 p-4 rounded-xl bg-accent/10 border border-accent/30">
-              <h4 className="font-bold text-foreground mb-3 flex items-center gap-2">
-                <Lightbulb className="w-5 h-5 text-accent" />
-                الـ Insights المكتشفة
+            <div className="mt-3 p-3 rounded-lg bg-green-500/10 border border-green-500/30">
+              <h4 className="font-bold text-foreground mb-2 flex items-center gap-2 text-sm">
+                <Lightbulb className="w-4 h-4 text-green-500" />
+                الـ Insights المكتشفة ({state.discoveredInsights.length}/3)
               </h4>
               <div className="flex flex-wrap gap-2">
                 {state.discoveredInsights.map((insight) => (
                   <div
                     key={insight.id}
-                    className="px-3 py-2 rounded-lg bg-accent/20 border border-accent/30 flex items-center gap-2"
+                    className="px-2 py-1 rounded-lg bg-green-500/20 border border-green-500/30 flex items-center gap-1 text-xs"
                   >
-                    <CheckCircle className="w-4 h-4 text-accent" />
-                    <span className="text-sm text-foreground">{insight.name}</span>
+                    <CheckCircle className="w-3 h-3 text-green-500" />
+                    <span className="text-foreground">{insight.name}</span>
                   </div>
                 ))}
               </div>
@@ -678,13 +739,13 @@ export const AnalysisScreen = ({ onNavigate }: AnalysisScreenProps) => {
       </AnimatePresence>
 
       {/* Navigation */}
-      <div className="absolute bottom-8 left-8 z-20">
+      <div className="absolute bottom-6 left-6 z-20">
         <NavigationButton iconEmoji="🏢" label="المكتب" onClick={() => onNavigate("office")} />
       </div>
-      <div className="absolute bottom-8 right-8 z-20">
+      <div className="absolute bottom-6 right-6 z-20">
         <NavigationButton iconEmoji="📁" label="الأدلة" onClick={() => onNavigate("evidence")} />
       </div>
-      <div className="absolute bottom-8 left-1/2 -translate-x-1/2 z-20">
+      <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-20">
         <NavigationButton iconEmoji="👥" label="الاستجواب" onClick={() => onNavigate("interrogation")} />
       </div>
     </InteractiveRoom>
