@@ -6,6 +6,7 @@ import { useGame } from "@/contexts/GameContext";
 import { EVIDENCE_ITEMS, INSIGHTS, HYPOTHESES, CHARACTERS } from "@/data/case1";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import analysisLabBg from "@/assets/rooms/analysis-lab.png";
 
 interface AnalysisScreenProps {
   onNavigate: (screen: string) => void;

@@ -9,9 +9,7 @@ import { useSound } from "@/hooks/useSoundEffects";
 import { CHARACTERS } from "@/data/case1";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
-import interrogationRoom from "@/assets/rooms/interrogation-room.png";
-import suspectArrested from "@/assets/scenes/suspect-arrested.png";
-import suspectEscaped from "@/assets/scenes/suspect-escaped.png";
+import projectsRoom from "@/assets/rooms/projects-room.png";
 
 interface InterrogationScreenProps {
   onNavigate: (screen: string) => void;
@@ -140,7 +138,7 @@ export const InterrogationScreen = ({ onNavigate }: InterrogationScreenProps) =>
   return (
     <>
       <InteractiveRoom
-        backgroundImage={interrogationRoom}
+        backgroundImage={projectsRoom}
         hotspots={[]}
         onHotspotClick={() => {}}
         activeHotspot={selectedCharacter?.id || null}
@@ -332,7 +330,6 @@ export const InterrogationScreen = ({ onNavigate }: InterrogationScreenProps) =>
       <SceneTransition 
         isVisible={showResult} 
         type={isCorrectAccusation ? "success" : "failure"} 
-        backgroundImage={isCorrectAccusation ? suspectArrested : suspectEscaped} 
         title={isCorrectAccusation ? "🎉 القضية محلولة!" : "💨 المجرم هرب!"} 
         subtitle={isCorrectAccusation ? "أحسنت! كشفت المذنب الحقيقي." : "اتهمت الشخص الخطأ."}
       >
