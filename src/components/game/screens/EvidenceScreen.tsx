@@ -7,7 +7,8 @@ import { useGame } from "@/contexts/GameContext";
 import { useSound } from "@/hooks/useSoundEffects";
 import { EVIDENCE_ITEMS } from "@/data/case1";
 import { cn } from "@/lib/utils";
-import evidenceRoomBg from "@/assets/rooms/evidence-room.png";
+import accountingRoomBg from "@/assets/rooms/accounting-room.png";
+import warehouseRoomBg from "@/assets/rooms/warehouse-room.png";
 
 interface EvidenceScreenProps {
   onNavigate: (screen: string) => void;
@@ -253,7 +254,7 @@ export const EvidenceScreen = ({ onNavigate }: EvidenceScreenProps) => {
 
   return (
     <InteractiveRoom
-      backgroundImage={evidenceRoomBg}
+      backgroundImage={accountingRoomBg}
       hotspots={hotspots}
       onHotspotClick={handleHotspotClick}
       activeHotspot={selectedEvidence?.id || null}
