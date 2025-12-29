@@ -1,503 +1,815 @@
 import { useState, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Notebook, Filter, BarChart3, Link2, Lightbulb, ArrowLeft } from "lucide-react";
+import { 
+  Table, Filter, BarChart3, GitMerge, FileText, ArrowLeft,
+  ArrowUpDown, ChevronDown, Plus, Trash2, X
+} from "lucide-react";
 import { NavigationButton } from "../NavigationButton";
 import { useGame } from "@/contexts/GameContext";
-import { BANK_TRANSACTIONS, PURCHASE_INVOICES, MONTHLY_SUMMARY, HYPOTHESES, SUSPECTS } from "@/data/case1";
+import { 
+  BANK_TRANSACTIONS, 
+  PURCHASE_INVOICES, 
+  SYSTEM_ACCESS_LOGS,
+  SUSPECTS 
+} from "@/data/case1";
 import { cn } from "@/lib/utils";
 
 interface AnalysisScreenProps {
   onNavigate: (screen: string) => void;
 }
 
-type TabType = "summary" | "filter" | "chart" | "link" | "hypothesis";
+type TabType = "data" | "chart" | "compare" | "notebook";
+type DataSource = "transactions" | "invoices" | "logs";
+type SortDirection = "asc" | "desc" | null;
+
+interface UserNote {
+  id: string;
+  text: string;
+  category: "observation" | "suspicion" | "pattern" | "question";
+  timestamp: number;
+}
 
 export const AnalysisScreen = ({ onNavigate }: AnalysisScreenProps) => {
-  const { state, getTrustLevel, discoverPattern, hasDiscoveredPattern, setActiveHypothesis, addNote } = useGame();
+  const { state, getTrustLevel, addUserNote, getUserNotes, deleteUserNote } = useGame();
   const trustLevel = getTrustLevel();
   
-  const [activeTab, setActiveTab] = useState<TabType>("summary");
+  const [activeTab, setActiveTab] = useState<TabType>("data");
   
-  // Filter state
-  const [filterPerson, setFilterPerson] = useState("all");
-  const [filterMonth, setFilterMonth] = useState("all");
-  const [filterVerified, setFilterVerified] = useState("all");
+  // Data Table State
+  const [selectedSource, setSelectedSource] = useState<DataSource>("transactions");
+  const [sortColumn, setSortColumn] = useState<string | null>(null);
+  const [sortDirection, setSortDirection] = useState<SortDirection>(null);
+  const [filters, setFilters] = useState<Record<string, string>>({});
+  const [selectedColumn, setSelectedColumn] = useState<string | null>(null);
   
-  // Link state
-  const [selectedEvidence1, setSelectedEvidence1] = useState<string | null>(null);
-  const [selectedEvidence2, setSelectedEvidence2] = useState<string | null>(null);
-  const [linkResult, setLinkResult] = useState<string | null>(null);
+  // Chart Builder State
+  const [chartType, setChartType] = useState<"bar" | "comparison">("bar");
+  const [chartXAxis, setChartXAxis] = useState<string>("month");
+  const [chartYAxis, setChartYAxis] = useState<string>("amount");
+  const [chartGroupBy, setChartGroupBy] = useState<string>("person");
+  const [chartBuilt, setChartBuilt] = useState(false);
+  
+  // Data Comparator State
+  const [compareSource1, setCompareSource1] = useState<DataSource>("transactions");
+  const [compareSource2, setCompareSource2] = useState<DataSource>("invoices");
+  const [compareField, setCompareField] = useState<string>("date");
+  const [comparisonResult, setComparisonResult] = useState<any[] | null>(null);
+  
+  // Notebook State
+  const [newNoteText, setNewNoteText] = useState("");
+  const [newNoteCategory, setNewNoteCategory] = useState<UserNote["category"]>("observation");
 
   const tabs = [
-    { id: "summary" as const, label: "📊 ملخص", icon: Notebook },
-    { id: "filter" as const, label: "🔍 فلترة", icon: Filter },
-    { id: "chart" as const, label: "📈 رسم بياني", icon: BarChart3 },
-    { id: "link" as const, label: "🔗 ربط الأدلة", icon: Link2 },
-    { id: "hypothesis" as const, label: "💡 الفرضيات", icon: Lightbulb },
+    { id: "data" as const, label: "📊 جدول البيانات", icon: Table },
+    { id: "chart" as const, label: "📈 بناء رسم بياني", icon: BarChart3 },
+    { id: "compare" as const, label: "🔗 مقارنة البيانات", icon: GitMerge },
+    { id: "notebook" as const, label: "📝 دفتر الملاحظات", icon: FileText },
   ];
 
-  // Filtered transactions
-  const filteredTransactions = useMemo(() => {
-    return BANK_TRANSACTIONS.filter(t => {
-      const personMatch = filterPerson === "all" || t.enteredBy === filterPerson;
-      const monthMatch = filterMonth === "all" || t.date.includes(filterMonth);
-      const verifiedMatch = filterVerified === "all" || 
-        (filterVerified === "verified" && t.verified) ||
-        (filterVerified === "unverified" && !t.verified);
-      return personMatch && monthMatch && verifiedMatch;
-    });
-  }, [filterPerson, filterMonth, filterVerified]);
+  // Get data based on source
+  const getDataSource = (source: DataSource) => {
+    switch (source) {
+      case "transactions":
+        return BANK_TRANSACTIONS.map(t => ({
+          ...t,
+          person: t.enteredBy === "karim" ? "كريم" : t.enteredBy === "sara" ? "سارة" : "أحمد",
+          month: t.date.substring(0, 7),
+          verified: t.verified ? "نعم" : "لا"
+        }));
+      case "invoices":
+        return PURCHASE_INVOICES.map(inv => ({
+          ...inv,
+          requestedByName: inv.requestedBy === "karim" ? "كريم" : inv.requestedBy === "sara" ? "سارة" : "أحمد",
+          hasReceiptText: inv.hasReceipt ? "نعم" : "لا",
+          month: inv.date.substring(0, 7)
+        }));
+      case "logs":
+        return SYSTEM_ACCESS_LOGS.map(log => ({
+          ...log,
+          userName: log.user === "karim" ? "كريم" : log.user === "sara" ? "سارة" : "أحمد",
+          afterHoursText: log.afterHours ? "نعم" : "لا",
+          month: log.date.substring(0, 7)
+        }));
+    }
+  };
 
-  // Calculate stats for chart
-  const personStats = useMemo(() => {
-    const stats: Record<string, { total: number; unverified: number; count: number }> = {
-      karim: { total: 0, unverified: 0, count: 0 },
-      sara: { total: 0, unverified: 0, count: 0 },
-      ahmed: { total: 0, unverified: 0, count: 0 },
-    };
+  const getColumns = (source: DataSource): { key: string; label: string; type: "text" | "number" | "boolean" }[] => {
+    switch (source) {
+      case "transactions":
+        return [
+          { key: "date", label: "التاريخ", type: "text" },
+          { key: "description", label: "الوصف", type: "text" },
+          { key: "amount", label: "المبلغ", type: "number" },
+          { key: "category", label: "التصنيف", type: "text" },
+          { key: "person", label: "أدخله", type: "text" },
+          { key: "verified", label: "موثق", type: "text" },
+        ];
+      case "invoices":
+        return [
+          { key: "date", label: "التاريخ", type: "text" },
+          { key: "vendor", label: "المورد", type: "text" },
+          { key: "items", label: "البنود", type: "text" },
+          { key: "amount", label: "المبلغ", type: "number" },
+          { key: "requestedByName", label: "طالب الشراء", type: "text" },
+          { key: "hasReceiptText", label: "إيصال", type: "text" },
+        ];
+      case "logs":
+        return [
+          { key: "date", label: "التاريخ", type: "text" },
+          { key: "time", label: "الوقت", type: "text" },
+          { key: "userName", label: "المستخدم", type: "text" },
+          { key: "action", label: "الإجراء", type: "text" },
+          { key: "details", label: "التفاصيل", type: "text" },
+          { key: "afterHoursText", label: "بعد الدوام", type: "text" },
+        ];
+    }
+  };
+
+  // Filtered and sorted data
+  const processedData = useMemo(() => {
+    let data = getDataSource(selectedSource);
     
-    BANK_TRANSACTIONS.forEach(t => {
-      if (t.amount < 0 && t.enteredBy) {
-        stats[t.enteredBy].total += Math.abs(t.amount);
-        stats[t.enteredBy].count += 1;
-        if (!t.verified) {
-          stats[t.enteredBy].unverified += Math.abs(t.amount);
+    // Apply filters
+    Object.entries(filters).forEach(([key, value]) => {
+      if (value && value !== "all") {
+        data = data.filter(item => String((item as any)[key]).includes(value));
+      }
+    });
+    
+    // Apply sorting
+    if (sortColumn && sortDirection) {
+      data = [...data].sort((a, b) => {
+        const aVal = (a as any)[sortColumn];
+        const bVal = (b as any)[sortColumn];
+        
+        if (typeof aVal === "number" && typeof bVal === "number") {
+          return sortDirection === "asc" ? aVal - bVal : bVal - aVal;
         }
+        
+        const aStr = String(aVal);
+        const bStr = String(bVal);
+        return sortDirection === "asc" ? aStr.localeCompare(bStr) : bStr.localeCompare(aStr);
+      });
+    }
+    
+    return data;
+  }, [selectedSource, filters, sortColumn, sortDirection]);
+
+  // Summary statistics
+  const summaryStats = useMemo(() => {
+    const data = processedData;
+    const numericColumns = getColumns(selectedSource).filter(c => c.type === "number");
+    
+    const stats: Record<string, { count: number; sum: number; avg: number; min: number; max: number }> = {};
+    
+    numericColumns.forEach(col => {
+      const values = data.map(d => (d as any)[col.key]).filter(v => typeof v === "number");
+      if (values.length > 0) {
+        stats[col.key] = {
+          count: values.length,
+          sum: values.reduce((a, b) => a + b, 0),
+          avg: values.reduce((a, b) => a + b, 0) / values.length,
+          min: Math.min(...values),
+          max: Math.max(...values),
+        };
       }
     });
     
     return stats;
-  }, []);
+  }, [processedData, selectedSource]);
 
-  const maxExpense = Math.max(...Object.values(personStats).map(s => s.total));
+  // Column statistics for selected column
+  const columnStats = useMemo(() => {
+    if (!selectedColumn) return null;
+    
+    const data = processedData;
+    const values = data.map(d => (d as any)[selectedColumn]);
+    
+    // Group by value
+    const grouped: Record<string, number> = {};
+    values.forEach(v => {
+      const key = String(v);
+      grouped[key] = (grouped[key] || 0) + 1;
+    });
+    
+    return Object.entries(grouped)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 10);
+  }, [processedData, selectedColumn]);
 
-  // Evidence linking logic
-  const handleLink = () => {
-    if (!selectedEvidence1 || !selectedEvidence2) return;
-    
-    const combo = [selectedEvidence1, selectedEvidence2].sort().join("-");
-    
-    // Define discoveries based on combinations
-    const discoveries: Record<string, { pattern: string; description: string }> = {
-      "invoices-logs": {
-        pattern: "pattern-invoice-timing",
-        description: "🔍 اكتشاف: الفواتير بدون إيصال تُدخل غالباً بعد ساعات العمل الرسمية",
-      },
-      "invoices-transactions": {
-        pattern: "pattern-unverified-amounts",
-        description: "🔍 اكتشاف: المعاملات غير الموثقة تتركز في مبالغ كبيرة (أكثر من 7000 ريال)",
-      },
-      "logs-transactions": {
-        pattern: "pattern-after-hours",
-        description: "🔍 اكتشاف: هناك نمط واضح للنشاط بعد ساعات العمل مرتبط بمعاملات محددة",
-      },
-      "emails-logs": {
-        pattern: "pattern-ahmed-excuse",
-        description: "🔍 اكتشاف: دخول أحمد المتأخر كان بطلب من المدير العام لإعداد تقرير",
-      },
-    };
-    
-    const discovery = discoveries[combo];
-    if (discovery && !hasDiscoveredPattern(discovery.pattern)) {
-      discoverPattern(discovery.pattern, discovery.description);
-      setLinkResult(discovery.description);
-    } else if (discovery) {
-      setLinkResult("✓ تم اكتشاف هذا النمط مسبقاً");
+  const handleSort = (column: string) => {
+    if (sortColumn === column) {
+      if (sortDirection === "asc") setSortDirection("desc");
+      else if (sortDirection === "desc") { setSortColumn(null); setSortDirection(null); }
     } else {
-      setLinkResult("لم يتم العثور على رابط واضح بين هذين الدليلين");
+      setSortColumn(column);
+      setSortDirection("asc");
     }
   };
 
-  // Handle hypothesis selection
-  const handleSelectHypothesis = (hypothesisId: string) => {
-    const hypothesis = HYPOTHESES.find(h => h.id === hypothesisId);
-    if (hypothesis) {
-      setActiveHypothesis(hypothesisId);
-      addNote({
-        type: "suspicion",
-        text: `تم اختيار فرضية: ${hypothesis.title}`,
-        source: "analysis",
-      });
-    }
+  const handleAddNote = () => {
+    if (!newNoteText.trim()) return;
+    addUserNote(newNoteText.trim(), newNoteCategory);
+    setNewNoteText("");
   };
 
-  const renderSummary = () => (
-    <div className="space-y-6">
-      {/* Investigation Notes */}
-      <div>
-        <h4 className="font-bold text-foreground mb-3 flex items-center gap-2">
-          <Notebook className="w-5 h-5 text-primary" />
-          دفتر التحقيق ({state.investigationNotes.length})
-        </h4>
-        {state.investigationNotes.length === 0 ? (
-          <div className="p-8 rounded-xl bg-card/30 border border-border text-center">
-            <p className="text-muted-foreground">لم يتم تسجيل أي ملاحظات بعد.</p>
-            <p className="text-sm text-muted-foreground mt-2">اجمع الأدلة واستجوب المشتبهين لتظهر الملاحظات هنا.</p>
-          </div>
-        ) : (
-          <div className="space-y-2 max-h-64 overflow-auto">
-            {state.investigationNotes.map((note, i) => (
-              <motion.div
-                key={note.id}
-                className={cn(
-                  "p-3 rounded-xl border",
-                  note.type === "pattern" ? "bg-accent/10 border-accent/30" :
-                  note.type === "key" ? "bg-primary/10 border-primary/30" :
-                  note.type === "clue" ? "bg-secondary/50 border-border" :
-                  "bg-card/30 border-border"
-                )}
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: i * 0.05 }}
-              >
-                <div className="flex items-start gap-3">
-                  <span className="text-lg">
-                    {note.type === "pattern" ? "🔍" : note.type === "key" ? "🔑" : note.type === "clue" ? "💬" : "📝"}
-                  </span>
-                  <div className="flex-1">
-                    <p className="text-foreground text-sm">{note.text}</p>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      {note.source === "interrogation" ? "الاستجواب" : note.source === "analysis" ? "التحليل" : "الأدلة"}
-                      {note.suspectId && ` • ${SUSPECTS.find(s => s.id === note.suspectId)?.name || note.suspectId}`}
-                    </p>
-                  </div>
-                </div>
-              </motion.div>
-            ))}
-          </div>
-        )}
+  // Build comparison
+  const handleCompare = () => {
+    const data1 = getDataSource(compareSource1);
+    const data2 = getDataSource(compareSource2);
+    
+    // Simple date-based comparison
+    const result: any[] = [];
+    
+    data1.forEach(item1 => {
+      const date = (item1 as any).date;
+      const matches = data2.filter(item2 => (item2 as any).date === date);
+      
+      if (matches.length > 0) {
+        matches.forEach(match => {
+          result.push({
+            date,
+            source1: compareSource1 === "transactions" ? (item1 as any).description : 
+                     compareSource1 === "invoices" ? (item1 as any).vendor : (item1 as any).action,
+            amount1: (item1 as any).amount || "-",
+            source2: compareSource2 === "transactions" ? (match as any).description :
+                     compareSource2 === "invoices" ? (match as any).vendor : (match as any).action,
+            amount2: (match as any).amount || "-",
+            person1: (item1 as any).person || (item1 as any).requestedByName || (item1 as any).userName,
+            person2: (match as any).person || (match as any).requestedByName || (match as any).userName,
+          });
+        });
+      }
+    });
+    
+    setComparisonResult(result);
+  };
+
+  // Chart data
+  const chartData = useMemo(() => {
+    if (!chartBuilt) return null;
+    
+    const data = getDataSource("transactions");
+    
+    // Group by person and month
+    const grouped: Record<string, Record<string, number>> = {};
+    
+    data.forEach(item => {
+      const person = (item as any).person;
+      const month = (item as any).month;
+      const amount = Math.abs((item as any).amount || 0);
+      
+      if ((item as any).amount < 0) { // Only expenses
+        if (!grouped[person]) grouped[person] = {};
+        grouped[person][month] = (grouped[person][month] || 0) + amount;
+      }
+    });
+    
+    return grouped;
+  }, [chartBuilt]);
+
+  const renderDataTable = () => (
+    <div className="space-y-4">
+      {/* Source Selection */}
+      <div className="flex gap-2 flex-wrap">
+        {[
+          { id: "transactions" as const, label: "المعاملات البنكية" },
+          { id: "invoices" as const, label: "الفواتير" },
+          { id: "logs" as const, label: "سجلات الدخول" },
+        ].map(source => (
+          <button
+            key={source.id}
+            onClick={() => { setSelectedSource(source.id); setFilters({}); setSortColumn(null); setSortDirection(null); }}
+            className={cn(
+              "px-4 py-2 rounded-lg text-sm font-medium transition-all",
+              selectedSource === source.id
+                ? "bg-primary text-primary-foreground"
+                : "bg-secondary/50 text-foreground hover:bg-secondary"
+            )}
+          >
+            {source.label}
+          </button>
+        ))}
       </div>
 
-      {/* Stats Grid */}
-      <div className="grid grid-cols-4 gap-4">
-        <div className="p-4 rounded-xl bg-card/30 border border-border text-center">
-          <p className="text-3xl font-bold text-primary">{state.collectedEvidence.length}</p>
-          <p className="text-sm text-muted-foreground">أدلة مجمعة</p>
-        </div>
-        <div className="p-4 rounded-xl bg-card/30 border border-border text-center">
-          <p className="text-3xl font-bold text-accent">{state.totalQuestionsAsked}</p>
-          <p className="text-sm text-muted-foreground">أسئلة طُرحت</p>
-        </div>
-        <div className="p-4 rounded-xl bg-card/30 border border-border text-center">
-          <p className="text-3xl font-bold text-green-400">{state.patternsDiscovered.length}</p>
-          <p className="text-sm text-muted-foreground">أنماط مكتشفة</p>
-        </div>
-        <div className="p-4 rounded-xl bg-card/30 border border-border text-center">
-          <p className="text-3xl font-bold text-gold">{state.score}</p>
-          <p className="text-sm text-muted-foreground">النقاط</p>
-        </div>
-      </div>
-    </div>
-  );
-
-  const renderFilter = () => (
-    <div className="space-y-6">
       {/* Filter Controls */}
-      <div className="grid grid-cols-3 gap-4">
-        <div>
-          <label className="text-sm text-muted-foreground mb-2 block">الشخص</label>
-          <select
-            value={filterPerson}
-            onChange={(e) => setFilterPerson(e.target.value)}
-            className="w-full px-3 py-2 rounded-lg bg-secondary/50 border border-border text-foreground"
+      <div className="flex gap-2 flex-wrap items-center">
+        <span className="text-sm text-muted-foreground">فلترة:</span>
+        {getColumns(selectedSource).slice(0, 4).map(col => (
+          <div key={col.key} className="relative">
+            <select
+              value={filters[col.key] || "all"}
+              onChange={(e) => setFilters(prev => ({ ...prev, [col.key]: e.target.value }))}
+              className="px-3 py-1.5 rounded-lg bg-secondary/50 border border-border text-foreground text-sm appearance-none pr-8"
+            >
+              <option value="all">{col.label}: الكل</option>
+              {[...new Set(getDataSource(selectedSource).map(d => String((d as any)[col.key])))].map(val => (
+                <option key={val} value={val}>{val}</option>
+              ))}
+            </select>
+            <ChevronDown className="absolute left-2 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
+          </div>
+        ))}
+        {Object.keys(filters).filter(k => filters[k] && filters[k] !== "all").length > 0 && (
+          <button
+            onClick={() => setFilters({})}
+            className="px-3 py-1.5 rounded-lg bg-destructive/20 text-destructive text-sm flex items-center gap-1"
           >
-            <option value="all">الكل</option>
-            <option value="karim">كريم</option>
-            <option value="sara">سارة</option>
-            <option value="ahmed">أحمد</option>
-          </select>
-        </div>
-        <div>
-          <label className="text-sm text-muted-foreground mb-2 block">الشهر</label>
-          <select
-            value={filterMonth}
-            onChange={(e) => setFilterMonth(e.target.value)}
-            className="w-full px-3 py-2 rounded-lg bg-secondary/50 border border-border text-foreground"
-          >
-            <option value="all">الكل</option>
-            <option value="2024-01">يناير</option>
-            <option value="2024-02">فبراير</option>
-            <option value="2024-03">مارس</option>
-          </select>
-        </div>
-        <div>
-          <label className="text-sm text-muted-foreground mb-2 block">التوثيق</label>
-          <select
-            value={filterVerified}
-            onChange={(e) => setFilterVerified(e.target.value)}
-            className="w-full px-3 py-2 rounded-lg bg-secondary/50 border border-border text-foreground"
-          >
-            <option value="all">الكل</option>
-            <option value="verified">موثقة</option>
-            <option value="unverified">غير موثقة</option>
-          </select>
-        </div>
-      </div>
-
-      {/* Results Summary */}
-      <div className="p-4 rounded-xl bg-primary/10 border border-primary/30">
-        <p className="text-foreground">
-          عدد النتائج: <span className="font-bold">{filteredTransactions.length}</span> معاملة
-          {filterPerson !== "all" && ` • الشخص: ${filterPerson === "karim" ? "كريم" : filterPerson === "sara" ? "سارة" : "أحمد"}`}
-        </p>
-        {filteredTransactions.length > 0 && (
-          <p className="text-sm text-muted-foreground mt-1">
-            إجمالي المصروفات: {Math.abs(filteredTransactions.filter(t => t.amount < 0).reduce((sum, t) => sum + t.amount, 0)).toLocaleString()} ريال
-          </p>
+            <X className="w-3 h-3" />
+            مسح الفلاتر
+          </button>
         )}
       </div>
 
-      {/* Filtered Results */}
-      <div className="max-h-48 overflow-auto rounded-xl border border-border">
+      {/* Data Table */}
+      <div className="overflow-auto max-h-[350px] rounded-xl border border-border">
         <table className="w-full text-sm">
-          <thead className="bg-secondary/30 sticky top-0">
+          <thead className="bg-secondary/50 sticky top-0">
             <tr>
-              <th className="text-right p-2 text-muted-foreground">التاريخ</th>
-              <th className="text-right p-2 text-muted-foreground">الوصف</th>
-              <th className="text-right p-2 text-muted-foreground">المبلغ</th>
-              <th className="text-right p-2 text-muted-foreground">موثق</th>
+              {getColumns(selectedSource).map(col => (
+                <th
+                  key={col.key}
+                  onClick={() => handleSort(col.key)}
+                  className="text-right p-3 text-muted-foreground cursor-pointer hover:text-foreground transition-colors"
+                >
+                  <div className="flex items-center gap-1">
+                    {col.label}
+                    <ArrowUpDown className={cn(
+                      "w-3 h-3 transition-colors",
+                      sortColumn === col.key ? "text-primary" : "text-muted-foreground/50"
+                    )} />
+                  </div>
+                </th>
+              ))}
             </tr>
           </thead>
           <tbody>
-            {filteredTransactions.map((t) => (
-              <tr key={t.id} className="border-b border-border/50">
-                <td className="p-2 font-mono text-xs text-foreground">{t.date}</td>
-                <td className="p-2 text-foreground">{t.description}</td>
-                <td className={cn("p-2 font-mono", t.amount >= 0 ? "text-green-400" : "text-destructive")}>
-                  {t.amount.toLocaleString()}
-                </td>
-                <td className="p-2 text-center">
-                  {t.verified ? "✓" : "-"}
-                </td>
+            {processedData.map((item, i) => (
+              <tr key={i} className="border-b border-border/50 hover:bg-secondary/20">
+                {getColumns(selectedSource).map(col => (
+                  <td 
+                    key={col.key} 
+                    className={cn(
+                      "p-3",
+                      col.type === "number" && "font-mono",
+                      col.key === "amount" && (item as any).amount < 0 && "text-destructive",
+                      col.key === "amount" && (item as any).amount > 0 && "text-green-400"
+                    )}
+                  >
+                    {col.key === "amount" ? ((item as any)[col.key] as number).toLocaleString() : String((item as any)[col.key])}
+                  </td>
+                ))}
               </tr>
             ))}
           </tbody>
         </table>
       </div>
-    </div>
-  );
 
-  const renderChart = () => (
-    <div className="space-y-6">
-      <h4 className="font-bold text-foreground">مقارنة المصروفات حسب الشخص</h4>
-      
-      {/* Simple Bar Chart */}
-      <div className="space-y-4">
-        {Object.entries(personStats).map(([person, stats]) => {
-          const percentage = maxExpense > 0 ? (stats.total / maxExpense) * 100 : 0;
-          const unverifiedPercentage = stats.total > 0 ? (stats.unverified / stats.total) * 100 : 0;
-          
-          return (
-            <div key={person} className="space-y-2">
-              <div className="flex items-center justify-between">
-                <span className="font-bold text-foreground">
-                  {person === "karim" ? "كريم" : person === "sara" ? "سارة" : "أحمد"}
-                </span>
-                <span className="text-muted-foreground text-sm">
-                  {stats.total.toLocaleString()} ريال ({stats.count} معاملات)
-                </span>
+      {/* Summary Row */}
+      <div className="p-4 rounded-xl bg-primary/10 border border-primary/30">
+        <div className="flex flex-wrap gap-6">
+          <div>
+            <span className="text-sm text-muted-foreground">عدد الصفوف:</span>
+            <span className="font-bold text-foreground mr-2">{processedData.length}</span>
+          </div>
+          {Object.entries(summaryStats).map(([key, stats]) => (
+            <div key={key} className="flex gap-4">
+              <div>
+                <span className="text-sm text-muted-foreground">المجموع:</span>
+                <span className="font-bold text-foreground mr-2">{stats.sum.toLocaleString()}</span>
               </div>
-              <div className="h-8 bg-secondary/30 rounded-lg overflow-hidden relative">
-                <motion.div
-                  className="h-full bg-primary/70 rounded-lg"
-                  initial={{ width: 0 }}
-                  animate={{ width: `${percentage}%` }}
-                  transition={{ duration: 0.5 }}
-                />
-                {stats.unverified > 0 && (
-                  <motion.div
-                    className="absolute top-0 left-0 h-full bg-amber-500/70"
-                    initial={{ width: 0 }}
-                    animate={{ width: `${(stats.unverified / maxExpense) * 100}%` }}
-                    transition={{ duration: 0.5, delay: 0.2 }}
-                  />
-                )}
+              <div>
+                <span className="text-sm text-muted-foreground">المتوسط:</span>
+                <span className="font-bold text-foreground mr-2">{Math.round(stats.avg).toLocaleString()}</span>
               </div>
-              {stats.unverified > 0 && (
-                <p className="text-xs text-amber-400">
-                  غير موثق: {stats.unverified.toLocaleString()} ريال ({unverifiedPercentage.toFixed(0)}%)
-                </p>
-              )}
             </div>
-          );
-        })}
-      </div>
-
-      {/* Legend */}
-      <div className="flex items-center gap-6 justify-center">
-        <div className="flex items-center gap-2">
-          <div className="w-4 h-4 rounded bg-primary/70" />
-          <span className="text-sm text-muted-foreground">إجمالي المصروفات</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <div className="w-4 h-4 rounded bg-amber-500/70" />
-          <span className="text-sm text-muted-foreground">غير موثق</span>
+          ))}
         </div>
       </div>
 
-      {/* Insight */}
-      {personStats.karim.unverified > personStats.sara.unverified + personStats.ahmed.unverified && (
-        <motion.div
-          className="p-4 rounded-xl bg-accent/10 border border-accent/30"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-        >
-          <p className="text-accent font-bold text-sm">
-            💡 ملاحظة: المصروفات غير الموثقة تتركز بشكل واضح عند شخص واحد
-          </p>
-        </motion.div>
-      )}
+      {/* Column Analysis */}
+      <div className="p-4 rounded-xl bg-secondary/30 border border-border">
+        <div className="flex items-center gap-4 mb-3">
+          <span className="text-sm text-muted-foreground">تحليل عمود:</span>
+          <select
+            value={selectedColumn || ""}
+            onChange={(e) => setSelectedColumn(e.target.value || null)}
+            className="px-3 py-1.5 rounded-lg bg-background border border-border text-foreground text-sm"
+          >
+            <option value="">اختر عمود...</option>
+            {getColumns(selectedSource).map(col => (
+              <option key={col.key} value={col.key}>{col.label}</option>
+            ))}
+          </select>
+        </div>
+        
+        {columnStats && (
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
+            {columnStats.map(([value, count]) => (
+              <div key={value} className="p-2 rounded-lg bg-background/50 text-center">
+                <p className="text-sm font-medium text-foreground truncate">{value}</p>
+                <p className="text-xs text-muted-foreground">{count} مرة</p>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 
-  const renderLink = () => (
+  const renderChartBuilder = () => (
     <div className="space-y-6">
-      <p className="text-muted-foreground">اختر دليلين لمحاولة ربطهما واكتشاف أنماط جديدة</p>
+      <p className="text-muted-foreground">اختر إعدادات الرسم البياني ثم اضغط "إنشاء"</p>
       
-      <div className="grid grid-cols-2 gap-4">
+      {/* Chart Settings */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <div>
-          <label className="text-sm text-muted-foreground mb-2 block">الدليل الأول</label>
+          <label className="text-sm text-muted-foreground mb-2 block">نوع الرسم</label>
           <select
-            value={selectedEvidence1 || ""}
-            onChange={(e) => { setSelectedEvidence1(e.target.value); setLinkResult(null); }}
+            value={chartType}
+            onChange={(e) => { setChartType(e.target.value as any); setChartBuilt(false); }}
             className="w-full px-3 py-2 rounded-lg bg-secondary/50 border border-border text-foreground"
           >
-            <option value="">اختر...</option>
-            <option value="invoices">الفواتير</option>
-            <option value="transactions">المعاملات البنكية</option>
-            <option value="logs">سجلات الدخول</option>
-            <option value="emails">الإيميلات</option>
+            <option value="bar">أعمدة</option>
+            <option value="comparison">مقارنة</option>
           </select>
         </div>
         <div>
-          <label className="text-sm text-muted-foreground mb-2 block">الدليل الثاني</label>
+          <label className="text-sm text-muted-foreground mb-2 block">المحور X</label>
           <select
-            value={selectedEvidence2 || ""}
-            onChange={(e) => { setSelectedEvidence2(e.target.value); setLinkResult(null); }}
+            value={chartXAxis}
+            onChange={(e) => { setChartXAxis(e.target.value); setChartBuilt(false); }}
             className="w-full px-3 py-2 rounded-lg bg-secondary/50 border border-border text-foreground"
           >
-            <option value="">اختر...</option>
-            <option value="invoices">الفواتير</option>
-            <option value="transactions">المعاملات البنكية</option>
-            <option value="logs">سجلات الدخول</option>
-            <option value="emails">الإيميلات</option>
+            <option value="month">الشهر</option>
+            <option value="category">التصنيف</option>
+          </select>
+        </div>
+        <div>
+          <label className="text-sm text-muted-foreground mb-2 block">المحور Y</label>
+          <select
+            value={chartYAxis}
+            onChange={(e) => { setChartYAxis(e.target.value); setChartBuilt(false); }}
+            className="w-full px-3 py-2 rounded-lg bg-secondary/50 border border-border text-foreground"
+          >
+            <option value="amount">المبلغ</option>
+            <option value="count">العدد</option>
+          </select>
+        </div>
+        <div>
+          <label className="text-sm text-muted-foreground mb-2 block">تجميع حسب</label>
+          <select
+            value={chartGroupBy}
+            onChange={(e) => { setChartGroupBy(e.target.value); setChartBuilt(false); }}
+            className="w-full px-3 py-2 rounded-lg bg-secondary/50 border border-border text-foreground"
+          >
+            <option value="person">الشخص</option>
+            <option value="verified">التوثيق</option>
           </select>
         </div>
       </div>
 
       <motion.button
-        onClick={handleLink}
-        disabled={!selectedEvidence1 || !selectedEvidence2 || selectedEvidence1 === selectedEvidence2}
-        className={cn(
-          "w-full py-3 rounded-xl font-bold transition-all",
-          selectedEvidence1 && selectedEvidence2 && selectedEvidence1 !== selectedEvidence2
-            ? "bg-primary text-primary-foreground hover:bg-primary/90"
-            : "bg-secondary text-muted-foreground cursor-not-allowed"
-        )}
-        whileHover={selectedEvidence1 && selectedEvidence2 ? { scale: 1.02 } : {}}
+        onClick={() => setChartBuilt(true)}
+        className="w-full py-3 rounded-xl bg-primary text-primary-foreground font-bold"
+        whileHover={{ scale: 1.02 }}
+        whileTap={{ scale: 0.98 }}
       >
-        🔗 تحليل الرابط
+        📊 إنشاء الرسم البياني
       </motion.button>
 
-      <AnimatePresence>
-        {linkResult && (
-          <motion.div
-            className={cn(
-              "p-4 rounded-xl border",
-              linkResult.includes("اكتشاف") ? "bg-accent/10 border-accent/30" : "bg-secondary/30 border-border"
-            )}
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0 }}
-          >
-            <p className="text-foreground">{linkResult}</p>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* Discovered Patterns */}
-      {state.patternsDiscovered.length > 0 && (
-        <div className="space-y-2">
-          <h4 className="font-bold text-foreground text-sm">الأنماط المكتشفة:</h4>
-          {state.investigationNotes
-            .filter(n => n.type === "pattern")
-            .map((note) => (
-              <div key={note.id} className="p-3 rounded-lg bg-accent/10 border border-accent/30 text-sm">
-                {note.text}
-              </div>
-            ))}
-        </div>
-      )}
-    </div>
-  );
-
-  const renderHypothesis = () => (
-    <div className="space-y-6">
-      <p className="text-muted-foreground">بناءً على الأدلة، اختر فرضية للتحقيق فيها</p>
-      
-      <div className="grid grid-cols-3 gap-4">
-        {HYPOTHESES.map((h) => {
-          const suspect = SUSPECTS.find(s => s.id === h.suspectId);
-          const isActive = state.activeHypothesis === h.id;
-          
-          return (
-            <motion.button
-              key={h.id}
-              onClick={() => handleSelectHypothesis(h.id)}
-              className={cn(
-                "p-4 rounded-xl border text-right transition-all",
-                isActive 
-                  ? "bg-primary/20 border-primary" 
-                  : "bg-secondary/30 border-border hover:border-primary/50"
-              )}
-              whileHover={{ scale: 1.02 }}
-            >
-              <div className="text-3xl mb-2">
-                {h.suspectId === "ahmed" ? "👔" : h.suspectId === "sara" ? "👩‍💼" : "🧑‍💼"}
-              </div>
-              <h4 className="font-bold text-foreground mb-1">{h.title}</h4>
-              <p className="text-xs text-muted-foreground">{h.description}</p>
-              {isActive && (
-                <span className="inline-block mt-2 px-2 py-1 rounded bg-primary text-primary-foreground text-xs">
-                  الفرضية الحالية
-                </span>
-              )}
-            </motion.button>
-          );
-        })}
-      </div>
-
-      {state.activeHypothesis && (
+      {/* Chart Display */}
+      {chartBuilt && chartData && (
         <motion.div
-          className="p-4 rounded-xl bg-primary/10 border border-primary/30"
-          initial={{ opacity: 0, y: 10 }}
+          className="p-6 rounded-xl bg-card/50 border border-border"
+          initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
         >
-          <p className="text-foreground text-sm">
-            💡 نصيحة: استمر في جمع الأدلة واستجواب المشتبهين لتأكيد أو نفي فرضيتك.
-            يمكنك تغيير الفرضية في أي وقت.
-          </p>
+          <h4 className="font-bold text-foreground mb-4">مصروفات كل شخص حسب الشهر</h4>
+          
+          <div className="space-y-4">
+            {Object.entries(chartData).map(([person, months]) => {
+              const total = Object.values(months).reduce((a, b) => a + b, 0);
+              const maxTotal = Math.max(...Object.values(chartData).map(m => Object.values(m).reduce((a, b) => a + b, 0)));
+              
+              return (
+                <div key={person} className="space-y-2">
+                  <div className="flex justify-between items-center">
+                    <span className="font-bold text-foreground">{person}</span>
+                    <span className="text-muted-foreground text-sm">{total.toLocaleString()} ريال</span>
+                  </div>
+                  
+                  {/* Monthly breakdown */}
+                  <div className="flex gap-1 h-8">
+                    {["2024-01", "2024-02", "2024-03"].map(month => {
+                      const value = months[month] || 0;
+                      const height = maxTotal > 0 ? (value / maxTotal) * 100 : 0;
+                      return (
+                        <motion.div
+                          key={month}
+                          className="flex-1 bg-secondary/30 rounded relative overflow-hidden"
+                          title={`${month}: ${value.toLocaleString()} ريال`}
+                        >
+                          <motion.div
+                            className={cn(
+                              "absolute bottom-0 left-0 right-0 rounded",
+                              person === "كريم" ? "bg-amber-500" :
+                              person === "سارة" ? "bg-blue-500" : "bg-green-500"
+                            )}
+                            initial={{ height: 0 }}
+                            animate={{ height: `${height}%` }}
+                            transition={{ duration: 0.5 }}
+                          />
+                        </motion.div>
+                      );
+                    })}
+                  </div>
+                  
+                  {/* Month labels */}
+                  <div className="flex gap-1 text-xs text-muted-foreground">
+                    <span className="flex-1 text-center">يناير</span>
+                    <span className="flex-1 text-center">فبراير</span>
+                    <span className="flex-1 text-center">مارس</span>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+          
+          {/* Legend */}
+          <div className="flex justify-center gap-6 mt-6 pt-4 border-t border-border">
+            <div className="flex items-center gap-2">
+              <div className="w-4 h-4 rounded bg-amber-500" />
+              <span className="text-sm text-muted-foreground">كريم</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-4 h-4 rounded bg-blue-500" />
+              <span className="text-sm text-muted-foreground">سارة</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-4 h-4 rounded bg-green-500" />
+              <span className="text-sm text-muted-foreground">أحمد</span>
+            </div>
+          </div>
         </motion.div>
       )}
     </div>
   );
 
+  const renderDataComparator = () => (
+    <div className="space-y-6">
+      <p className="text-muted-foreground">اختر مصدرين للبيانات لدمجهما ومقارنتهما</p>
+      
+      {/* Comparison Settings */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div>
+          <label className="text-sm text-muted-foreground mb-2 block">المصدر الأول</label>
+          <select
+            value={compareSource1}
+            onChange={(e) => { setCompareSource1(e.target.value as DataSource); setComparisonResult(null); }}
+            className="w-full px-3 py-2 rounded-lg bg-secondary/50 border border-border text-foreground"
+          >
+            <option value="transactions">المعاملات البنكية</option>
+            <option value="invoices">الفواتير</option>
+            <option value="logs">سجلات الدخول</option>
+          </select>
+        </div>
+        <div>
+          <label className="text-sm text-muted-foreground mb-2 block">المصدر الثاني</label>
+          <select
+            value={compareSource2}
+            onChange={(e) => { setCompareSource2(e.target.value as DataSource); setComparisonResult(null); }}
+            className="w-full px-3 py-2 rounded-lg bg-secondary/50 border border-border text-foreground"
+          >
+            <option value="transactions">المعاملات البنكية</option>
+            <option value="invoices">الفواتير</option>
+            <option value="logs">سجلات الدخول</option>
+          </select>
+        </div>
+        <div>
+          <label className="text-sm text-muted-foreground mb-2 block">الربط عن طريق</label>
+          <select
+            value={compareField}
+            onChange={(e) => { setCompareField(e.target.value); setComparisonResult(null); }}
+            className="w-full px-3 py-2 rounded-lg bg-secondary/50 border border-border text-foreground"
+          >
+            <option value="date">التاريخ</option>
+          </select>
+        </div>
+      </div>
+
+      <motion.button
+        onClick={handleCompare}
+        disabled={compareSource1 === compareSource2}
+        className={cn(
+          "w-full py-3 rounded-xl font-bold transition-all",
+          compareSource1 !== compareSource2
+            ? "bg-primary text-primary-foreground"
+            : "bg-secondary text-muted-foreground cursor-not-allowed"
+        )}
+        whileHover={compareSource1 !== compareSource2 ? { scale: 1.02 } : {}}
+      >
+        🔗 دمج ومقارنة البيانات
+      </motion.button>
+
+      {/* Comparison Result */}
+      {comparisonResult && (
+        <motion.div
+          className="rounded-xl border border-border overflow-hidden"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+        >
+          <div className="p-3 bg-secondary/50 border-b border-border">
+            <p className="font-bold text-foreground">نتيجة المقارنة ({comparisonResult.length} تطابق)</p>
+          </div>
+          
+          <div className="overflow-auto max-h-[300px]">
+            <table className="w-full text-sm">
+              <thead className="bg-secondary/30 sticky top-0">
+                <tr>
+                  <th className="text-right p-2 text-muted-foreground">التاريخ</th>
+                  <th className="text-right p-2 text-muted-foreground">المصدر 1</th>
+                  <th className="text-right p-2 text-muted-foreground">المبلغ 1</th>
+                  <th className="text-right p-2 text-muted-foreground">المصدر 2</th>
+                  <th className="text-right p-2 text-muted-foreground">المبلغ 2</th>
+                  <th className="text-right p-2 text-muted-foreground">الشخص</th>
+                </tr>
+              </thead>
+              <tbody>
+                {comparisonResult.map((row, i) => (
+                  <tr key={i} className="border-b border-border/50">
+                    <td className="p-2 font-mono text-xs">{row.date}</td>
+                    <td className="p-2 text-foreground">{row.source1}</td>
+                    <td className="p-2 font-mono">{typeof row.amount1 === "number" ? row.amount1.toLocaleString() : row.amount1}</td>
+                    <td className="p-2 text-foreground">{row.source2}</td>
+                    <td className="p-2 font-mono">{typeof row.amount2 === "number" ? row.amount2.toLocaleString() : row.amount2}</td>
+                    <td className="p-2">{row.person1}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          
+          {comparisonResult.length === 0 && (
+            <div className="p-8 text-center text-muted-foreground">
+              لا توجد تطابقات في التواريخ بين المصدرين
+            </div>
+          )}
+        </motion.div>
+      )}
+    </div>
+  );
+
+  const renderNotebook = () => {
+    const userNotes = getUserNotes();
+    
+    return (
+      <div className="space-y-6">
+        <div className="p-4 rounded-xl bg-accent/10 border border-accent/30">
+          <p className="text-accent font-medium">📝 دفتر ملاحظاتك الشخصي</p>
+          <p className="text-sm text-muted-foreground mt-1">
+            سجّل ملاحظاتك وأفكارك هنا. هذه الملاحظات لك وحدك - السيستم لن يصحح أو يقيّم ما تكتبه.
+          </p>
+        </div>
+
+        {/* Add Note Form */}
+        <div className="p-4 rounded-xl bg-card/50 border border-border space-y-4">
+          <textarea
+            value={newNoteText}
+            onChange={(e) => setNewNoteText(e.target.value)}
+            placeholder="اكتب ملاحظتك هنا..."
+            className="w-full h-24 px-4 py-3 rounded-lg bg-background border border-border text-foreground placeholder:text-muted-foreground resize-none focus:outline-none focus:ring-2 focus:ring-primary/50"
+            dir="rtl"
+          />
+          
+          <div className="flex flex-wrap gap-4 items-center justify-between">
+            <div className="flex gap-2">
+              {[
+                { id: "observation" as const, label: "👁️ ملاحظة", color: "bg-blue-500/20 text-blue-400" },
+                { id: "suspicion" as const, label: "🤔 شك", color: "bg-amber-500/20 text-amber-400" },
+                { id: "pattern" as const, label: "🔍 نمط", color: "bg-purple-500/20 text-purple-400" },
+                { id: "question" as const, label: "❓ سؤال", color: "bg-green-500/20 text-green-400" },
+              ].map(cat => (
+                <button
+                  key={cat.id}
+                  onClick={() => setNewNoteCategory(cat.id)}
+                  className={cn(
+                    "px-3 py-1.5 rounded-lg text-sm font-medium transition-all",
+                    newNoteCategory === cat.id ? cat.color : "bg-secondary/50 text-muted-foreground"
+                  )}
+                >
+                  {cat.label}
+                </button>
+              ))}
+            </div>
+            
+            <motion.button
+              onClick={handleAddNote}
+              disabled={!newNoteText.trim()}
+              className={cn(
+                "px-6 py-2 rounded-lg font-bold flex items-center gap-2",
+                newNoteText.trim()
+                  ? "bg-primary text-primary-foreground"
+                  : "bg-secondary text-muted-foreground cursor-not-allowed"
+              )}
+              whileHover={newNoteText.trim() ? { scale: 1.05 } : {}}
+            >
+              <Plus className="w-4 h-4" />
+              إضافة
+            </motion.button>
+          </div>
+        </div>
+
+        {/* Notes List */}
+        <div className="space-y-3">
+          <h4 className="font-bold text-foreground">ملاحظاتي ({userNotes.length})</h4>
+          
+          {userNotes.length === 0 ? (
+            <div className="p-8 rounded-xl bg-card/30 border border-border text-center">
+              <p className="text-muted-foreground">لم تسجل أي ملاحظات بعد.</p>
+              <p className="text-sm text-muted-foreground mt-2">
+                ابدأ بتسجيل ما تلاحظه أثناء تحليل البيانات.
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-2 max-h-[300px] overflow-auto">
+              <AnimatePresence>
+                {userNotes.map((note) => (
+                  <motion.div
+                    key={note.id}
+                    className={cn(
+                      "p-4 rounded-xl border flex items-start gap-3",
+                      note.category === "observation" ? "bg-blue-500/10 border-blue-500/30" :
+                      note.category === "suspicion" ? "bg-amber-500/10 border-amber-500/30" :
+                      note.category === "pattern" ? "bg-purple-500/10 border-purple-500/30" :
+                      "bg-green-500/10 border-green-500/30"
+                    )}
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: 20 }}
+                  >
+                    <span className="text-xl">
+                      {note.category === "observation" ? "👁️" :
+                       note.category === "suspicion" ? "🤔" :
+                       note.category === "pattern" ? "🔍" : "❓"}
+                    </span>
+                    <div className="flex-1">
+                      <p className="text-foreground">{note.text}</p>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        {new Date(note.timestamp).toLocaleTimeString("ar-SA", { hour: "2-digit", minute: "2-digit" })}
+                      </p>
+                    </div>
+                    <button
+                      onClick={() => deleteUserNote(note.id)}
+                      className="text-muted-foreground hover:text-destructive transition-colors"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </motion.div>
+                ))}
+              </AnimatePresence>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  };
+
   return (
-    <div className="min-h-screen bg-gradient-to-b from-gray-900 via-gray-800 to-black p-8">
-      <div className="max-w-5xl mx-auto">
+    <div className="min-h-screen bg-gradient-to-b from-background via-background to-secondary/20 relative overflow-hidden">
+      {/* Background Effects */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-0 left-1/4 w-96 h-96 bg-primary/5 rounded-full blur-3xl" />
+        <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-accent/5 rounded-full blur-3xl" />
+      </div>
+
+      <div className="relative z-10 container mx-auto px-4 py-6 max-w-6xl">
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-4">
-            <Notebook className="w-8 h-8 text-primary" />
-            <h1 className="text-3xl font-bold text-foreground">غرفة التحليل</h1>
+            <motion.button
+              onClick={() => onNavigate("office")}
+              className="p-2 rounded-xl bg-secondary/50 text-muted-foreground hover:text-foreground transition-colors"
+              whileHover={{ scale: 1.05 }}
+            >
+              <ArrowLeft className="w-5 h-5" />
+            </motion.button>
+            <div>
+              <h1 className="text-2xl font-bold text-foreground">غرفة التحليل</h1>
+              <p className="text-sm text-muted-foreground">حلل البيانات واكتشف الأنماط بنفسك</p>
+            </div>
           </div>
+          
+          {/* Trust Indicator */}
           <div className={cn(
-            "px-4 py-2 rounded-full font-bold",
-            trustLevel === "high" ? "bg-green-500/20 text-green-400" :
-            trustLevel === "medium" ? "bg-amber-500/20 text-amber-400" :
-            "bg-destructive/20 text-destructive"
+            "px-4 py-2 rounded-xl border",
+            trustLevel === "critical" ? "bg-destructive/20 border-destructive/50 text-destructive" :
+            trustLevel === "low" ? "bg-orange-500/20 border-orange-500/50 text-orange-400" :
+            trustLevel === "medium" ? "bg-yellow-500/20 border-yellow-500/50 text-yellow-400" :
+            "bg-green-500/20 border-green-500/50 text-green-400"
           )}>
-            الثقة: {state.trust}%
+            <span className="font-bold">{state.trust}%</span>
+            <span className="text-sm mr-2">ثقة</span>
           </div>
         </div>
 
@@ -508,14 +820,15 @@ export const AnalysisScreen = ({ onNavigate }: AnalysisScreenProps) => {
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
               className={cn(
-                "px-4 py-2 rounded-lg font-bold whitespace-nowrap transition-all",
+                "px-4 py-3 rounded-xl font-medium whitespace-nowrap transition-all flex items-center gap-2",
                 activeTab === tab.id
-                  ? "bg-primary text-primary-foreground"
-                  : "bg-secondary/50 text-foreground hover:bg-secondary"
+                  ? "bg-primary text-primary-foreground shadow-lg"
+                  : "bg-card/50 text-muted-foreground hover:bg-card hover:text-foreground border border-border"
               )}
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
             >
+              <tab.icon className="w-4 h-4" />
               {tab.label}
             </motion.button>
           ))}
@@ -523,24 +836,42 @@ export const AnalysisScreen = ({ onNavigate }: AnalysisScreenProps) => {
 
         {/* Content */}
         <motion.div
-          className="p-6 rounded-2xl bg-card/30 border border-border min-h-[400px]"
-          key={activeTab}
-          initial={{ opacity: 0, y: 10 }}
+          className="bg-card/30 backdrop-blur-sm rounded-2xl border border-border p-6"
+          initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.2 }}
         >
-          {activeTab === "summary" && renderSummary()}
-          {activeTab === "filter" && renderFilter()}
-          {activeTab === "chart" && renderChart()}
-          {activeTab === "link" && renderLink()}
-          {activeTab === "hypothesis" && renderHypothesis()}
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={activeTab}
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -20 }}
+            >
+              {activeTab === "data" && renderDataTable()}
+              {activeTab === "chart" && renderChartBuilder()}
+              {activeTab === "compare" && renderDataComparator()}
+              {activeTab === "notebook" && renderNotebook()}
+            </motion.div>
+          </AnimatePresence>
         </motion.div>
 
         {/* Navigation */}
-        <div className="flex justify-center gap-4 mt-8">
-          <NavigationButton iconEmoji="🏢" label="المكتب" onClick={() => onNavigate("office")} />
-          <NavigationButton iconEmoji="📁" label="الأدلة" onClick={() => onNavigate("evidence")} />
-          <NavigationButton iconEmoji="👥" label="الاستجواب" onClick={() => onNavigate("interrogation")} />
+        <div className="flex justify-center gap-4 mt-6">
+          <NavigationButton
+            onClick={() => onNavigate("office")}
+            icon="🏠"
+            label="المكتب"
+          />
+          <NavigationButton
+            onClick={() => onNavigate("evidence")}
+            icon="📁"
+            label="الأدلة"
+          />
+          <NavigationButton
+            onClick={() => onNavigate("interrogation")}
+            icon="🗣️"
+            label="الاستجواب"
+          />
         </div>
       </div>
     </div>
