@@ -1,241 +1,114 @@
 import { useState, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Filter, BarChart3, Link2, Lightbulb, Calculator, SortAsc, Hash, Layers, CheckCircle, Clock, Shield, Lock, Table2 } from "lucide-react";
+import { Notebook, Filter, BarChart3, Link2, Lightbulb, ArrowLeft } from "lucide-react";
 import { NavigationButton } from "../NavigationButton";
 import { useGame } from "@/contexts/GameContext";
-import { BANK_TRANSACTIONS, PURCHASE_INVOICES, ACTIVITY_LOG, HYPOTHESES, SUSPECTS } from "@/data/case1";
+import { BANK_TRANSACTIONS, PURCHASE_INVOICES, MONTHLY_SUMMARY, HYPOTHESES, SUSPECTS } from "@/data/case1";
 import { cn } from "@/lib/utils";
-import analysisRoom from "@/assets/rooms/analysis-room.png";
-import { InteractiveRoom } from "../InteractiveRoom";
-import { toast } from "sonner";
 
 interface AnalysisScreenProps {
   onNavigate: (screen: string) => void;
 }
 
-type ToolType = "filter" | "sort" | "sum" | "count" | "groupby" | "match";
-type DataSource = "transactions" | "invoices" | "logs";
+type TabType = "summary" | "filter" | "chart" | "link" | "hypothesis";
 
 export const AnalysisScreen = ({ onNavigate }: AnalysisScreenProps) => {
-  const { state, getTrustLevel, discoverInsight, hasInsight, setActiveHypothesis, addNote, setPhase } = useGame();
+  const { state, getTrustLevel, discoverPattern, hasDiscoveredPattern, setActiveHypothesis, addNote } = useGame();
   const trustLevel = getTrustLevel();
   
-  // Tool state
-  const [activeTool, setActiveTool] = useState<ToolType | null>(null);
-  const [dataSource, setDataSource] = useState<DataSource | null>(null);
+  const [activeTab, setActiveTab] = useState<TabType>("summary");
   
   // Filter state
-  const [filterColumn, setFilterColumn] = useState<string>("");
-  const [filterValue, setFilterValue] = useState<string>("");
+  const [filterPerson, setFilterPerson] = useState("all");
+  const [filterMonth, setFilterMonth] = useState("all");
+  const [filterVerified, setFilterVerified] = useState("all");
   
-  // Sort state
-  const [sortColumn, setSortColumn] = useState<string>("");
-  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
-  
-  // GroupBy state
-  const [groupByColumn, setGroupByColumn] = useState<string>("");
-  const [aggregateType, setAggregateType] = useState<"sum" | "count">("count");
-  
-  // Match state
-  const [matchSource1, setMatchSource1] = useState<DataSource>("transactions");
-  const [matchSource2, setMatchSource2] = useState<DataSource>("invoices");
-  
-  // Results
-  const [showResults, setShowResults] = useState(false);
-  const [resultData, setResultData] = useState<any[]>([]);
-  const [resultSummary, setResultSummary] = useState<string>("");
-  
-  // Hypothesis panel
-  const [showHypothesis, setShowHypothesis] = useState(false);
+  // Link state
+  const [selectedEvidence1, setSelectedEvidence1] = useState<string | null>(null);
+  const [selectedEvidence2, setSelectedEvidence2] = useState<string | null>(null);
+  const [linkResult, setLinkResult] = useState<string | null>(null);
 
-  const tools = [
-    { id: "filter" as const, name: "فلترة", icon: Filter, description: "تصفية البيانات حسب شرط" },
-    { id: "sort" as const, name: "ترتيب", icon: SortAsc, description: "ترتيب البيانات" },
-    { id: "sum" as const, name: "مجموع", icon: Calculator, description: "حساب المجموع" },
-    { id: "count" as const, name: "عدد", icon: Hash, description: "عدد الصفوف" },
-    { id: "groupby" as const, name: "تجميع", icon: Layers, description: "تجميع البيانات" },
-    { id: "match" as const, name: "مطابقة", icon: Link2, description: "مقارنة جدولين" },
+  const tabs = [
+    { id: "summary" as const, label: "📊 ملخص", icon: Notebook },
+    { id: "filter" as const, label: "🔍 فلترة", icon: Filter },
+    { id: "chart" as const, label: "📈 رسم بياني", icon: BarChart3 },
+    { id: "link" as const, label: "🔗 ربط الأدلة", icon: Link2 },
+    { id: "hypothesis" as const, label: "💡 الفرضيات", icon: Lightbulb },
   ];
 
-  // Data sources based on collected evidence
-  const availableDataSources = useMemo(() => {
-    const sources: { id: DataSource; name: string; locked: boolean }[] = [];
+  // Filtered transactions
+  const filteredTransactions = useMemo(() => {
+    return BANK_TRANSACTIONS.filter(t => {
+      const personMatch = filterPerson === "all" || t.enteredBy === filterPerson;
+      const monthMatch = filterMonth === "all" || t.date.includes(filterMonth);
+      const verifiedMatch = filterVerified === "all" || 
+        (filterVerified === "verified" && t.verified) ||
+        (filterVerified === "unverified" && !t.verified);
+      return personMatch && monthMatch && verifiedMatch;
+    });
+  }, [filterPerson, filterMonth, filterVerified]);
+
+  // Calculate stats for chart
+  const personStats = useMemo(() => {
+    const stats: Record<string, { total: number; unverified: number; count: number }> = {
+      karim: { total: 0, unverified: 0, count: 0 },
+      sara: { total: 0, unverified: 0, count: 0 },
+      ahmed: { total: 0, unverified: 0, count: 0 },
+    };
     
-    // البنك يظهر لو جمعت "bank_summary" أو "bank_detailed"
-    const hasBankEvidence = state.collectedEvidence.some(e => e.includes("bank"));
-    sources.push({ 
-      id: "transactions", 
-      name: "المعاملات البنكية", 
-      locked: !hasBankEvidence 
+    BANK_TRANSACTIONS.forEach(t => {
+      if (t.amount < 0 && t.enteredBy) {
+        stats[t.enteredBy].total += Math.abs(t.amount);
+        stats[t.enteredBy].count += 1;
+        if (!t.verified) {
+          stats[t.enteredBy].unverified += Math.abs(t.amount);
+        }
+      }
     });
     
-    // السجلات تظهر لو جمعت "system_log" أو "activity_log"
-    const hasLogEvidence = state.collectedEvidence.some(e => e.includes("log"));
-    sources.push({ 
-      id: "logs", 
-      name: "سجلات النظام", 
-      locked: !hasLogEvidence 
-    });
-    
-    // الفواتير تظهر فقط في Pack 2 أو بعده
-    const hasInvoiceEvidence = state.collectedEvidence.some(e => e.includes("invoice"));
-    sources.push({ 
-      id: "invoices", 
-      name: "الفواتير", 
-      locked: !hasInvoiceEvidence 
-    });
-    
-    return sources;
-  }, [state.collectedEvidence]);
+    return stats;
+  }, []);
 
-  const getDataColumns = (source: DataSource) => {
-    switch (source) {
-      case "transactions":
-        return ["date", "description", "amount", "category", "enteredBy"];
-      case "invoices":
-        return ["date", "vendor", "amount", "requestedBy", "hasReceipt"];
-      case "logs":
-        return ["date", "time", "user", "action"];
+  const maxExpense = Math.max(...Object.values(personStats).map(s => s.total));
+
+  // Evidence linking logic
+  const handleLink = () => {
+    if (!selectedEvidence1 || !selectedEvidence2) return;
+    
+    const combo = [selectedEvidence1, selectedEvidence2].sort().join("-");
+    
+    // Define discoveries based on combinations
+    const discoveries: Record<string, { pattern: string; description: string }> = {
+      "invoices-logs": {
+        pattern: "pattern-invoice-timing",
+        description: "🔍 اكتشاف: الفواتير بدون إيصال تُدخل غالباً بعد ساعات العمل الرسمية",
+      },
+      "invoices-transactions": {
+        pattern: "pattern-unverified-amounts",
+        description: "🔍 اكتشاف: المعاملات غير الموثقة تتركز في مبالغ كبيرة (أكثر من 7000 ريال)",
+      },
+      "logs-transactions": {
+        pattern: "pattern-after-hours",
+        description: "🔍 اكتشاف: هناك نمط واضح للنشاط بعد ساعات العمل مرتبط بمعاملات محددة",
+      },
+      "emails-logs": {
+        pattern: "pattern-ahmed-excuse",
+        description: "🔍 اكتشاف: دخول أحمد المتأخر كان بطلب من المدير العام لإعداد تقرير",
+      },
+    };
+    
+    const discovery = discoveries[combo];
+    if (discovery && !hasDiscoveredPattern(discovery.pattern)) {
+      discoverPattern(discovery.pattern, discovery.description);
+      setLinkResult(discovery.description);
+    } else if (discovery) {
+      setLinkResult("✓ تم اكتشاف هذا النمط مسبقاً");
+    } else {
+      setLinkResult("لم يتم العثور على رابط واضح بين هذين الدليلين");
     }
   };
 
-  const getData = (source: DataSource) => {
-    switch (source) {
-      case "transactions": return BANK_TRANSACTIONS;
-      case "invoices": return PURCHASE_INVOICES;
-      case "logs": return ACTIVITY_LOG;
-    }
-  };
-
-  const columnLabels: Record<string, string> = {
-    date: "التاريخ",
-    description: "الوصف",
-    amount: "المبلغ",
-    category: "الفئة",
-    enteredBy: "المسؤول",
-    vendor: "المورد",
-    requestedBy: "الطالب",
-    hasReceipt: "إيصال",
-    time: "الوقت",
-    user: "المستخدم",
-    action: "الإجراء",
-    count: "العدد",
-    sum: "المجموع",
-    total: "المجموع",
-  };
-
-  // Execute tool
-  const executeTool = () => {
-    if (!dataSource) {
-      toast.error("اختر جدول البيانات أولاً");
-      return;
-    }
-    
-    const data = getData(dataSource);
-    let results: any[] = [];
-    let summary = "";
-
-    switch (activeTool) {
-      case "filter":
-        if (!filterColumn || !filterValue) {
-          toast.error("اختر العمود والقيمة للفلترة");
-          return;
-        }
-        results = data.filter((row: any) => {
-          const val = String(row[filterColumn]).toLowerCase();
-          return val.includes(filterValue.toLowerCase());
-        });
-        summary = `تم فلترة ${results.length} صف من ${data.length} (${columnLabels[filterColumn]} يحتوي "${filterValue}")`;
-        break;
-
-      case "sort":
-        if (!sortColumn) {
-          toast.error("اختر العمود للترتيب");
-          return;
-        }
-        results = [...data].sort((a: any, b: any) => {
-          if (sortDirection === "asc") {
-            return a[sortColumn] > b[sortColumn] ? 1 : -1;
-          }
-          return a[sortColumn] < b[sortColumn] ? 1 : -1;
-        });
-        summary = `تم ترتيب ${results.length} صف حسب ${columnLabels[sortColumn]} (${sortDirection === "asc" ? "تصاعدي" : "تنازلي"})`;
-        break;
-
-      case "sum":
-        const sumTotal = data.reduce((acc: number, row: any) => {
-          const val = parseFloat(row.amount) || 0;
-          return acc + val;
-        }, 0);
-        results = [{ total: sumTotal }];
-        summary = `المجموع الكلي: ${sumTotal.toLocaleString()} ريال`;
-        break;
-
-      case "count":
-        results = [{ count: data.length }];
-        summary = `إجمالي عدد الصفوف: ${data.length}`;
-        break;
-
-      case "groupby":
-        if (!groupByColumn) {
-          toast.error("اختر العمود للتجميع");
-          return;
-        }
-        const groups: Record<string, { count: number; sum: number }> = {};
-        data.forEach((row: any) => {
-          const key = String(row[groupByColumn]);
-          if (!groups[key]) {
-            groups[key] = { count: 0, sum: 0 };
-          }
-          groups[key].count++;
-          if (row.amount) {
-            groups[key].sum += Math.abs(parseFloat(row.amount)) || 0;
-          }
-        });
-        results = Object.entries(groups).map(([key, val]) => ({
-          [groupByColumn]: key,
-          count: val.count,
-          sum: val.sum,
-        }));
-        results.sort((a, b) => b.sum - a.sum);
-        summary = `تم تجميع البيانات إلى ${results.length} مجموعة حسب ${columnLabels[groupByColumn]}`;
-        break;
-
-      case "match":
-        // Find invoices without receipts
-        const invoicesWithoutReceipt = PURCHASE_INVOICES.filter(inv => !inv.hasReceipt);
-        results = invoicesWithoutReceipt.map(inv => ({
-          date: inv.date,
-          vendor: inv.vendor,
-          amount: inv.amount,
-          requestedBy: inv.requestedBy,
-          hasReceipt: "لا",
-        }));
-        summary = `فواتير بدون إيصال: ${results.length} من ${PURCHASE_INVOICES.length}`;
-        break;
-    }
-
-    setResultData(results);
-    setResultSummary(summary);
-    setShowResults(true);
-  };
-
-  // Register insight
-  const registerInsight = (insightId: string, name: string, description: string) => {
-    if (hasInsight(insightId)) {
-      toast.info("تم اكتشاف هذا النمط مسبقاً");
-      return;
-    }
-    
-    discoverInsight(insightId, name, description);
-    toast.success(`🔍 تم اكتشاف: ${name}`);
-    
-    // Check if we should show hypothesis selection
-    if (state.discoveredInsights.length === 0 && state.gamePhase === "analysis1") {
-      setShowHypothesis(true);
-    }
-  };
-
+  // Handle hypothesis selection
   const handleSelectHypothesis = (hypothesisId: string) => {
     const hypothesis = HYPOTHESES.find(h => h.id === hypothesisId);
     if (hypothesis) {
@@ -245,509 +118,431 @@ export const AnalysisScreen = ({ onNavigate }: AnalysisScreenProps) => {
         text: `تم اختيار فرضية: ${hypothesis.title}`,
         source: "analysis",
       });
-      setShowHypothesis(false);
-      setPhase("evidence_pack2");
-      toast.success("تم اختيار الفرضية! الآن يمكنك جمع أدلة جديدة");
     }
   };
 
-  const handleSelectDataSource = (source: DataSource) => {
-    const sourceInfo = availableDataSources.find(s => s.id === source);
-    if (sourceInfo?.locked) {
-      toast.error("يجب جمع الأدلة المرتبطة أولاً");
-      return;
-    }
-    setDataSource(source);
-    setShowResults(false);
-    // Reset filters when changing source
-    setFilterColumn("");
-    setFilterValue("");
-    setSortColumn("");
-    setGroupByColumn("");
-  };
-
-  // Current data for the grid
-  const currentData = dataSource ? getData(dataSource) : [];
-  const currentColumns = dataSource ? getDataColumns(dataSource) : [];
-
-  return (
-    <InteractiveRoom
-      backgroundImage={analysisRoom}
-      hotspots={[]}
-      onHotspotClick={() => {}}
-      activeHotspot={null}
-      overlayContent={null}
-      onCloseOverlay={() => {}}
-    >
-      {/* Objective Bar */}
-      <motion.div className="absolute top-4 left-1/2 -translate-x-1/2 z-20">
-        <div className="px-4 py-2 rounded-full bg-background/90 backdrop-blur-xl border border-primary/30">
-          <span className="text-muted-foreground text-xs ml-2">📋</span>
-          <span className="font-bold text-foreground text-sm">{state.currentObjective}</span>
-        </div>
-      </motion.div>
-
-      {/* Trust & Time */}
-      <motion.div className="absolute top-14 left-1/2 -translate-x-1/2 z-20">
-        <div className={cn(
-          "px-4 py-1 rounded-full backdrop-blur-xl border flex items-center gap-3 text-xs",
-          trustLevel === "high" ? "bg-green-500/20 border-green-500/30" :
-          trustLevel === "medium" ? "bg-amber-500/20 border-amber-500/30" :
-          "bg-destructive/20 border-destructive/30"
-        )}>
-          <span className="flex items-center gap-1">
-            <Shield className="w-3 h-3" />
-            {state.trust}%
-          </span>
-          <span className="flex items-center gap-1">
-            <Clock className="w-3 h-3" />
-            {state.timeRemaining}/{state.maxTime}
-          </span>
-          <span className="flex items-center gap-1 text-accent">
-            🔍 {state.discoveredInsights.length}/3
-          </span>
-        </div>
-      </motion.div>
-
-      {/* Main Analysis Panel - Excel-like Design */}
-      <div className="absolute inset-0 flex items-center justify-center z-10 p-4 pt-24">
-        <motion.div 
-          className="bg-background/95 backdrop-blur-xl border border-primary/30 rounded-2xl p-4 max-w-6xl w-full max-h-[80vh] overflow-hidden flex flex-col"
-          initial={{ opacity: 0, y: 50 }}
-          animate={{ opacity: 1, y: 0 }}
-        >
-          <h2 className="text-xl font-bold text-foreground mb-4 flex items-center gap-2">
-            <BarChart3 className="w-6 h-6 text-primary" />
-            غرفة التحليل
-          </h2>
-
-          {/* Section 1: Data Source Selection */}
-          <div className="mb-4">
-            <label className="text-sm text-muted-foreground mb-2 block">📊 اختر الجدول:</label>
-            <div className="flex gap-2 flex-wrap">
-              {availableDataSources.map((source) => (
-                <button
-                  key={source.id}
-                  onClick={() => handleSelectDataSource(source.id)}
-                  disabled={source.locked}
-                  className={cn(
-                    "px-4 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-2",
-                    source.locked 
-                      ? "bg-muted/30 text-muted-foreground cursor-not-allowed opacity-60"
-                      : dataSource === source.id 
-                        ? "bg-primary text-primary-foreground" 
-                        : "bg-secondary text-foreground hover:bg-secondary/80"
-                  )}
-                >
-                  {source.locked ? <Lock className="w-3 h-3" /> : <Table2 className="w-3 h-3" />}
-                  {source.name}
-                  {source.locked && <span className="text-xs">(اجمع الأدلة أولاً)</span>}
-                </button>
-              ))}
-            </div>
+  const renderSummary = () => (
+    <div className="space-y-6">
+      {/* Investigation Notes */}
+      <div>
+        <h4 className="font-bold text-foreground mb-3 flex items-center gap-2">
+          <Notebook className="w-5 h-5 text-primary" />
+          دفتر التحقيق ({state.investigationNotes.length})
+        </h4>
+        {state.investigationNotes.length === 0 ? (
+          <div className="p-8 rounded-xl bg-card/30 border border-border text-center">
+            <p className="text-muted-foreground">لم يتم تسجيل أي ملاحظات بعد.</p>
+            <p className="text-sm text-muted-foreground mt-2">اجمع الأدلة واستجوب المشتبهين لتظهر الملاحظات هنا.</p>
           </div>
-
-          {/* Section 2: Data Grid (Excel-like) */}
-          {dataSource ? (
-            <div className="flex-1 flex flex-col min-h-0 mb-4">
-              <label className="text-sm text-muted-foreground mb-2 block">
-                📋 البيانات ({currentData.length} صف):
-              </label>
-              <div className="flex-1 overflow-auto border border-border rounded-lg bg-card/50">
-                <table className="w-full text-sm border-collapse">
-                  <thead className="bg-secondary/50 sticky top-0 z-10">
-                    <tr>
-                      <th className="p-2 text-right border-l border-border text-muted-foreground font-bold w-10">#</th>
-                      {currentColumns.map(col => (
-                        <th key={col} className="p-2 text-right border-l border-border text-muted-foreground font-bold">
-                          {columnLabels[col]}
-                        </th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {currentData.map((row: any, i) => (
-                      <tr 
-                        key={i} 
-                        className={cn(
-                          "border-b border-border/50 hover:bg-primary/5 transition-colors",
-                          i % 2 === 0 ? "bg-background" : "bg-secondary/20"
-                        )}
-                      >
-                        <td className="p-2 text-right border-l border-border text-muted-foreground">{i + 1}</td>
-                        {currentColumns.map(col => (
-                          <td key={col} className="p-2 text-right border-l border-border text-foreground">
-                            {col === "hasReceipt" 
-                              ? (row[col] ? "✅ نعم" : "❌ لا")
-                              : col === "amount" 
-                                ? `${Number(row[col]).toLocaleString()} ريال`
-                                : String(row[col])
-                            }
-                          </td>
-                        ))}
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          ) : (
-            <div className="flex-1 flex items-center justify-center bg-secondary/20 rounded-lg border border-dashed border-border mb-4">
-              <div className="text-center text-muted-foreground">
-                <Table2 className="w-12 h-12 mx-auto mb-2 opacity-50" />
-                <p>اختر جدول من الأعلى لعرض البيانات</p>
-              </div>
-            </div>
-          )}
-
-          {/* Section 3: Tools */}
-          {dataSource && (
-            <div className="mb-4 p-3 bg-secondary/30 rounded-lg border border-border">
-              <label className="text-sm text-muted-foreground mb-2 block">🔧 الأدوات:</label>
-              <div className="flex gap-2 flex-wrap mb-3">
-                {tools.map((tool) => (
-                  <motion.button
-                    key={tool.id}
-                    onClick={() => {
-                      setActiveTool(activeTool === tool.id ? null : tool.id);
-                      setShowResults(false);
-                    }}
-                    className={cn(
-                      "px-3 py-2 rounded-lg border transition-all flex items-center gap-2 text-sm",
-                      activeTool === tool.id
-                        ? "bg-primary text-primary-foreground border-primary"
-                        : "bg-background border-border hover:border-primary"
-                    )}
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                  >
-                    <tool.icon className="w-4 h-4" />
-                    {tool.name}
-                  </motion.button>
-                ))}
-              </div>
-
-              {/* Tool Options */}
-              <AnimatePresence mode="wait">
-                {activeTool && (
-                  <motion.div
-                    key={activeTool}
-                    className="flex items-end gap-3 flex-wrap"
-                    initial={{ opacity: 0, height: 0 }}
-                    animate={{ opacity: 1, height: "auto" }}
-                    exit={{ opacity: 0, height: 0 }}
-                  >
-                    {activeTool === "filter" && (
-                      <>
-                        <div className="flex-1 min-w-[150px]">
-                          <label className="text-xs text-muted-foreground mb-1 block">العمود</label>
-                          <select
-                            value={filterColumn}
-                            onChange={(e) => setFilterColumn(e.target.value)}
-                            className="w-full px-3 py-2 rounded-lg bg-background border border-border text-foreground text-sm"
-                          >
-                            <option value="">اختر...</option>
-                            {currentColumns.map(col => (
-                              <option key={col} value={col}>{columnLabels[col]}</option>
-                            ))}
-                          </select>
-                        </div>
-                        <div className="flex-1 min-w-[150px]">
-                          <label className="text-xs text-muted-foreground mb-1 block">يحتوي على</label>
-                          <input
-                            type="text"
-                            value={filterValue}
-                            onChange={(e) => setFilterValue(e.target.value)}
-                            placeholder="مثال: karim"
-                            className="w-full px-3 py-2 rounded-lg bg-background border border-border text-foreground text-sm"
-                          />
-                        </div>
-                      </>
-                    )}
-
-                    {activeTool === "sort" && (
-                      <>
-                        <div className="flex-1 min-w-[150px]">
-                          <label className="text-xs text-muted-foreground mb-1 block">العمود</label>
-                          <select
-                            value={sortColumn}
-                            onChange={(e) => setSortColumn(e.target.value)}
-                            className="w-full px-3 py-2 rounded-lg bg-background border border-border text-foreground text-sm"
-                          >
-                            <option value="">اختر...</option>
-                            {currentColumns.map(col => (
-                              <option key={col} value={col}>{columnLabels[col]}</option>
-                            ))}
-                          </select>
-                        </div>
-                        <div className="flex gap-2">
-                          <button
-                            onClick={() => setSortDirection("asc")}
-                            className={cn(
-                              "px-3 py-2 rounded-lg text-sm",
-                              sortDirection === "asc" ? "bg-primary text-primary-foreground" : "bg-background border border-border"
-                            )}
-                          >
-                            تصاعدي ↑
-                          </button>
-                          <button
-                            onClick={() => setSortDirection("desc")}
-                            className={cn(
-                              "px-3 py-2 rounded-lg text-sm",
-                              sortDirection === "desc" ? "bg-primary text-primary-foreground" : "bg-background border border-border"
-                            )}
-                          >
-                            تنازلي ↓
-                          </button>
-                        </div>
-                      </>
-                    )}
-
-                    {activeTool === "groupby" && (
-                      <>
-                        <div className="flex-1 min-w-[150px]">
-                          <label className="text-xs text-muted-foreground mb-1 block">تجميع حسب</label>
-                          <select
-                            value={groupByColumn}
-                            onChange={(e) => setGroupByColumn(e.target.value)}
-                            className="w-full px-3 py-2 rounded-lg bg-background border border-border text-foreground text-sm"
-                          >
-                            <option value="">اختر...</option>
-                            {currentColumns.map(col => (
-                              <option key={col} value={col}>{columnLabels[col]}</option>
-                            ))}
-                          </select>
-                        </div>
-                        <div className="flex gap-2">
-                          <button
-                            onClick={() => setAggregateType("count")}
-                            className={cn(
-                              "px-3 py-2 rounded-lg text-sm",
-                              aggregateType === "count" ? "bg-primary text-primary-foreground" : "bg-background border border-border"
-                            )}
-                          >
-                            عدد
-                          </button>
-                          <button
-                            onClick={() => setAggregateType("sum")}
-                            className={cn(
-                              "px-3 py-2 rounded-lg text-sm",
-                              aggregateType === "sum" ? "bg-primary text-primary-foreground" : "bg-background border border-border"
-                            )}
-                          >
-                            مجموع
-                          </button>
-                        </div>
-                      </>
-                    )}
-
-                    {activeTool === "match" && (
-                      <>
-                        <div className="flex-1 min-w-[120px]">
-                          <label className="text-xs text-muted-foreground mb-1 block">الجدول الأول</label>
-                          <select
-                            value={matchSource1}
-                            onChange={(e) => setMatchSource1(e.target.value as DataSource)}
-                            className="w-full px-3 py-2 rounded-lg bg-background border border-border text-foreground text-sm"
-                          >
-                            <option value="transactions">المعاملات</option>
-                            <option value="invoices">الفواتير</option>
-                            <option value="logs">السجلات</option>
-                          </select>
-                        </div>
-                        <div className="flex-1 min-w-[120px]">
-                          <label className="text-xs text-muted-foreground mb-1 block">الجدول الثاني</label>
-                          <select
-                            value={matchSource2}
-                            onChange={(e) => setMatchSource2(e.target.value as DataSource)}
-                            className="w-full px-3 py-2 rounded-lg bg-background border border-border text-foreground text-sm"
-                          >
-                            <option value="transactions">المعاملات</option>
-                            <option value="invoices">الفواتير</option>
-                            <option value="logs">السجلات</option>
-                          </select>
-                        </div>
-                      </>
-                    )}
-
-                    {(activeTool === "sum" || activeTool === "count") && (
-                      <p className="text-sm text-muted-foreground py-2">
-                        {activeTool === "sum" ? "سيتم حساب مجموع عمود المبلغ" : "سيتم عد جميع الصفوف"}
-                      </p>
-                    )}
-
-                    <motion.button
-                      onClick={executeTool}
-                      className="px-6 py-2 rounded-lg bg-primary text-primary-foreground font-bold text-sm"
-                      whileHover={{ scale: 1.02 }}
-                    >
-                      ⚡ تنفيذ
-                    </motion.button>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </div>
-          )}
-
-          {/* Section 4: Results */}
-          <AnimatePresence>
-            {showResults && (
+        ) : (
+          <div className="space-y-2 max-h-64 overflow-auto">
+            {state.investigationNotes.map((note, i) => (
               <motion.div
-                className="p-3 bg-accent/10 rounded-lg border border-accent/30"
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0 }}
-              >
-                <div className="flex items-center justify-between mb-3">
-                  <h4 className="font-bold text-foreground flex items-center gap-2">
-                    📊 النتيجة
-                  </h4>
-                  <span className="text-sm text-accent font-medium">{resultSummary}</span>
-                </div>
-
-                {resultData.length > 0 && resultData.length <= 20 && (
-                  <div className="max-h-40 overflow-auto rounded-lg border border-border bg-background mb-3">
-                    <table className="w-full text-sm border-collapse">
-                      <thead className="bg-secondary/50 sticky top-0">
-                        <tr>
-                          {Object.keys(resultData[0]).map(key => (
-                            <th key={key} className="p-2 text-right border-l border-border text-muted-foreground font-bold">
-                              {columnLabels[key] || key}
-                            </th>
-                          ))}
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {resultData.map((row, i) => (
-                          <tr key={i} className={cn(
-                            "border-b border-border/50",
-                            i % 2 === 0 ? "bg-background" : "bg-secondary/20"
-                          )}>
-                            {Object.entries(row).map(([key, val], j) => (
-                              <td key={j} className="p-2 text-right border-l border-border text-foreground">
-                                {key === "sum" || key === "total" || key === "amount"
-                                  ? `${Number(val).toLocaleString()} ريال`
-                                  : String(val)
-                                }
-                              </td>
-                            ))}
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
+                key={note.id}
+                className={cn(
+                  "p-3 rounded-xl border",
+                  note.type === "pattern" ? "bg-accent/10 border-accent/30" :
+                  note.type === "key" ? "bg-primary/10 border-primary/30" :
+                  note.type === "clue" ? "bg-secondary/50 border-border" :
+                  "bg-card/30 border-border"
                 )}
-
-                {/* Register Insight */}
-                <div className="flex items-center gap-2 flex-wrap">
-                  <span className="text-sm text-muted-foreground">اكتشفت نمطاً؟</span>
-                  {!hasInsight("after-hours") && (
-                    <button
-                      onClick={() => registerInsight("after-hours", "نشاط بعد الدوام", "شخص واحد يتكرر دخوله بعد ساعات العمل")}
-                      className="px-3 py-1 rounded-lg bg-accent/20 text-accent text-xs hover:bg-accent/30 transition-all"
-                    >
-                      🌙 نشاط بعد الدوام
-                    </button>
-                  )}
-                  {!hasInsight("no-receipt") && (
-                    <button
-                      onClick={() => registerInsight("no-receipt", "فواتير بدون إيصالات", "مبالغ كبيرة بدون توثيق")}
-                      className="px-3 py-1 rounded-lg bg-accent/20 text-accent text-xs hover:bg-accent/30 transition-all"
-                    >
-                      📄 فواتير بدون إيصال
-                    </button>
-                  )}
-                  {!hasInsight("same-requester") && (
-                    <button
-                      onClick={() => registerInsight("same-requester", "طالب واحد للمشتريات", "جميع الفواتير المشبوهة من نفس الشخص")}
-                      className="px-3 py-1 rounded-lg bg-accent/20 text-accent text-xs hover:bg-accent/30 transition-all"
-                    >
-                      👤 نفس الطالب
-                    </button>
-                  )}
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: i * 0.05 }}
+              >
+                <div className="flex items-start gap-3">
+                  <span className="text-lg">
+                    {note.type === "pattern" ? "🔍" : note.type === "key" ? "🔑" : note.type === "clue" ? "💬" : "📝"}
+                  </span>
+                  <div className="flex-1">
+                    <p className="text-foreground text-sm">{note.text}</p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {note.source === "interrogation" ? "الاستجواب" : note.source === "analysis" ? "التحليل" : "الأدلة"}
+                      {note.suspectId && ` • ${SUSPECTS.find(s => s.id === note.suspectId)?.name || note.suspectId}`}
+                    </p>
+                  </div>
                 </div>
               </motion.div>
-            )}
-          </AnimatePresence>
-
-          {/* Discovered Insights */}
-          {state.discoveredInsights.length > 0 && (
-            <div className="mt-3 p-3 rounded-lg bg-green-500/10 border border-green-500/30">
-              <h4 className="font-bold text-foreground mb-2 flex items-center gap-2 text-sm">
-                <Lightbulb className="w-4 h-4 text-green-500" />
-                الـ Insights المكتشفة ({state.discoveredInsights.length}/3)
-              </h4>
-              <div className="flex flex-wrap gap-2">
-                {state.discoveredInsights.map((insight) => (
-                  <div
-                    key={insight.id}
-                    className="px-2 py-1 rounded-lg bg-green-500/20 border border-green-500/30 flex items-center gap-1 text-xs"
-                  >
-                    <CheckCircle className="w-3 h-3 text-green-500" />
-                    <span className="text-foreground">{insight.name}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-        </motion.div>
+            ))}
+          </div>
+        )}
       </div>
 
-      {/* Hypothesis Panel */}
+      {/* Stats Grid */}
+      <div className="grid grid-cols-4 gap-4">
+        <div className="p-4 rounded-xl bg-card/30 border border-border text-center">
+          <p className="text-3xl font-bold text-primary">{state.collectedEvidence.length}</p>
+          <p className="text-sm text-muted-foreground">أدلة مجمعة</p>
+        </div>
+        <div className="p-4 rounded-xl bg-card/30 border border-border text-center">
+          <p className="text-3xl font-bold text-accent">{state.totalQuestionsAsked}</p>
+          <p className="text-sm text-muted-foreground">أسئلة طُرحت</p>
+        </div>
+        <div className="p-4 rounded-xl bg-card/30 border border-border text-center">
+          <p className="text-3xl font-bold text-green-400">{state.patternsDiscovered.length}</p>
+          <p className="text-sm text-muted-foreground">أنماط مكتشفة</p>
+        </div>
+        <div className="p-4 rounded-xl bg-card/30 border border-border text-center">
+          <p className="text-3xl font-bold text-gold">{state.score}</p>
+          <p className="text-sm text-muted-foreground">النقاط</p>
+        </div>
+      </div>
+    </div>
+  );
+
+  const renderFilter = () => (
+    <div className="space-y-6">
+      {/* Filter Controls */}
+      <div className="grid grid-cols-3 gap-4">
+        <div>
+          <label className="text-sm text-muted-foreground mb-2 block">الشخص</label>
+          <select
+            value={filterPerson}
+            onChange={(e) => setFilterPerson(e.target.value)}
+            className="w-full px-3 py-2 rounded-lg bg-secondary/50 border border-border text-foreground"
+          >
+            <option value="all">الكل</option>
+            <option value="karim">كريم</option>
+            <option value="sara">سارة</option>
+            <option value="ahmed">أحمد</option>
+          </select>
+        </div>
+        <div>
+          <label className="text-sm text-muted-foreground mb-2 block">الشهر</label>
+          <select
+            value={filterMonth}
+            onChange={(e) => setFilterMonth(e.target.value)}
+            className="w-full px-3 py-2 rounded-lg bg-secondary/50 border border-border text-foreground"
+          >
+            <option value="all">الكل</option>
+            <option value="2024-01">يناير</option>
+            <option value="2024-02">فبراير</option>
+            <option value="2024-03">مارس</option>
+          </select>
+        </div>
+        <div>
+          <label className="text-sm text-muted-foreground mb-2 block">التوثيق</label>
+          <select
+            value={filterVerified}
+            onChange={(e) => setFilterVerified(e.target.value)}
+            className="w-full px-3 py-2 rounded-lg bg-secondary/50 border border-border text-foreground"
+          >
+            <option value="all">الكل</option>
+            <option value="verified">موثقة</option>
+            <option value="unverified">غير موثقة</option>
+          </select>
+        </div>
+      </div>
+
+      {/* Results Summary */}
+      <div className="p-4 rounded-xl bg-primary/10 border border-primary/30">
+        <p className="text-foreground">
+          عدد النتائج: <span className="font-bold">{filteredTransactions.length}</span> معاملة
+          {filterPerson !== "all" && ` • الشخص: ${filterPerson === "karim" ? "كريم" : filterPerson === "sara" ? "سارة" : "أحمد"}`}
+        </p>
+        {filteredTransactions.length > 0 && (
+          <p className="text-sm text-muted-foreground mt-1">
+            إجمالي المصروفات: {Math.abs(filteredTransactions.filter(t => t.amount < 0).reduce((sum, t) => sum + t.amount, 0)).toLocaleString()} ريال
+          </p>
+        )}
+      </div>
+
+      {/* Filtered Results */}
+      <div className="max-h-48 overflow-auto rounded-xl border border-border">
+        <table className="w-full text-sm">
+          <thead className="bg-secondary/30 sticky top-0">
+            <tr>
+              <th className="text-right p-2 text-muted-foreground">التاريخ</th>
+              <th className="text-right p-2 text-muted-foreground">الوصف</th>
+              <th className="text-right p-2 text-muted-foreground">المبلغ</th>
+              <th className="text-right p-2 text-muted-foreground">موثق</th>
+            </tr>
+          </thead>
+          <tbody>
+            {filteredTransactions.map((t) => (
+              <tr key={t.id} className="border-b border-border/50">
+                <td className="p-2 font-mono text-xs text-foreground">{t.date}</td>
+                <td className="p-2 text-foreground">{t.description}</td>
+                <td className={cn("p-2 font-mono", t.amount >= 0 ? "text-green-400" : "text-destructive")}>
+                  {t.amount.toLocaleString()}
+                </td>
+                <td className="p-2 text-center">
+                  {t.verified ? "✓" : "-"}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+
+  const renderChart = () => (
+    <div className="space-y-6">
+      <h4 className="font-bold text-foreground">مقارنة المصروفات حسب الشخص</h4>
+      
+      {/* Simple Bar Chart */}
+      <div className="space-y-4">
+        {Object.entries(personStats).map(([person, stats]) => {
+          const percentage = maxExpense > 0 ? (stats.total / maxExpense) * 100 : 0;
+          const unverifiedPercentage = stats.total > 0 ? (stats.unverified / stats.total) * 100 : 0;
+          
+          return (
+            <div key={person} className="space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="font-bold text-foreground">
+                  {person === "karim" ? "كريم" : person === "sara" ? "سارة" : "أحمد"}
+                </span>
+                <span className="text-muted-foreground text-sm">
+                  {stats.total.toLocaleString()} ريال ({stats.count} معاملات)
+                </span>
+              </div>
+              <div className="h-8 bg-secondary/30 rounded-lg overflow-hidden relative">
+                <motion.div
+                  className="h-full bg-primary/70 rounded-lg"
+                  initial={{ width: 0 }}
+                  animate={{ width: `${percentage}%` }}
+                  transition={{ duration: 0.5 }}
+                />
+                {stats.unverified > 0 && (
+                  <motion.div
+                    className="absolute top-0 left-0 h-full bg-amber-500/70"
+                    initial={{ width: 0 }}
+                    animate={{ width: `${(stats.unverified / maxExpense) * 100}%` }}
+                    transition={{ duration: 0.5, delay: 0.2 }}
+                  />
+                )}
+              </div>
+              {stats.unverified > 0 && (
+                <p className="text-xs text-amber-400">
+                  غير موثق: {stats.unverified.toLocaleString()} ريال ({unverifiedPercentage.toFixed(0)}%)
+                </p>
+              )}
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Legend */}
+      <div className="flex items-center gap-6 justify-center">
+        <div className="flex items-center gap-2">
+          <div className="w-4 h-4 rounded bg-primary/70" />
+          <span className="text-sm text-muted-foreground">إجمالي المصروفات</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <div className="w-4 h-4 rounded bg-amber-500/70" />
+          <span className="text-sm text-muted-foreground">غير موثق</span>
+        </div>
+      </div>
+
+      {/* Insight */}
+      {personStats.karim.unverified > personStats.sara.unverified + personStats.ahmed.unverified && (
+        <motion.div
+          className="p-4 rounded-xl bg-accent/10 border border-accent/30"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+        >
+          <p className="text-accent font-bold text-sm">
+            💡 ملاحظة: المصروفات غير الموثقة تتركز بشكل واضح عند شخص واحد
+          </p>
+        </motion.div>
+      )}
+    </div>
+  );
+
+  const renderLink = () => (
+    <div className="space-y-6">
+      <p className="text-muted-foreground">اختر دليلين لمحاولة ربطهما واكتشاف أنماط جديدة</p>
+      
+      <div className="grid grid-cols-2 gap-4">
+        <div>
+          <label className="text-sm text-muted-foreground mb-2 block">الدليل الأول</label>
+          <select
+            value={selectedEvidence1 || ""}
+            onChange={(e) => { setSelectedEvidence1(e.target.value); setLinkResult(null); }}
+            className="w-full px-3 py-2 rounded-lg bg-secondary/50 border border-border text-foreground"
+          >
+            <option value="">اختر...</option>
+            <option value="invoices">الفواتير</option>
+            <option value="transactions">المعاملات البنكية</option>
+            <option value="logs">سجلات الدخول</option>
+            <option value="emails">الإيميلات</option>
+          </select>
+        </div>
+        <div>
+          <label className="text-sm text-muted-foreground mb-2 block">الدليل الثاني</label>
+          <select
+            value={selectedEvidence2 || ""}
+            onChange={(e) => { setSelectedEvidence2(e.target.value); setLinkResult(null); }}
+            className="w-full px-3 py-2 rounded-lg bg-secondary/50 border border-border text-foreground"
+          >
+            <option value="">اختر...</option>
+            <option value="invoices">الفواتير</option>
+            <option value="transactions">المعاملات البنكية</option>
+            <option value="logs">سجلات الدخول</option>
+            <option value="emails">الإيميلات</option>
+          </select>
+        </div>
+      </div>
+
+      <motion.button
+        onClick={handleLink}
+        disabled={!selectedEvidence1 || !selectedEvidence2 || selectedEvidence1 === selectedEvidence2}
+        className={cn(
+          "w-full py-3 rounded-xl font-bold transition-all",
+          selectedEvidence1 && selectedEvidence2 && selectedEvidence1 !== selectedEvidence2
+            ? "bg-primary text-primary-foreground hover:bg-primary/90"
+            : "bg-secondary text-muted-foreground cursor-not-allowed"
+        )}
+        whileHover={selectedEvidence1 && selectedEvidence2 ? { scale: 1.02 } : {}}
+      >
+        🔗 تحليل الرابط
+      </motion.button>
+
       <AnimatePresence>
-        {showHypothesis && (
+        {linkResult && (
           <motion.div
-            className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
+            className={cn(
+              "p-4 rounded-xl border",
+              linkResult.includes("اكتشاف") ? "bg-accent/10 border-accent/30" : "bg-secondary/30 border-border"
+            )}
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0 }}
           >
-            <motion.div
-              className="bg-background border border-primary/30 rounded-2xl p-6 max-w-2xl w-full"
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.9, opacity: 0 }}
-            >
-              <div className="flex items-center gap-3 mb-6">
-                <Lightbulb className="w-8 h-8 text-accent" />
-                <div>
-                  <h3 className="text-xl font-bold text-foreground">اختر فرضية للتحقيق</h3>
-                  <p className="text-sm text-muted-foreground">اختيار فرضية يفتح أسئلة وأدلة جديدة</p>
-                </div>
-              </div>
-
-              <div className="space-y-4">
-                {HYPOTHESES.map((hypothesis) => {
-                  const suspect = SUSPECTS.find(s => s.id === hypothesis.suspectId);
-                  return (
-                    <motion.button
-                      key={hypothesis.id}
-                      onClick={() => handleSelectHypothesis(hypothesis.id)}
-                      className="w-full p-4 rounded-xl bg-secondary/30 border border-border hover:border-primary text-right transition-all"
-                      whileHover={{ scale: 1.02 }}
-                    >
-                      <h4 className="font-bold text-foreground">{hypothesis.title}</h4>
-                      <p className="text-sm text-muted-foreground mt-1">{hypothesis.description}</p>
-                      <p className="text-xs text-primary mt-2">المشتبه به: {suspect?.name}</p>
-                    </motion.button>
-                  );
-                })}
-              </div>
-            </motion.div>
+            <p className="text-foreground">{linkResult}</p>
           </motion.div>
         )}
       </AnimatePresence>
 
-      {/* Navigation */}
-      <div className="absolute bottom-6 left-6 z-20">
-        <NavigationButton iconEmoji="🏢" label="المكتب" onClick={() => onNavigate("office")} />
+      {/* Discovered Patterns */}
+      {state.patternsDiscovered.length > 0 && (
+        <div className="space-y-2">
+          <h4 className="font-bold text-foreground text-sm">الأنماط المكتشفة:</h4>
+          {state.investigationNotes
+            .filter(n => n.type === "pattern")
+            .map((note) => (
+              <div key={note.id} className="p-3 rounded-lg bg-accent/10 border border-accent/30 text-sm">
+                {note.text}
+              </div>
+            ))}
+        </div>
+      )}
+    </div>
+  );
+
+  const renderHypothesis = () => (
+    <div className="space-y-6">
+      <p className="text-muted-foreground">بناءً على الأدلة، اختر فرضية للتحقيق فيها</p>
+      
+      <div className="grid grid-cols-3 gap-4">
+        {HYPOTHESES.map((h) => {
+          const suspect = SUSPECTS.find(s => s.id === h.suspectId);
+          const isActive = state.activeHypothesis === h.id;
+          
+          return (
+            <motion.button
+              key={h.id}
+              onClick={() => handleSelectHypothesis(h.id)}
+              className={cn(
+                "p-4 rounded-xl border text-right transition-all",
+                isActive 
+                  ? "bg-primary/20 border-primary" 
+                  : "bg-secondary/30 border-border hover:border-primary/50"
+              )}
+              whileHover={{ scale: 1.02 }}
+            >
+              <div className="text-3xl mb-2">
+                {h.suspectId === "ahmed" ? "👔" : h.suspectId === "sara" ? "👩‍💼" : "🧑‍💼"}
+              </div>
+              <h4 className="font-bold text-foreground mb-1">{h.title}</h4>
+              <p className="text-xs text-muted-foreground">{h.description}</p>
+              {isActive && (
+                <span className="inline-block mt-2 px-2 py-1 rounded bg-primary text-primary-foreground text-xs">
+                  الفرضية الحالية
+                </span>
+              )}
+            </motion.button>
+          );
+        })}
       </div>
-      <div className="absolute bottom-6 right-6 z-20">
-        <NavigationButton iconEmoji="📁" label="الأدلة" onClick={() => onNavigate("evidence")} />
+
+      {state.activeHypothesis && (
+        <motion.div
+          className="p-4 rounded-xl bg-primary/10 border border-primary/30"
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+        >
+          <p className="text-foreground text-sm">
+            💡 نصيحة: استمر في جمع الأدلة واستجواب المشتبهين لتأكيد أو نفي فرضيتك.
+            يمكنك تغيير الفرضية في أي وقت.
+          </p>
+        </motion.div>
+      )}
+    </div>
+  );
+
+  return (
+    <div className="min-h-screen bg-gradient-to-b from-gray-900 via-gray-800 to-black p-8">
+      <div className="max-w-5xl mx-auto">
+        {/* Header */}
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center gap-4">
+            <Notebook className="w-8 h-8 text-primary" />
+            <h1 className="text-3xl font-bold text-foreground">غرفة التحليل</h1>
+          </div>
+          <div className={cn(
+            "px-4 py-2 rounded-full font-bold",
+            trustLevel === "high" ? "bg-green-500/20 text-green-400" :
+            trustLevel === "medium" ? "bg-amber-500/20 text-amber-400" :
+            "bg-destructive/20 text-destructive"
+          )}>
+            الثقة: {state.trust}%
+          </div>
+        </div>
+
+        {/* Tabs */}
+        <div className="flex gap-2 mb-6 overflow-x-auto pb-2">
+          {tabs.map((tab) => (
+            <motion.button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id)}
+              className={cn(
+                "px-4 py-2 rounded-lg font-bold whitespace-nowrap transition-all",
+                activeTab === tab.id
+                  ? "bg-primary text-primary-foreground"
+                  : "bg-secondary/50 text-foreground hover:bg-secondary"
+              )}
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+            >
+              {tab.label}
+            </motion.button>
+          ))}
+        </div>
+
+        {/* Content */}
+        <motion.div
+          className="p-6 rounded-2xl bg-card/30 border border-border min-h-[400px]"
+          key={activeTab}
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.2 }}
+        >
+          {activeTab === "summary" && renderSummary()}
+          {activeTab === "filter" && renderFilter()}
+          {activeTab === "chart" && renderChart()}
+          {activeTab === "link" && renderLink()}
+          {activeTab === "hypothesis" && renderHypothesis()}
+        </motion.div>
+
+        {/* Navigation */}
+        <div className="flex justify-center gap-4 mt-8">
+          <NavigationButton iconEmoji="🏢" label="المكتب" onClick={() => onNavigate("office")} />
+          <NavigationButton iconEmoji="📁" label="الأدلة" onClick={() => onNavigate("evidence")} />
+          <NavigationButton iconEmoji="👥" label="الاستجواب" onClick={() => onNavigate("interrogation")} />
+        </div>
       </div>
-      <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-20">
-        <NavigationButton iconEmoji="👥" label="الاستجواب" onClick={() => onNavigate("interrogation")} />
-      </div>
-    </InteractiveRoom>
+    </div>
   );
 };
