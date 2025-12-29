@@ -259,9 +259,9 @@ export const OfficeScreen = ({ onNavigate }: OfficeScreenProps) => {
                   onClick={() => onNavigate("analysis")}
                 >
                   📊 غرفة التحليل
-                  {state.patternsDiscovered.length > 0 && (
+                  {(state.filtersApplied > 0 || state.chartsBuilt > 0) && (
                     <span className="px-2 py-0.5 rounded bg-accent/30 text-xs">
-                      {state.patternsDiscovered.length} أنماط
+                      تحليلات
                     </span>
                   )}
                 </motion.button>
@@ -304,42 +304,27 @@ export const OfficeScreen = ({ onNavigate }: OfficeScreenProps) => {
                 </div>
               </motion.div>
 
-              {/* Patterns Discovered */}
+              {/* Analysis Actions */}
               <div className="space-y-3">
                 <h4 className="font-bold text-foreground flex items-center gap-2">
                   <Target className="w-4 h-4 text-accent" />
-                  الأنماط المكتشفة ({state.patternsDiscovered.length})
+                  إحصائيات التحليل
                 </h4>
                 
-                {state.patternsDiscovered.length === 0 ? (
-                  <div className="text-center py-8 text-muted-foreground">
-                    <motion.p
-                      className="text-4xl mb-2"
-                      animate={{ rotate: [0, -10, 10, 0] }}
-                      transition={{ duration: 2, repeat: Infinity }}
-                    >
-                      🔍
-                    </motion.p>
-                    <p>لم تكتشف أي أنماط بعد</p>
-                    <p className="text-sm">استخدم غرفة التحليل لربط الأدلة!</p>
+                <div className="grid grid-cols-3 gap-2">
+                  <div className="p-2 rounded-lg bg-accent/10 border border-accent/30 text-center">
+                    <p className="text-lg font-bold text-accent">{state.filtersApplied}</p>
+                    <p className="text-xs text-muted-foreground">فلاتر</p>
                   </div>
-                ) : (
-                  <div className="grid gap-3 max-h-32 overflow-auto">
-                    {state.investigationNotes
-                      .filter(n => n.type === "pattern")
-                      .map((note, i) => (
-                        <motion.div
-                          key={note.id}
-                          className="p-3 rounded-lg bg-accent/10 border border-accent/30"
-                          initial={{ opacity: 0, x: -20 }}
-                          animate={{ opacity: 1, x: 0 }}
-                          transition={{ delay: i * 0.1 }}
-                        >
-                          <p className="text-foreground text-sm">{note.text}</p>
-                        </motion.div>
-                      ))}
+                  <div className="p-2 rounded-lg bg-primary/10 border border-primary/30 text-center">
+                    <p className="text-lg font-bold text-primary">{state.chartsBuilt}</p>
+                    <p className="text-xs text-muted-foreground">رسوم</p>
                   </div>
-                )}
+                  <div className="p-2 rounded-lg bg-purple-500/10 border border-purple-500/30 text-center">
+                    <p className="text-lg font-bold text-purple-400">{state.comparisonsRun}</p>
+                    <p className="text-xs text-muted-foreground">مقارنات</p>
+                  </div>
+                </div>
               </div>
 
               {/* Stats Summary */}
