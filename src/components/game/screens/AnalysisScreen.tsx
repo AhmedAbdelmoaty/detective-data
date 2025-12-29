@@ -127,20 +127,20 @@ export const AnalysisScreen = ({ onNavigate }: AnalysisScreenProps) => {
 
   // Filtered and sorted data
   const processedData = useMemo(() => {
-    let data = getDataSource(selectedSource);
+    let data: Record<string, any>[] = getDataSource(selectedSource) as Record<string, any>[];
     
     // Apply filters
     Object.entries(filters).forEach(([key, value]) => {
       if (value && value !== "all") {
-        data = data.filter(item => String((item as any)[key]).includes(value));
+        data = data.filter(item => String(item[key]).includes(value));
       }
     });
     
     // Apply sorting
     if (sortColumn && sortDirection) {
       data = [...data].sort((a, b) => {
-        const aVal = (a as any)[sortColumn];
-        const bVal = (b as any)[sortColumn];
+        const aVal = a[sortColumn];
+        const bVal = b[sortColumn];
         
         if (typeof aVal === "number" && typeof bVal === "number") {
           return sortDirection === "asc" ? aVal - bVal : bVal - aVal;
@@ -859,17 +859,17 @@ export const AnalysisScreen = ({ onNavigate }: AnalysisScreenProps) => {
         <div className="flex justify-center gap-4 mt-6">
           <NavigationButton
             onClick={() => onNavigate("office")}
-            icon="🏠"
+            iconEmoji="🏠"
             label="المكتب"
           />
           <NavigationButton
             onClick={() => onNavigate("evidence")}
-            icon="📁"
+            iconEmoji="📁"
             label="الأدلة"
           />
           <NavigationButton
             onClick={() => onNavigate("interrogation")}
-            icon="🗣️"
+            iconEmoji="🗣️"
             label="الاستجواب"
           />
         </div>
