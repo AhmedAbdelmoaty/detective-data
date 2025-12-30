@@ -1,5 +1,5 @@
 // Case 1: الأموال المفقودة - The Missing Money
-// لعبة تحقيق تفاعلية
+// لعبة تحقيق تفاعلية - نسخة محسنة
 
 export const CASE_INFO = {
   id: "case-1",
@@ -16,15 +16,15 @@ export const CASE_INFO = {
     
     مهمتك: افحص الأدلة، استجوب المشتبهين، واكتشف من هو المختلس.
     
-    تحذير: بعض الأدلة قد تكون مضللة. فكر جيداً قبل أن تتهم أحداً.
+    تحذير: بعض الأدلة قد تكون مضللة. ليس كل شيء كما يبدو. فكر جيداً قبل أن تتهم أحداً.
   `,
 };
 
 // ============================================
-// البيانات المالية - مبسطة بدون hints
+// البيانات المالية - معقدة ومضللة
 // ============================================
 
-// كشف الحساب البنكي - 15 معاملة فقط
+// كشف الحساب البنكي - يحتوي على بيانات مضللة من الجميع
 export const BANK_TRANSACTIONS = [
   // يناير - شهر عادي
   { id: "t1", date: "2024-01-03", description: "رواتب الموظفين", amount: -28000, category: "salaries", enteredBy: "sara", verified: true },
@@ -33,52 +33,63 @@ export const BANK_TRANSACTIONS = [
   { id: "t4", date: "2024-01-22", description: "فاتورة كهرباء", amount: -1800, category: "utilities", enteredBy: "sara", verified: true },
   { id: "t5", date: "2024-01-28", description: "معدات حاسوب", amount: -4500, category: "equipment", enteredBy: "karim", verified: true },
   
-  // فبراير
+  // فبراير - تبدأ المعاملات المشبوهة
   { id: "t6", date: "2024-02-01", description: "رواتب الموظفين", amount: -28000, category: "salaries", enteredBy: "sara", verified: true },
   { id: "t7", date: "2024-02-10", description: "دفعة من عميل - مؤسسة البناء", amount: 38000, category: "revenue", enteredBy: "sara", verified: true },
   { id: "t8", date: "2024-02-12", description: "معدات مكتبية خاصة", amount: -12000, category: "equipment", enteredBy: "karim", verified: false },
-  { id: "t9", date: "2024-02-20", description: "مكافأة أداء استثنائي", amount: -8000, category: "bonus", enteredBy: "ahmed", verified: true },
-  { id: "t10", date: "2024-02-25", description: "خدمات استشارية", amount: -8500, category: "consulting", enteredBy: "karim", verified: false },
+  { id: "t9", date: "2024-02-18", description: "أدوات تنظيف صناعية", amount: -3500, category: "supplies", enteredBy: "sara", verified: false }, // مضلل - سارة
+  { id: "t10", date: "2024-02-20", description: "مكافأة أداء استثنائي", amount: -8000, category: "bonus", enteredBy: "ahmed", verified: true },
+  { id: "t11", date: "2024-02-25", description: "خدمات استشارية", amount: -8500, category: "consulting", enteredBy: "karim", verified: false },
   
-  // مارس
-  { id: "t11", date: "2024-03-01", description: "رواتب الموظفين", amount: -28000, category: "salaries", enteredBy: "sara", verified: true },
-  { id: "t12", date: "2024-03-08", description: "دفعة من عميل - شركة التقنية", amount: 35000, category: "revenue", enteredBy: "sara", verified: true },
-  { id: "t13", date: "2024-03-12", description: "معدات تقنية متخصصة", amount: -18000, category: "equipment", enteredBy: "karim", verified: false },
-  { id: "t14", date: "2024-03-18", description: "سلفة موظف", amount: -5000, category: "advance", enteredBy: "sara", verified: true },
-  { id: "t15", date: "2024-03-25", description: "برمجيات وتراخيص", amount: -7500, category: "software", enteredBy: "karim", verified: false },
+  // مارس - تتصاعد المعاملات
+  { id: "t12", date: "2024-03-01", description: "رواتب الموظفين", amount: -28000, category: "salaries", enteredBy: "sara", verified: true },
+  { id: "t13", date: "2024-03-05", description: "لوازم مطبعية عاجلة", amount: -5000, category: "supplies", enteredBy: "sara", verified: false }, // مضلل - سارة
+  { id: "t14", date: "2024-03-08", description: "دفعة من عميل - شركة التقنية", amount: 35000, category: "revenue", enteredBy: "sara", verified: true },
+  { id: "t15", date: "2024-03-12", description: "معدات تقنية متخصصة", amount: -18000, category: "equipment", enteredBy: "karim", verified: false },
+  { id: "t16", date: "2024-03-18", description: "سلفة موظف", amount: -5000, category: "advance", enteredBy: "sara", verified: true },
+  { id: "t17", date: "2024-03-25", description: "برمجيات وتراخيص", amount: -7500, category: "software", enteredBy: "karim", verified: false },
 ];
 
-// سجل المشتريات - بدون hints
+// سجل المشتريات - مضلل من سارة وأحمد أيضاً
 export const PURCHASE_INVOICES = [
-  // فواتير يناير - موثقة
+  // فواتير يناير - موثقة بالكامل
   { id: "inv-1", date: "2024-01-15", vendor: "مكتبة الرياض", items: "أقلام، ورق، ملفات", amount: 1200, poNumber: "PO-2024-001", hasReceipt: true, approvedBy: "ahmed", requestedBy: "karim" },
   { id: "inv-2", date: "2024-01-28", vendor: "متجر الإلكترونيات", items: "3 لابتوب Dell", amount: 4500, poNumber: "PO-2024-002", hasReceipt: true, approvedBy: "ahmed", requestedBy: "karim" },
   
-  // فواتير فبراير - مختلطة
+  // فواتير فبراير - مختلطة (سارة وكريم بدون إيصالات)
   { id: "inv-3", date: "2024-02-12", vendor: "مورد تجهيزات", items: "معدات مكتبية متنوعة", amount: 12000, poNumber: "PO-2024-003", hasReceipt: false, approvedBy: "ahmed", requestedBy: "karim" },
-  { id: "inv-4", date: "2024-02-20", vendor: "شركة التوريدات العامة", items: "مستلزمات إدارية", amount: 3500, poNumber: "PO-2024-004", hasReceipt: true, approvedBy: "ahmed", requestedBy: "sara" },
+  { id: "inv-4", date: "2024-02-18", vendor: "شركة النظافة المتقدمة", items: "أدوات تنظيف صناعية", amount: 3500, poNumber: "PO-2024-004", hasReceipt: false, approvedBy: "ahmed", requestedBy: "sara" }, // مضلل - سارة
   { id: "inv-5", date: "2024-02-25", vendor: "شركة الاستشارات", items: "استشارات تقنية", amount: 8500, poNumber: "PO-2024-005", hasReceipt: false, approvedBy: "ahmed", requestedBy: "karim" },
   
-  // فواتير مارس
-  { id: "inv-6", date: "2024-03-12", vendor: "تقنيات المستقبل", items: "أجهزة متخصصة", amount: 18000, poNumber: "PO-2024-006", hasReceipt: false, approvedBy: "ahmed", requestedBy: "karim" },
-  { id: "inv-7", date: "2024-03-14", vendor: "مؤسسة الخدمات", items: "صيانة شاملة", amount: 4200, poNumber: "PO-2024-007", hasReceipt: true, approvedBy: "ahmed", requestedBy: "sara" },
-  { id: "inv-8", date: "2024-03-25", vendor: "برمجيات متقدمة", items: "تراخيص برمجيات", amount: 7500, poNumber: "PO-2024-008", hasReceipt: false, approvedBy: "ahmed", requestedBy: "karim" },
+  // فواتير مارس - أيضاً مختلطة
+  { id: "inv-6", date: "2024-03-05", vendor: "مطبعة الأمانة", items: "لوازم مطبعية عاجلة", amount: 5000, poNumber: "PO-2024-006", hasReceipt: false, approvedBy: "ahmed", requestedBy: "sara" }, // مضلل - سارة
+  { id: "inv-7", date: "2024-03-12", vendor: "تقنيات المستقبل", items: "أجهزة متخصصة", amount: 18000, poNumber: "PO-2024-007", hasReceipt: false, approvedBy: "ahmed", requestedBy: "karim" },
+  { id: "inv-8", date: "2024-03-14", vendor: "مؤسسة الخدمات", items: "صيانة شاملة", amount: 4200, poNumber: "PO-2024-008", hasReceipt: true, approvedBy: "ahmed", requestedBy: "sara" },
+  { id: "inv-9", date: "2024-03-25", vendor: "برمجيات متقدمة", items: "تراخيص برمجيات", amount: 7500, poNumber: "PO-2024-009", hasReceipt: false, approvedBy: "ahmed", requestedBy: "karim" },
 ];
 
-// سجلات الدخول للنظام
+// سجلات الدخول للنظام - أحمد وكريم لديهم دخول ليلي
 export const SYSTEM_ACCESS_LOGS = [
-  // سجلات متنوعة - بدون تمييز واضح
-  { id: "log-1", date: "2024-02-07", time: "22:45", user: "karim", action: "إضافة معاملة", details: "PO-2024-003", ip: "192.168.1.105", afterHours: true },
-  { id: "log-2", date: "2024-02-14", time: "09:30", user: "sara", action: "تحديث سجل", details: "تقرير شهري", ip: "192.168.1.102", afterHours: false },
-  { id: "log-3", date: "2024-02-20", time: "20:30", user: "ahmed", action: "مراجعة تقارير", details: "تقرير المصروفات", ip: "192.168.1.100", afterHours: true },
-  { id: "log-4", date: "2024-02-24", time: "23:15", user: "karim", action: "إضافة مورد جديد", details: "شركة الاستشارات", ip: "192.168.1.105", afterHours: true },
-  { id: "log-5", date: "2024-03-09", time: "10:00", user: "sara", action: "إضافة إيراد", details: "شركة التقنية", ip: "192.168.1.102", afterHours: false },
-  { id: "log-6", date: "2024-03-11", time: "21:00", user: "karim", action: "تعديل فاتورة", details: "PO-2024-006", ip: "192.168.1.105", afterHours: true },
-  { id: "log-7", date: "2024-03-15", time: "14:30", user: "ahmed", action: "مراجعة موافقات", details: "فواتير مارس", ip: "192.168.1.100", afterHours: false },
-  { id: "log-8", date: "2024-03-24", time: "22:00", user: "karim", action: "إضافة فاتورة", details: "PO-2024-008", ip: "192.168.1.105", afterHours: true },
+  // يناير - طبيعي
+  { id: "log-1", date: "2024-01-15", time: "10:30", user: "karim", action: "إضافة فاتورة", details: "PO-2024-001", ip: "192.168.1.105", afterHours: false },
+  { id: "log-2", date: "2024-01-28", time: "14:00", user: "karim", action: "إضافة فاتورة", details: "PO-2024-002", ip: "192.168.1.105", afterHours: false },
+  
+  // فبراير - كريم وأحمد يدخلون ليلاً
+  { id: "log-3", date: "2024-02-07", time: "22:45", user: "karim", action: "إضافة معاملة", details: "PO-2024-003", ip: "192.168.1.105", afterHours: true },
+  { id: "log-4", date: "2024-02-14", time: "09:30", user: "sara", action: "تحديث سجل", details: "تقرير شهري", ip: "192.168.1.102", afterHours: false },
+  { id: "log-5", date: "2024-02-18", time: "11:00", user: "sara", action: "إضافة فاتورة", details: "PO-2024-004", ip: "192.168.1.102", afterHours: false }, // سارة - ساعات عمل
+  { id: "log-6", date: "2024-02-20", time: "20:30", user: "ahmed", action: "مراجعة تقارير", details: "تقرير المصروفات", ip: "192.168.1.100", afterHours: true }, // أحمد - ليلي (لكن مبرر)
+  { id: "log-7", date: "2024-02-24", time: "23:15", user: "karim", action: "إضافة مورد جديد", details: "شركة الاستشارات", ip: "192.168.1.105", afterHours: true },
+  
+  // مارس - استمرار النمط
+  { id: "log-8", date: "2024-03-05", time: "10:15", user: "sara", action: "إضافة فاتورة", details: "PO-2024-006", ip: "192.168.1.102", afterHours: false }, // سارة - ساعات عمل
+  { id: "log-9", date: "2024-03-09", time: "10:00", user: "sara", action: "إضافة إيراد", details: "شركة التقنية", ip: "192.168.1.102", afterHours: false },
+  { id: "log-10", date: "2024-03-11", time: "21:00", user: "karim", action: "تعديل فاتورة", details: "PO-2024-007", ip: "192.168.1.105", afterHours: true },
+  { id: "log-11", date: "2024-03-15", time: "14:30", user: "ahmed", action: "مراجعة موافقات", details: "فواتير مارس", ip: "192.168.1.100", afterHours: false },
+  { id: "log-12", date: "2024-03-24", time: "22:00", user: "karim", action: "إضافة فاتورة", details: "PO-2024-009", ip: "192.168.1.105", afterHours: true },
 ];
 
-// الإيميلات الداخلية - بدون علامات مفتاح
+// الإيميلات الداخلية - تحتوي على أدلة براءة سارة وأحمد
 export const INTERNAL_EMAILS = [
   {
     id: "email-1",
@@ -86,39 +97,73 @@ export const INTERNAL_EMAILS = [
     from: "المدير العام",
     to: "أحمد المنصور",
     subject: "طلب تقرير عاجل",
-    body: "أحمد، أحتاج تقرير المصروفات الشهري الليلة. لدينا اجتماع مجلس الإدارة غداً صباحاً.",
+    body: "أحمد، أحتاج تقرير المصروفات الشهري الليلة. لدينا اجتماع مجلس الإدارة غداً صباحاً. أرجو إعداده قبل منتصف الليل.",
+    important: true,
   },
   {
     id: "email-2", 
+    date: "2024-02-22",
+    from: "سارة الخالد",
+    to: "أحمد المنصور",
+    subject: "إيصالات الفواتير المتأخرة",
+    body: "أستاذ أحمد، مرفق إيصالات الفاتورة PO-2024-004 (أدوات التنظيف). وصلت من المورد اليوم. الفاتورة كانت 3,500 ريال.",
+    attachments: ["receipt-PO-2024-004.pdf"],
+    important: true,
+  },
+  {
+    id: "email-3",
     date: "2024-03-01",
     from: "سارة الخالد",
     to: "أحمد المنصور",
     subject: "استفسار عن الفواتير",
-    body: "أستاذ أحمد، لاحظت زيادة كبيرة في فواتير المشتريات هذا الشهر. هل يمكنك التأكد من صحتها؟",
+    body: "أستاذ أحمد، لاحظت زيادة كبيرة في فواتير المشتريات هذا الشهر. بعضها بمبالغ كبيرة وبدون إيصالات. هل يمكنك التأكد من صحتها؟",
+    important: false,
   },
   {
-    id: "email-3",
+    id: "email-4",
     date: "2024-03-01", 
     from: "أحمد المنصور",
     to: "سارة الخالد",
     subject: "رد: استفسار عن الفواتير",
     body: "سارة، راجعت مع كريم وأكد أنها مشتريات ضرورية للمشاريع الجديدة. لا تقلقي.",
+    important: false,
   },
   {
-    id: "email-4",
+    id: "email-5",
+    date: "2024-03-07",
+    from: "سارة الخالد",
+    to: "أحمد المنصور",
+    subject: "إيصال الفاتورة PO-2024-006",
+    body: "أستاذ أحمد، مرفق إيصال اللوازم المطبعية (فاتورة PO-2024-006). تأخر وصوله من المطبعة. المبلغ 5,000 ريال كما هو مسجل.",
+    attachments: ["receipt-PO-2024-006.pdf"],
+    important: true,
+  },
+  {
+    id: "email-6",
     date: "2024-02-09",
     from: "كريم الحسن",
     to: "أحمد المنصور",
     subject: "طلب موافقة عاجلة",
-    body: "أستاذ أحمد، نحتاج معدات جديدة عاجلة للمشروع. أرجو التوقيع على أمر الشراء المرفق.",
+    body: "أستاذ أحمد، نحتاج معدات جديدة عاجلة للمشروع. أرجو التوقيع على أمر الشراء المرفق. الإيصالات ستصل لاحقاً من المورد.",
+    important: false,
   },
   {
-    id: "email-5",
+    id: "email-7",
     date: "2024-03-10",
     from: "سارة الخالد",
     to: "كريم الحسن",
-    subject: "طلب إيصالات",
-    body: "كريم، أحتاج إيصالات الفواتير الأخيرة لإتمام السجلات المحاسبية.",
+    subject: "طلب إيصالات عاجل",
+    body: "كريم، أحتاج إيصالات الفواتير PO-2024-003، PO-2024-005، PO-2024-007، PO-2024-009 لإتمام السجلات المحاسبية. مر أكثر من شهر على بعضها.",
+    important: false,
+  },
+  {
+    id: "email-8",
+    date: "2024-03-12",
+    from: "كريم الحسن",
+    to: "سارة الخالد",
+    subject: "رد: طلب إيصالات عاجل",
+    body: "سارة، الموردين الجدد لا يعطون إيصالات فورية. سأتابع معهم وأرسلها حين تصل.",
+    important: false,
   },
 ];
 
@@ -140,25 +185,25 @@ export const MONTHLY_SUMMARY = [
     month: "فبراير", 
     monthEn: "February",
     revenue: 38000, 
-    expenses: 56500, 
-    netProfit: -18500,
+    expenses: 60000, 
+    netProfit: -22000,
     karimExpenses: 20500,
-    saraExpenses: 28000,
+    saraExpenses: 31500,
     ahmedExpenses: 8000,
-    transactionCount: 5,
-    unverifiedCount: 2,
+    transactionCount: 6,
+    unverifiedCount: 3,
   },
   { 
     month: "مارس", 
     monthEn: "March",
     revenue: 35000, 
-    expenses: 58500, 
-    netProfit: -23500,
+    expenses: 63500, 
+    netProfit: -28500,
     karimExpenses: 25500,
-    saraExpenses: 33000,
+    saraExpenses: 38000,
     ahmedExpenses: 0,
-    transactionCount: 5,
-    unverifiedCount: 2,
+    transactionCount: 6,
+    unverifiedCount: 3,
   },
 ];
 
@@ -169,7 +214,7 @@ export const FINANCIAL_DATA = {
 };
 
 // ============================================
-// المشتبه بهم - ردود محايدة أكثر
+// المشتبه بهم - ردود تحتوي معلومات للتحقق
 // ============================================
 
 export interface InterrogationQuestion {
@@ -179,6 +224,7 @@ export interface InterrogationQuestion {
   revealsClue: boolean;
   clue?: string;
   affectsTrust: number;
+  verifiableInfo?: string; // معلومة يمكن التحقق منها في الأدلة
 }
 
 export interface Suspect {
@@ -209,25 +255,26 @@ export const SUSPECTS: Suspect[] = [
       {
         id: "ahmed-q1",
         text: "لماذا دخلت النظام في الساعة 8:30 مساءً يوم 20 فبراير؟",
-        response: "كان لدي اجتماع مجلس إدارة في اليوم التالي، والمدير العام طلب مني تجهيز تقرير المصروفات الشهري. يمكنك التحقق من الإيميلات.",
+        response: "كان لدي اجتماع مجلس إدارة في اليوم التالي، والمدير العام طلب مني تجهيز تقرير المصروفات الشهري. يمكنك التحقق من الإيميلات - أرسل لي طلباً رسمياً.",
         revealsClue: true,
-        clue: "أحمد لديه تفسير لدخوله المتأخر - راجع الإيميلات",
+        clue: "أحمد يدعي أن المدير العام طلب منه التقرير - تحقق من الإيميلات",
+        verifiableInfo: "تحقق من الإيميلات: هل يوجد إيميل من المدير العام لأحمد يطلب تقريراً؟",
         affectsTrust: 5,
       },
       {
         id: "ahmed-q2",
         text: "لماذا وقعت على فواتير بدون إيصالات؟",
-        response: "أثق في فريقي. عندما يقدم أحدهم طلب شراء، أفترض أنه تم التأكد منه. ربما كان يجب أن أدقق أكثر.",
+        response: "أثق في فريقي. كريم يقول دائماً إن الإيصالات ستصل لاحقاً من الموردين الجدد. ربما كان يجب أن أدقق أكثر.",
         revealsClue: true,
-        clue: "أحمد اعترف بثقته في الفريق دون تدقيق كافٍ",
+        clue: "أحمد يعترف بالثقة العمياء في كريم",
         affectsTrust: 3,
       },
       {
         id: "ahmed-q3",
         text: "هل لاحظت أي شيء غريب في الأشهر الأخيرة؟",
-        response: "لاحظت زيادة في طلبات الشراء العاجلة. كان يُقال دائماً إنها للمشاريع الجديدة.",
+        response: "لاحظت زيادة في طلبات الشراء العاجلة من كريم. كان يُقال دائماً إنها للمشاريع الجديدة. سارة أيضاً أرسلت لي إيميل تستفسر عن الفواتير.",
         revealsClue: true,
-        clue: "زيادة في طلبات الشراء العاجلة مؤخراً",
+        clue: "زيادة في طلبات كريم العاجلة، وسارة نبهت للمشكلة",
         affectsTrust: 5,
       },
     ],
@@ -245,26 +292,28 @@ export const SUSPECTS: Suspect[] = [
     questions: [
       {
         id: "sara-q1",
-        text: "هل لاحظتِ شيئاً غريباً في حسابات الشركة؟",
-        response: "نعم، أرسلت إيميل لأحمد أسأله عن الزيادة الكبيرة في الفواتير. لكن لم أتلقَ متابعة كافية.",
+        text: "لديكِ فاتورتان بدون إيصال - PO-2024-004 و PO-2024-006. أين الإيصالات؟",
+        response: "أرسلت الإيصالات لأحمد بالإيميل فور وصولها! الأولى يوم 22 فبراير والثانية يوم 7 مارس. يمكنك التحقق من الإيميلات.",
         revealsClue: true,
-        clue: "سارة نبهت الإدارة للمشكلة مسبقاً",
+        clue: "سارة تدعي أنها أرسلت الإيصالات بالإيميل - تحقق من الإيميلات",
+        verifiableInfo: "تحقق من الإيميلات: هل توجد إيميلات من سارة فيها إيصالات؟",
         affectsTrust: 5,
       },
       {
         id: "sara-q2",
-        text: "من المسؤول عن إدخال فواتير المشتريات؟",
-        response: "كل قسم يدخل فواتيره. المشتريات مسؤولية مدير المشتريات، وأنا أراجع الإيرادات والمصروفات الثابتة فقط.",
+        text: "هل لاحظتِ شيئاً غريباً في حسابات الشركة؟",
+        response: "نعم! أرسلت إيميل لأحمد أسأله عن الزيادة الكبيرة في الفواتير. طلبت من كريم أيضاً إيصالات فواتيره لكنه يماطل دائماً.",
         revealsClue: true,
-        clue: "سارة ليست مسؤولة عن فواتير المشتريات",
-        affectsTrust: 3,
+        clue: "سارة نبهت الإدارة للمشكلة وطلبت إيصالات من كريم",
+        affectsTrust: 5,
       },
       {
         id: "sara-q3",
         text: "متى تدخلين النظام عادةً؟",
-        response: "من الساعة 8 صباحاً حتى 5 مساءً. لا أحتاج للعمل بعد الدوام، كل مهامي أنجزها خلال ساعات العمل.",
+        response: "من الساعة 8 صباحاً حتى 5 مساءً. لا أحتاج للعمل بعد الدوام. يمكنك التحقق من سجلات الدخول - كل عمليات الدخول الخاصة بي خلال ساعات العمل.",
         revealsClue: true,
-        clue: "سارة تعمل خلال ساعات الدوام الرسمية فقط",
+        clue: "سارة تعمل خلال ساعات الدوام فقط - تحقق من السجلات",
+        verifiableInfo: "تحقق من سجلات الدخول: هل سارة تدخل النظام خارج ساعات العمل؟",
         affectsTrust: 3,
       },
     ],
@@ -282,26 +331,28 @@ export const SUSPECTS: Suspect[] = [
     questions: [
       {
         id: "karim-q1",
-        text: "لماذا بعض الفواتير بدون إيصالات؟",
-        response: "بعض الموردين الجدد لا يعطون إيصالات فورية. الإيصالات ستصل لاحقاً بعد اكتمال التوريد.",
+        text: "لديك 4 فواتير بدون إيصالات بمجموع 46,000 ريال. أين الإيصالات؟",
+        response: "الموردين الجدد لا يعطون إيصالات فورية. وعدوني أنها ستصل قريباً. هذا أمر طبيعي مع الموردين الجدد.",
         revealsClue: true,
-        clue: "كريم يبرر غياب الإيصالات بأنها ستصل لاحقاً",
+        clue: "كريم يبرر غياب الإيصالات بوعود - لا يوجد دليل",
+        verifiableInfo: "تحقق من الإيميلات: هل كريم أرسل أي إيصالات مثل سارة؟",
         affectsTrust: -3,
       },
       {
         id: "karim-q2",
-        text: "لماذا تدخل النظام بعد ساعات العمل أحياناً؟",
-        response: "أفضل العمل في هدوء لإنجاز المهام المتراكمة. الصباح مزدحم بالاجتماعات.",
+        text: "لماذا تدخل النظام بعد ساعات العمل بانتظام؟",
+        response: "أفضل العمل في هدوء لإنجاز المهام المتراكمة. الصباح مزدحم بالاجتماعات. هذا طبيعي تماماً.",
         revealsClue: true,
-        clue: "كريم يعمل بعد الدوام بانتظام",
+        clue: "كريم يبرر الدخول الليلي بالهدوء - لكن هل آخرون يفعلون ذلك؟",
+        verifiableInfo: "تحقق من سجلات الدخول: من يدخل النظام ليلاً ولماذا؟",
         affectsTrust: -3,
       },
       {
         id: "karim-q3",
-        text: "هل يمكنك تقديم تفاصيل عن شركة 'تقنيات المستقبل'؟",
-        response: "هي شركة جديدة في السوق تقدم أسعاراً تنافسية. تعاملت معهم للمرة الأولى هذا العام.",
+        text: "هل يمكنك تقديم تفاصيل عن شركة 'تقنيات المستقبل' مورد فاتورة الـ 18,000 ريال؟",
+        response: "هي شركة جديدة في السوق تقدم أسعاراً تنافسية. تعاملت معهم للمرة الأولى هذا العام. ليس لدي معلومات كثيرة عنهم.",
         revealsClue: true,
-        clue: "كريم لم يقدم تفاصيل واضحة عن المورد الجديد",
+        clue: "كريم لا يملك معلومات عن مورد دفع له 18,000 ريال",
         affectsTrust: -5,
       },
     ],
@@ -364,61 +415,35 @@ export const EVIDENCE_ITEMS = [
 ];
 
 // ============================================
-// الفرضيات الممكنة
-// ============================================
-
-export const HYPOTHESES = [
-  {
-    id: "hypothesis-ahmed",
-    suspectId: "ahmed",
-    title: "أحمد يستغل منصبه",
-    description: "المدير المالي يوقع على معاملات وهمية لتحقيق مكاسب شخصية",
-    isCorrect: false,
-  },
-  {
-    id: "hypothesis-sara",
-    suspectId: "sara",
-    title: "سارة تتلاعب بالأرقام",
-    description: "المحاسبة تغير الأرقام في السجلات لإخفاء اختلاس",
-    isCorrect: false,
-  },
-  {
-    id: "hypothesis-karim",
-    suspectId: "karim",
-    title: "كريم يزور الفواتير",
-    description: "مدير المشتريات يصدر فواتير لموردين وهميين",
-    isCorrect: true,
-  },
-];
-
-// ============================================
-// النتيجة النهائية
+// حل القضية - للمقارنة النهائية
 // ============================================
 
 export const CASE_SOLUTION = {
   culprit: "karim",
-  method: "إنشاء فواتير مشتريات وهمية لموردين غير حقيقيين وإدخالها في النظام المالي",
-  totalAmount: 46000,
+  culpritName: "كريم الحسن",
+  method: "فواتير وهمية لموردين غير حقيقيين",
+  totalStolen: 46000,
   keyEvidence: [
-    "فواتير بدون إيصالات كلها من قسم المشتريات",
-    "سجلات دخول متكررة بعد ساعات العمل",
-    "موردون جدد بدون سجل تجاري واضح",
-    "زيادة مفاجئة في المصروفات دون زيادة في الإنتاجية",
+    "4 فواتير بدون إيصالات من كريم فقط (بعد استبعاد فواتير سارة الموثقة بالإيميل)",
+    "دخول النظام ليلاً لإضافة الفواتير المشبوهة",
+    "لا يوجد أي إيميل من كريم يؤكد وصول إيصالات (عكس سارة)",
+    "سارة نبهت للمشكلة وطلبت إيصالات من كريم",
   ],
   misleadingClues: [
-    {
-      clue: "أحمد دخل النظام متأخراً",
-      explanation: "كان يحضر تقريراً طلبه المدير العام - راجع الإيميلات",
-    },
-    {
-      clue: "سارة أرسلت إيميل تستفسر عن الفواتير",
-      explanation: "هذا دليل على يقظتها وليس تورطها",
-    },
+    "فاتورتان بدون إيصال من سارة - لكن الإيصالات موجودة في الإيميلات",
+    "دخول أحمد ليلاً - لكن بطلب رسمي من المدير العام موجود في الإيميلات",
   ],
-  minEvidenceRequired: 3,
-  minInterrogationsRequired: 2,
+  analysisSteps: [
+    "الخطوة 1: فلترة الفواتير بدون إيصال → 3 أشخاص (كريم 4، سارة 2)",
+    "الخطوة 2: فحص الإيميلات → سارة أرسلت إيصالاتها لاحقاً (بريئة)",
+    "الخطوة 3: فحص سجلات الدخول → سارة تعمل نهاراً فقط، كريم ليلاً",
+    "الخطوة 4: فحص الإيميلات → أحمد لديه طلب رسمي للعمل الليلي (بريء)",
+    "الخطوة 5: البحث عن إيصالات كريم في الإيميلات → لا يوجد شيء",
+    "الخطوة 6: الاستنتاج → كريم هو المختلس",
+  ],
+  minimumRequirements: {
+    evidenceCollected: 3,
+    suspectsInterrogated: 2,
+    patternsDiscovered: 1,
+  },
 };
-
-// للتوافق
-export const LEARNING_CONCEPTS: never[] = [];
-export const ANALYSIS_CHALLENGES: never[] = [];

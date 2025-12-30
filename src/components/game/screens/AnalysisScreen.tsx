@@ -1,19 +1,19 @@
 import { useState, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Notebook, Filter, BarChart3, Link2, Lightbulb, ArrowLeft } from "lucide-react";
+import { Notebook, Filter, BarChart3, Link2, FileText, ArrowLeft } from "lucide-react";
 import { NavigationButton } from "../NavigationButton";
 import { useGame } from "@/contexts/GameContext";
-import { BANK_TRANSACTIONS, PURCHASE_INVOICES, MONTHLY_SUMMARY, HYPOTHESES, SUSPECTS } from "@/data/case1";
+import { BANK_TRANSACTIONS, PURCHASE_INVOICES, MONTHLY_SUMMARY, SUSPECTS, SYSTEM_ACCESS_LOGS, INTERNAL_EMAILS } from "@/data/case1";
 import { cn } from "@/lib/utils";
 
 interface AnalysisScreenProps {
   onNavigate: (screen: string) => void;
 }
 
-type TabType = "summary" | "filter" | "chart" | "link" | "hypothesis";
+type TabType = "summary" | "filter" | "chart" | "link" | "notepad";
 
 export const AnalysisScreen = ({ onNavigate }: AnalysisScreenProps) => {
-  const { state, getTrustLevel, discoverPattern, hasDiscoveredPattern, setActiveHypothesis, addNote } = useGame();
+  const { state, getTrustLevel, discoverPattern, hasDiscoveredPattern, addNote } = useGame();
   const trustLevel = getTrustLevel();
   
   const [activeTab, setActiveTab] = useState<TabType>("summary");
@@ -23,17 +23,19 @@ export const AnalysisScreen = ({ onNavigate }: AnalysisScreenProps) => {
   const [filterMonth, setFilterMonth] = useState("all");
   const [filterVerified, setFilterVerified] = useState("all");
   
-  // Link state
-  const [selectedEvidence1, setSelectedEvidence1] = useState<string | null>(null);
-  const [selectedEvidence2, setSelectedEvidence2] = useState<string | null>(null);
-  const [linkResult, setLinkResult] = useState<string | null>(null);
+  // Link state - now shows merged tables
+  const [linkTable1, setLinkTable1] = useState<string | null>(null);
+  const [linkTable2, setLinkTable2] = useState<string | null>(null);
+  
+  // Notepad state
+  const [noteText, setNoteText] = useState("");
 
   const tabs = [
     { id: "summary" as const, label: "📊 ملخص", icon: Notebook },
     { id: "filter" as const, label: "🔍 فلترة", icon: Filter },
     { id: "chart" as const, label: "📈 رسم بياني", icon: BarChart3 },
-    { id: "link" as const, label: "🔗 ربط الأدلة", icon: Link2 },
-    { id: "hypothesis" as const, label: "💡 الفرضيات", icon: Lightbulb },
+    { id: "link" as const, label: "🔗 ربط البيانات", icon: Link2 },
+    { id: "notepad" as const, label: "📝 دفتر الملاحظات", icon: FileText },
   ];
 
   // Filtered transactions
@@ -71,53 +73,60 @@ export const AnalysisScreen = ({ onNavigate }: AnalysisScreenProps) => {
 
   const maxExpense = Math.max(...Object.values(personStats).map(s => s.total));
 
-  // Evidence linking logic
-  const handleLink = () => {
-    if (!selectedEvidence1 || !selectedEvidence2) return;
+  // Generate merged table for data linking
+  const getMergedData = () => {
+    if (!linkTable1 || !linkTable2 || linkTable1 === linkTable2) return null;
     
-    const combo = [selectedEvidence1, selectedEvidence2].sort().join("-");
+    const combo = [linkTable1, linkTable2].sort().join("-");
     
-    // Define discoveries based on combinations
-    const discoveries: Record<string, { pattern: string; description: string }> = {
-      "invoices-logs": {
-        pattern: "pattern-invoice-timing",
-        description: "🔍 اكتشاف: الفواتير بدون إيصال تُدخل غالباً بعد ساعات العمل الرسمية",
-      },
-      "invoices-transactions": {
-        pattern: "pattern-unverified-amounts",
-        description: "🔍 اكتشاف: المعاملات غير الموثقة تتركز في مبالغ كبيرة (أكثر من 7000 ريال)",
-      },
-      "logs-transactions": {
-        pattern: "pattern-after-hours",
-        description: "🔍 اكتشاف: هناك نمط واضح للنشاط بعد ساعات العمل مرتبط بمعاملات محددة",
-      },
-      "emails-logs": {
-        pattern: "pattern-ahmed-excuse",
-        description: "🔍 اكتشاف: دخول أحمد المتأخر كان بطلب من المدير العام لإعداد تقرير",
-      },
-    };
-    
-    const discovery = discoveries[combo];
-    if (discovery && !hasDiscoveredPattern(discovery.pattern)) {
-      discoverPattern(discovery.pattern, discovery.description);
-      setLinkResult(discovery.description);
-    } else if (discovery) {
-      setLinkResult("✓ تم اكتشاف هذا النمط مسبقاً");
-    } else {
-      setLinkResult("لم يتم العثور على رابط واضح بين هذين الدليلين");
+    if (combo === "invoices-logs") {
+      // Merge invoices with access logs by person and date
+      return PURCHASE_INVOICES.filter(inv => !inv.hasReceipt).map(inv => {
+        const relatedLog = SYSTEM_ACCESS_LOGS.find(log => 
+          log.details.includes(inv.poNumber) || 
+          (log.user === inv.requestedBy && log.date <= inv.date)
+        );
+        return {
+          invoice: inv.poNumber,
+          date: inv.date,
+          amount: inv.amount,
+          requestedBy: inv.requestedBy === "karim" ? "كريم" : inv.requestedBy === "sara" ? "سارة" : "أحمد",
+          hasReceipt: inv.hasReceipt ? "نعم" : "لا",
+          loginTime: relatedLog?.time || "-",
+          afterHours: relatedLog?.afterHours ? "نعم" : "لا",
+        };
+      });
     }
+    
+    if (combo === "emails-invoices") {
+      // Show invoices and related emails
+      const invoicesWithoutReceipt = PURCHASE_INVOICES.filter(inv => !inv.hasReceipt);
+      return invoicesWithoutReceipt.map(inv => {
+        const relatedEmail = INTERNAL_EMAILS.find(email => 
+          email.body.includes(inv.poNumber) || 
+          (email.attachments && email.attachments.some(a => a.includes(inv.poNumber)))
+        );
+        return {
+          invoice: inv.poNumber,
+          requestedBy: inv.requestedBy === "karim" ? "كريم" : inv.requestedBy === "sara" ? "سارة" : "أحمد",
+          amount: inv.amount,
+          hasEmailReceipt: relatedEmail ? "نعم ✓" : "لا",
+          emailDate: relatedEmail?.date || "-",
+        };
+      });
+    }
+    
+    return null;
   };
 
-  // Handle hypothesis selection
-  const handleSelectHypothesis = (hypothesisId: string) => {
-    const hypothesis = HYPOTHESES.find(h => h.id === hypothesisId);
-    if (hypothesis) {
-      setActiveHypothesis(hypothesisId);
+  const handleSaveNote = () => {
+    if (noteText.trim()) {
       addNote({
-        type: "suspicion",
-        text: `تم اختيار فرضية: ${hypothesis.title}`,
+        type: "discovery",
+        text: noteText.trim(),
         source: "analysis",
       });
+      setNoteText("");
     }
   };
 
@@ -334,150 +343,134 @@ export const AnalysisScreen = ({ onNavigate }: AnalysisScreenProps) => {
           <span className="text-sm text-muted-foreground">غير موثق</span>
         </div>
       </div>
-
-      {/* Insight */}
-      {personStats.karim.unverified > personStats.sara.unverified + personStats.ahmed.unverified && (
-        <motion.div
-          className="p-4 rounded-xl bg-accent/10 border border-accent/30"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-        >
-          <p className="text-accent font-bold text-sm">
-            💡 ملاحظة: المصروفات غير الموثقة تتركز بشكل واضح عند شخص واحد
-          </p>
-        </motion.div>
-      )}
     </div>
   );
 
-  const renderLink = () => (
-    <div className="space-y-6">
-      <p className="text-muted-foreground">اختر دليلين لمحاولة ربطهما واكتشاف أنماط جديدة</p>
-      
-      <div className="grid grid-cols-2 gap-4">
-        <div>
-          <label className="text-sm text-muted-foreground mb-2 block">الدليل الأول</label>
-          <select
-            value={selectedEvidence1 || ""}
-            onChange={(e) => { setSelectedEvidence1(e.target.value); setLinkResult(null); }}
-            className="w-full px-3 py-2 rounded-lg bg-secondary/50 border border-border text-foreground"
-          >
-            <option value="">اختر...</option>
-            <option value="invoices">الفواتير</option>
-            <option value="transactions">المعاملات البنكية</option>
-            <option value="logs">سجلات الدخول</option>
-            <option value="emails">الإيميلات</option>
-          </select>
+  const renderLink = () => {
+    const mergedData = getMergedData();
+    
+    return (
+      <div className="space-y-6">
+        <p className="text-muted-foreground">اختر جدولين لدمجهما ورؤية البيانات جنباً إلى جنب</p>
+        
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <label className="text-sm text-muted-foreground mb-2 block">الجدول الأول</label>
+            <select
+              value={linkTable1 || ""}
+              onChange={(e) => setLinkTable1(e.target.value || null)}
+              className="w-full px-3 py-2 rounded-lg bg-secondary/50 border border-border text-foreground"
+            >
+              <option value="">اختر...</option>
+              <option value="invoices">الفواتير</option>
+              <option value="logs">سجلات الدخول</option>
+              <option value="emails">الإيميلات</option>
+            </select>
+          </div>
+          <div>
+            <label className="text-sm text-muted-foreground mb-2 block">الجدول الثاني</label>
+            <select
+              value={linkTable2 || ""}
+              onChange={(e) => setLinkTable2(e.target.value || null)}
+              className="w-full px-3 py-2 rounded-lg bg-secondary/50 border border-border text-foreground"
+            >
+              <option value="">اختر...</option>
+              <option value="invoices">الفواتير</option>
+              <option value="logs">سجلات الدخول</option>
+              <option value="emails">الإيميلات</option>
+            </select>
+          </div>
         </div>
-        <div>
-          <label className="text-sm text-muted-foreground mb-2 block">الدليل الثاني</label>
-          <select
-            value={selectedEvidence2 || ""}
-            onChange={(e) => { setSelectedEvidence2(e.target.value); setLinkResult(null); }}
-            className="w-full px-3 py-2 rounded-lg bg-secondary/50 border border-border text-foreground"
-          >
-            <option value="">اختر...</option>
-            <option value="invoices">الفواتير</option>
-            <option value="transactions">المعاملات البنكية</option>
-            <option value="logs">سجلات الدخول</option>
-            <option value="emails">الإيميلات</option>
-          </select>
-        </div>
-      </div>
 
-      <motion.button
-        onClick={handleLink}
-        disabled={!selectedEvidence1 || !selectedEvidence2 || selectedEvidence1 === selectedEvidence2}
-        className={cn(
-          "w-full py-3 rounded-xl font-bold transition-all",
-          selectedEvidence1 && selectedEvidence2 && selectedEvidence1 !== selectedEvidence2
-            ? "bg-primary text-primary-foreground hover:bg-primary/90"
-            : "bg-secondary text-muted-foreground cursor-not-allowed"
-        )}
-        whileHover={selectedEvidence1 && selectedEvidence2 ? { scale: 1.02 } : {}}
-      >
-        🔗 تحليل الرابط
-      </motion.button>
-
-      <AnimatePresence>
-        {linkResult && (
+        {/* Merged Data Table */}
+        {mergedData && (
           <motion.div
-            className={cn(
-              "p-4 rounded-xl border",
-              linkResult.includes("اكتشاف") ? "bg-accent/10 border-accent/30" : "bg-secondary/30 border-border"
-            )}
+            className="max-h-64 overflow-auto rounded-xl border border-primary/30"
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0 }}
           >
-            <p className="text-foreground">{linkResult}</p>
+            <table className="w-full text-sm">
+              <thead className="bg-primary/20 sticky top-0">
+                <tr>
+                  {Object.keys(mergedData[0] || {}).map(key => (
+                    <th key={key} className="text-right p-2 text-foreground font-bold">
+                      {key === "invoice" ? "الفاتورة" :
+                       key === "date" ? "التاريخ" :
+                       key === "amount" ? "المبلغ" :
+                       key === "requestedBy" ? "طالبها" :
+                       key === "hasReceipt" ? "إيصال" :
+                       key === "loginTime" ? "وقت الدخول" :
+                       key === "afterHours" ? "خارج الدوام" :
+                       key === "hasEmailReceipt" ? "إيصال بالإيميل" :
+                       key === "emailDate" ? "تاريخ الإيميل" :
+                       key}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {mergedData.map((row, i) => (
+                  <tr key={i} className="border-b border-border/50">
+                    {Object.values(row).map((val, j) => (
+                      <td key={j} className="p-2 text-foreground">
+                        {typeof val === "number" ? val.toLocaleString() : String(val)}
+                      </td>
+                    ))}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </motion.div>
         )}
-      </AnimatePresence>
 
-      {/* Discovered Patterns */}
-      {state.patternsDiscovered.length > 0 && (
+        {linkTable1 && linkTable2 && linkTable1 !== linkTable2 && !mergedData && (
+          <div className="p-4 rounded-xl bg-secondary/30 border border-border text-center">
+            <p className="text-muted-foreground">لا توجد بيانات مشتركة بين الجدولين المختارين</p>
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  const renderNotepad = () => (
+    <div className="space-y-6">
+      <p className="text-muted-foreground">اكتب ملاحظاتك واستنتاجاتك هنا. ستظهر في ملخص التحقيق.</p>
+      
+      <div className="space-y-4">
+        <textarea
+          value={noteText}
+          onChange={(e) => setNoteText(e.target.value)}
+          placeholder="اكتب ملاحظتك هنا... مثال: أشك في كريم لأن فواتيره بدون إيصالات..."
+          className="w-full h-32 px-4 py-3 rounded-xl bg-secondary/50 border border-border text-foreground placeholder:text-muted-foreground resize-none"
+        />
+        
+        <motion.button
+          onClick={handleSaveNote}
+          disabled={!noteText.trim()}
+          className={cn(
+            "w-full py-3 rounded-xl font-bold transition-all",
+            noteText.trim()
+              ? "bg-primary text-primary-foreground hover:bg-primary/90"
+              : "bg-secondary text-muted-foreground cursor-not-allowed"
+          )}
+          whileHover={noteText.trim() ? { scale: 1.02 } : {}}
+        >
+          📝 حفظ الملاحظة
+        </motion.button>
+      </div>
+
+      {/* Saved Notes */}
+      {state.investigationNotes.filter(n => n.source === "analysis").length > 0 && (
         <div className="space-y-2">
-          <h4 className="font-bold text-foreground text-sm">الأنماط المكتشفة:</h4>
+          <h4 className="font-bold text-foreground text-sm">ملاحظاتك المحفوظة:</h4>
           {state.investigationNotes
-            .filter(n => n.type === "pattern")
+            .filter(n => n.source === "analysis")
             .map((note) => (
-              <div key={note.id} className="p-3 rounded-lg bg-accent/10 border border-accent/30 text-sm">
+              <div key={note.id} className="p-3 rounded-lg bg-primary/10 border border-primary/30 text-sm">
                 {note.text}
               </div>
             ))}
         </div>
-      )}
-    </div>
-  );
-
-  const renderHypothesis = () => (
-    <div className="space-y-6">
-      <p className="text-muted-foreground">بناءً على الأدلة، اختر فرضية للتحقيق فيها</p>
-      
-      <div className="grid grid-cols-3 gap-4">
-        {HYPOTHESES.map((h) => {
-          const suspect = SUSPECTS.find(s => s.id === h.suspectId);
-          const isActive = state.activeHypothesis === h.id;
-          
-          return (
-            <motion.button
-              key={h.id}
-              onClick={() => handleSelectHypothesis(h.id)}
-              className={cn(
-                "p-4 rounded-xl border text-right transition-all",
-                isActive 
-                  ? "bg-primary/20 border-primary" 
-                  : "bg-secondary/30 border-border hover:border-primary/50"
-              )}
-              whileHover={{ scale: 1.02 }}
-            >
-              <div className="text-3xl mb-2">
-                {h.suspectId === "ahmed" ? "👔" : h.suspectId === "sara" ? "👩‍💼" : "🧑‍💼"}
-              </div>
-              <h4 className="font-bold text-foreground mb-1">{h.title}</h4>
-              <p className="text-xs text-muted-foreground">{h.description}</p>
-              {isActive && (
-                <span className="inline-block mt-2 px-2 py-1 rounded bg-primary text-primary-foreground text-xs">
-                  الفرضية الحالية
-                </span>
-              )}
-            </motion.button>
-          );
-        })}
-      </div>
-
-      {state.activeHypothesis && (
-        <motion.div
-          className="p-4 rounded-xl bg-primary/10 border border-primary/30"
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-        >
-          <p className="text-foreground text-sm">
-            💡 نصيحة: استمر في جمع الأدلة واستجواب المشتبهين لتأكيد أو نفي فرضيتك.
-            يمكنك تغيير الفرضية في أي وقت.
-          </p>
-        </motion.div>
       )}
     </div>
   );
@@ -533,7 +526,7 @@ export const AnalysisScreen = ({ onNavigate }: AnalysisScreenProps) => {
           {activeTab === "filter" && renderFilter()}
           {activeTab === "chart" && renderChart()}
           {activeTab === "link" && renderLink()}
-          {activeTab === "hypothesis" && renderHypothesis()}
+          {activeTab === "notepad" && renderNotepad()}
         </motion.div>
 
         {/* Navigation */}
