@@ -18,14 +18,6 @@ export interface InvestigationNote {
   suspectId?: string;
 }
 
-// ملاحظات المستخدم الحرة
-export interface UserNote {
-  id: string;
-  text: string;
-  category: "observation" | "suspicion" | "pattern" | "question";
-  timestamp: number;
-}
-
 export interface SuspectInterrogation {
   suspectId: string;
   questionsAsked: string[];
@@ -45,11 +37,8 @@ export interface GameState {
   collectedEvidence: string[];
   viewedEvidence: string[];
   
-  // دفتر التحقيق (ملاحظات النظام)
+  // دفتر التحقيق
   investigationNotes: InvestigationNote[];
-  
-  // ملاحظات المستخدم الحرة
-  userNotes: UserNote[];
   
   // الفرضيات
   activeHypothesis: string | null;
@@ -66,14 +55,12 @@ export interface GameState {
   caseCompleted: boolean;
   score: number;
   
+  // تتبع المفاتيح والأنماط المكتشفة
+  keysDiscovered: string[];
+  patternsDiscovered: string[];
+  
   // حالة الحوار
   hasSeenIntroDialogue: boolean;
-  
-  // تتبع الأفعال للتقييم
-  actionsPerformed: string[];
-  filtersApplied: number;
-  chartsBuilt: number;
-  comparisonsRun: number;
 }
 
 interface GameContextType {
@@ -83,13 +70,8 @@ interface GameContextType {
   collectEvidence: (id: string) => void;
   viewEvidence: (id: string) => void;
   
-  // Investigation notes (system)
+  // Investigation notes
   addNote: (note: Omit<InvestigationNote, "id" | "timestamp">) => void;
-  
-  // User notes (free-form)
-  addUserNote: (text: string, category: UserNote["category"]) => void;
-  deleteUserNote: (id: string) => void;
-  getUserNotes: () => UserNote[];
   
   // Hypothesis actions
   setActiveHypothesis: (id: string) => void;
@@ -103,11 +85,11 @@ interface GameContextType {
   getQuestionsAskedForSuspect: (suspectId: string) => string[];
   canAskMoreQuestions: (suspectId: string) => boolean;
   
-  // Action tracking (للتقييم)
-  trackAction: (action: string) => void;
-  trackFilter: () => void;
-  trackChart: () => void;
-  trackComparison: () => void;
+  // Key/Pattern discovery
+  discoverKey: (keyId: string) => void;
+  hasDiscoveredKey: (keyId: string) => boolean;
+  discoverPattern: (patternId: string, description: string) => void;
+  hasDiscoveredPattern: (patternId: string) => boolean;
   
   // Game actions
   setPhase: (phase: GameState["currentPhase"]) => void;
@@ -131,7 +113,6 @@ const initialState: GameState = {
   collectedEvidence: [],
   viewedEvidence: [],
   investigationNotes: [],
-  userNotes: [],
   activeHypothesis: null,
   testedHypotheses: [],
   interrogations: [],
@@ -141,11 +122,9 @@ const initialState: GameState = {
   maxAccusationAttempts: 3,
   caseCompleted: false,
   score: 0,
+  keysDiscovered: [],
+  patternsDiscovered: [],
   hasSeenIntroDialogue: false,
-  actionsPerformed: [],
-  filtersApplied: 0,
-  chartsBuilt: 0,
-  comparisonsRun: 0,
 };
 
 const GameContext = createContext<GameContextType | undefined>(undefined);
@@ -166,7 +145,6 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
         trust: Math.min(prev.maxTrust, prev.trust + trustBonus),
         progress: Math.min(prev.progress + 10, 100),
         score: prev.score + 25,
-        actionsPerformed: [...prev.actionsPerformed, `collect-${id}`],
       };
     });
   }, []);
@@ -177,7 +155,6 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
       return {
         ...prev,
         viewedEvidence: [...prev.viewedEvidence, id],
-        actionsPerformed: [...prev.actionsPerformed, `view-${id}`],
       };
     });
   }, []);
@@ -190,51 +167,22 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
         timestamp: Date.now(),
       };
       
-      // مكافآت بسيطة للملاحظات النظامية
-      const trustBonus = note.type === "clue" ? 3 : 0;
+      const trustBonus = note.type === "key" ? 10 : note.type === "clue" ? 5 : note.type === "pattern" ? 15 : 0;
       
       return {
         ...prev,
         investigationNotes: [...prev.investigationNotes, newNote],
         trust: Math.min(prev.maxTrust, prev.trust + trustBonus),
-        score: prev.score + (note.type === "clue" ? 10 : 0),
+        score: prev.score + (note.type === "key" ? 50 : note.type === "clue" ? 20 : note.type === "pattern" ? 40 : 5),
       };
     });
   }, []);
-
-  // ملاحظات المستخدم الحرة - بدون تصحيح أو تقييم
-  const addUserNote = useCallback((text: string, category: UserNote["category"]) => {
-    setState(prev => {
-      const newNote: UserNote = {
-        id: `user-note-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-        text,
-        category,
-        timestamp: Date.now(),
-      };
-      
-      return {
-        ...prev,
-        userNotes: [...prev.userNotes, newNote],
-        actionsPerformed: [...prev.actionsPerformed, `note-${category}`],
-      };
-    });
-  }, []);
-
-  const deleteUserNote = useCallback((id: string) => {
-    setState(prev => ({
-      ...prev,
-      userNotes: prev.userNotes.filter(n => n.id !== id),
-    }));
-  }, []);
-
-  const getUserNotes = useCallback(() => {
-    return state.userNotes;
-  }, [state.userNotes]);
 
   const setActiveHypothesis = useCallback((id: string) => {
     setState(prev => ({
       ...prev,
       activeHypothesis: id,
+      score: prev.score + 30,
     }));
   }, []);
 
@@ -283,13 +231,27 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
         ];
       }
       
+      const newNotes = clue 
+        ? [
+            ...prev.investigationNotes,
+            {
+              id: `note-${Date.now()}`,
+              type: "clue" as const,
+              text: clue,
+              source: "interrogation",
+              timestamp: Date.now(),
+              suspectId,
+            },
+          ]
+        : prev.investigationNotes;
+      
       return {
         ...prev,
         interrogations: newInterrogations,
         totalQuestionsAsked: prev.totalQuestionsAsked + 1,
+        investigationNotes: newNotes,
         progress: Math.min(prev.progress + 5, 100),
-        score: prev.score + 10,
-        actionsPerformed: [...prev.actionsPerformed, `interrogate-${suspectId}-${questionId}`],
+        score: prev.score + 15,
       };
     });
   }, []);
@@ -304,40 +266,48 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
     return questionsAsked.length < 3;
   }, [getQuestionsAskedForSuspect]);
 
-  // Action tracking للتقييم
-  const trackAction = useCallback((action: string) => {
-    setState(prev => ({
-      ...prev,
-      actionsPerformed: [...prev.actionsPerformed, action],
-    }));
+  const discoverKey = useCallback((keyId: string) => {
+    setState(prev => {
+      if (prev.keysDiscovered.includes(keyId)) return prev;
+      
+      return {
+        ...prev,
+        keysDiscovered: [...prev.keysDiscovered, keyId],
+        trust: Math.min(prev.maxTrust, prev.trust + 10),
+        score: prev.score + 75,
+      };
+    });
   }, []);
 
-  const trackFilter = useCallback(() => {
-    setState(prev => ({
-      ...prev,
-      filtersApplied: prev.filtersApplied + 1,
-      score: prev.score + 5,
-      actionsPerformed: [...prev.actionsPerformed, "filter"],
-    }));
+  const hasDiscoveredKey = useCallback((keyId: string): boolean => {
+    return state.keysDiscovered.includes(keyId);
+  }, [state.keysDiscovered]);
+
+  const discoverPattern = useCallback((patternId: string, description: string) => {
+    setState(prev => {
+      if (prev.patternsDiscovered.includes(patternId)) return prev;
+      
+      const newNote: InvestigationNote = {
+        id: `pattern-${Date.now()}`,
+        type: "pattern",
+        text: description,
+        source: "analysis",
+        timestamp: Date.now(),
+      };
+      
+      return {
+        ...prev,
+        patternsDiscovered: [...prev.patternsDiscovered, patternId],
+        investigationNotes: [...prev.investigationNotes, newNote],
+        trust: Math.min(prev.maxTrust, prev.trust + 15),
+        score: prev.score + 50,
+      };
+    });
   }, []);
 
-  const trackChart = useCallback(() => {
-    setState(prev => ({
-      ...prev,
-      chartsBuilt: prev.chartsBuilt + 1,
-      score: prev.score + 15,
-      actionsPerformed: [...prev.actionsPerformed, "chart"],
-    }));
-  }, []);
-
-  const trackComparison = useCallback(() => {
-    setState(prev => ({
-      ...prev,
-      comparisonsRun: prev.comparisonsRun + 1,
-      score: prev.score + 20,
-      actionsPerformed: [...prev.actionsPerformed, "comparison"],
-    }));
-  }, []);
+  const hasDiscoveredPattern = useCallback((patternId: string): boolean => {
+    return state.patternsDiscovered.includes(patternId);
+  }, [state.patternsDiscovered]);
 
   const setPhase = useCallback((phase: GameState["currentPhase"]) => {
     setState(prev => ({ ...prev, currentPhase: phase }));
@@ -353,14 +323,13 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
       const attemptsLeft = prev.maxAccusationAttempts - newAttempts;
       
       if (isCorrect) {
-        // نجاح! - التقييم على الأفعال
-        const evidenceBonus = prev.collectedEvidence.length * 30;
-        const interrogationBonus = prev.totalQuestionsAsked * 15;
-        const analysisBonus = (prev.filtersApplied * 5) + (prev.chartsBuilt * 15) + (prev.comparisonsRun * 20);
-        const notesBonus = prev.userNotes.length * 10;
-        const trustBonus = Math.floor(prev.trust / 10) * 10;
+        // نجاح!
+        const evidenceBonus = prev.collectedEvidence.length * 50;
+        const notesBonus = prev.investigationNotes.filter(n => n.type === "key" || n.type === "pattern").length * 100;
+        const trustBonus = Math.floor(prev.trust / 10) * 20;
+        const questionsBonus = prev.totalQuestionsAsked * 10;
         
-        const finalScore = prev.score + 300 + evidenceBonus + interrogationBonus + analysisBonus + notesBonus + trustBonus;
+        const finalScore = prev.score + 500 + evidenceBonus + notesBonus + trustBonus + questionsBonus;
         
         result = { correct: true, attemptsLeft, gameOver: true };
         
@@ -370,7 +339,6 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
           accusationAttempts: newAttempts,
           caseCompleted: true,
           score: finalScore,
-          actionsPerformed: [...prev.actionsPerformed, `accuse-${suspectId}-correct`],
         };
       } else {
         // محاولة خاطئة
@@ -386,8 +354,7 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
           trust: newTrust,
           caseCompleted: isGameOver,
           accusation: isGameOver ? suspectId : prev.accusation,
-          score: isGameOver ? Math.max(0, prev.score - 100) : prev.score,
-          actionsPerformed: [...prev.actionsPerformed, `accuse-${suspectId}-wrong`],
+          score: isGameOver ? Math.max(0, prev.score - 200) : prev.score,
         };
       }
     });
@@ -414,8 +381,8 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
   const getProgress = useCallback(() => {
     const evidenceProgress = (state.collectedEvidence.length / 4) * 40;
     const interrogationProgress = (state.interrogations.filter(i => i.questionsAsked.length > 0).length / 3) * 40;
-    const analysisProgress = Math.min((state.filtersApplied + state.chartsBuilt + state.comparisonsRun) / 5, 1) * 20;
-    return Math.round(evidenceProgress + interrogationProgress + analysisProgress);
+    const notesProgress = Math.min(state.investigationNotes.length / 10, 1) * 20;
+    return Math.round(evidenceProgress + interrogationProgress + notesProgress);
   }, [state]);
 
   const getTrustLevel = useCallback((): "critical" | "low" | "medium" | "high" => {
@@ -441,19 +408,16 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
       collectEvidence,
       viewEvidence,
       addNote,
-      addUserNote,
-      deleteUserNote,
-      getUserNotes,
       setActiveHypothesis,
       addTrust,
       removeTrust,
       askQuestion,
       getQuestionsAskedForSuspect,
       canAskMoreQuestions,
-      trackAction,
-      trackFilter,
-      trackChart,
-      trackComparison,
+      discoverKey,
+      hasDiscoveredKey,
+      discoverPattern,
+      hasDiscoveredPattern,
       setPhase,
       makeAccusation,
       resetGame,

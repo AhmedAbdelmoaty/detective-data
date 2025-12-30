@@ -1,7 +1,7 @@
 import { motion } from "framer-motion";
 import { 
   Trophy, Star, Award, Target, RotateCcw, 
-  CheckCircle, XCircle, Shield, FileText, BarChart3
+  CheckCircle, XCircle, Shield
 } from "lucide-react";
 import { useGame } from "@/contexts/GameContext";
 import { CASE_INFO, CASE_SOLUTION } from "@/data/case1";
@@ -12,12 +12,11 @@ interface ResultScreenProps {
 }
 
 export const ResultScreen = ({ onNavigate }: ResultScreenProps) => {
-  const { state, resetGame, getInterrogationProgress, getUserNotes } = useGame();
+  const { state, resetGame, getInterrogationProgress } = useGame();
 
   const isWin = state.accusation === CASE_SOLUTION.culprit;
-  const totalPossibleScore = 1000;
+  const totalPossibleScore = 1500;
   const scorePercentage = Math.round((state.score / totalPossibleScore) * 100);
-  const userNotes = getUserNotes();
   
   const getRank = () => {
     if (scorePercentage >= 90) return { title: "محقق أسطوري", titleEn: "Legendary Detective", icon: "🏆", color: "text-yellow-400" };
@@ -40,9 +39,8 @@ export const ResultScreen = ({ onNavigate }: ResultScreenProps) => {
     { label: "الأدلة المجمعة", value: state.collectedEvidence.length, max: 4, icon: "📁" },
     { label: "الاستجوابات", value: suspectsInterrogated, max: 3, icon: "🗣️" },
     { label: "الأسئلة المطروحة", value: interrogationProgress.asked, max: interrogationProgress.total, icon: "❓" },
-    { label: "الفلاتر المستخدمة", value: state.filtersApplied, max: null, icon: "🔍" },
-    { label: "الرسوم البيانية", value: state.chartsBuilt, max: null, icon: "📊" },
-    { label: "المقارنات", value: state.comparisonsRun, max: null, icon: "🔗" },
+    { label: "الأنماط المكتشفة", value: state.patternsDiscovered.length, max: 4, icon: "🔍" },
+    { label: "محاولات الاتهام", value: state.accusationAttempts, max: 3, icon: "⚖️" },
   ];
 
   return (
@@ -107,7 +105,7 @@ export const ResultScreen = ({ onNavigate }: ResultScreenProps) => {
           
           <p className="text-muted-foreground text-lg">
             {isWin 
-              ? `أحسنت! لقد كشفت أن كريم هو المختلس.`
+              ? `أحسنت! لقد كشفت أن ${CASE_SOLUTION.culprit === "karim" ? "كريم" : ""} هو المختلس.`
               : "للأسف، اتهمت الشخص الخطأ. المختلس الحقيقي استغل الفرصة وهرب!"}
           </p>
         </motion.div>
@@ -132,6 +130,9 @@ export const ResultScreen = ({ onNavigate }: ResultScreenProps) => {
                 <Star className="w-8 h-8 text-gold" />
                 <span className="text-5xl font-bold text-gold">{state.score}</span>
               </div>
+              <p className="text-xs text-muted-foreground mt-1">
+                من أصل {totalPossibleScore} نقطة ({scorePercentage}%)
+              </p>
             </div>
 
             {/* Rank */}
@@ -147,22 +148,21 @@ export const ResultScreen = ({ onNavigate }: ResultScreenProps) => {
               <p className="text-sm text-muted-foreground">{rank.titleEn}</p>
             </div>
 
-            {/* Trust & Attempts */}
+            {/* Trust & Case */}
             <div className="text-center md:text-left">
               <div className="flex items-center gap-2 mb-2">
                 <Shield className="w-5 h-5 text-primary" />
                 <span className="font-bold">{state.trust}% ثقة</span>
               </div>
-              <p className="text-muted-foreground text-sm">
-                محاولات الاتهام: {state.accusationAttempts}/3
-              </p>
+              <p className="text-muted-foreground text-sm mb-1">القضية</p>
+              <p className="text-xl font-bold text-foreground">{CASE_INFO.title}</p>
             </div>
           </div>
         </motion.div>
 
         {/* Stats Grid */}
         <motion.div
-          className="grid grid-cols-2 md:grid-cols-6 gap-3 mb-6"
+          className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6"
           initial={{ y: 20, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           transition={{ delay: 0.4 }}
@@ -170,60 +170,19 @@ export const ResultScreen = ({ onNavigate }: ResultScreenProps) => {
           {stats.map((stat, i) => (
             <motion.div
               key={stat.label}
-              className="p-3 rounded-xl bg-card/50 border border-border text-center"
+              className="p-4 rounded-xl bg-card/50 border border-border text-center"
               initial={{ scale: 0 }}
               animate={{ scale: 1 }}
               transition={{ delay: 0.5 + i * 0.1, type: "spring" }}
             >
-              <span className="text-xl mb-1 block">{stat.icon}</span>
-              <p className="text-xl font-bold text-foreground">
-                {stat.value}{stat.max !== null && <span className="text-muted-foreground text-sm">/{stat.max}</span>}
+              <span className="text-2xl mb-2 block">{stat.icon}</span>
+              <p className="text-2xl font-bold text-foreground">
+                {stat.value}<span className="text-muted-foreground text-sm">/{stat.max}</span>
               </p>
               <p className="text-xs text-muted-foreground">{stat.label}</p>
             </motion.div>
           ))}
         </motion.div>
-
-        {/* User Notes Review - مقارنة ذاتية */}
-        {userNotes.length > 0 && (
-          <motion.div
-            className="p-6 rounded-2xl bg-accent/10 border border-accent/30 mb-6"
-            initial={{ y: 20, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            transition={{ delay: 0.5 }}
-          >
-            <h3 className="text-xl font-bold text-accent mb-4 flex items-center gap-2">
-              <FileText className="w-6 h-6" />
-              ملاحظاتك أثناء التحقيق ({userNotes.length})
-            </h3>
-            
-            <p className="text-sm text-muted-foreground mb-4">
-              راجع ملاحظاتك وقارنها بالحل الحقيقي. هل كان تحليلك في المسار الصحيح؟
-            </p>
-            
-            <div className="space-y-2 max-h-48 overflow-auto">
-              {userNotes.map((note, i) => (
-                <div
-                  key={note.id}
-                  className={cn(
-                    "p-3 rounded-lg border flex items-start gap-3",
-                    note.category === "observation" ? "bg-blue-500/10 border-blue-500/30" :
-                    note.category === "suspicion" ? "bg-amber-500/10 border-amber-500/30" :
-                    note.category === "pattern" ? "bg-purple-500/10 border-purple-500/30" :
-                    "bg-green-500/10 border-green-500/30"
-                  )}
-                >
-                  <span className="text-lg">
-                    {note.category === "observation" ? "👁️" :
-                     note.category === "suspicion" ? "🤔" :
-                     note.category === "pattern" ? "🔍" : "❓"}
-                  </span>
-                  <p className="text-foreground text-sm">{note.text}</p>
-                </div>
-              ))}
-            </div>
-          </motion.div>
-        )}
 
         {/* Case Summary (if won) */}
         {isWin && (
@@ -255,7 +214,7 @@ export const ResultScreen = ({ onNavigate }: ResultScreenProps) => {
               </div>
               
               <div className="p-4 rounded-lg bg-background/50">
-                <p className="text-sm text-muted-foreground mb-2">الأدلة الرئيسية التي كان يجب اكتشافها</p>
+                <p className="text-sm text-muted-foreground mb-2">الأدلة الرئيسية</p>
                 <ul className="space-y-1">
                   {CASE_SOLUTION.keyEvidence.map((e, i) => (
                     <li key={i} className="text-sm text-foreground flex items-center gap-2">
@@ -266,18 +225,9 @@ export const ResultScreen = ({ onNavigate }: ResultScreenProps) => {
                 </ul>
               </div>
 
-              {/* Analysis Required */}
-              <div className="p-4 rounded-lg bg-primary/10 border border-primary/30">
-                <p className="text-sm text-primary font-bold mb-1 flex items-center gap-2">
-                  <BarChart3 className="w-4 h-4" />
-                  التحليل المطلوب
-                </p>
-                <p className="text-sm text-foreground">{CASE_SOLUTION.analysisRequired}</p>
-              </div>
-
-              {/* Misleading Clues */}
+              {/* Misleading Clues Explained */}
               <div className="p-4 rounded-lg bg-orange-500/10 border border-orange-500/30">
-                <p className="text-sm text-orange-400 mb-2 font-bold">الأدلة المضللة:</p>
+                <p className="text-sm text-orange-400 mb-2 font-bold">الأدلة المضللة التي تجاوزتها:</p>
                 <ul className="space-y-2">
                   {CASE_SOLUTION.misleadingClues.map((mc, i) => (
                     <li key={i} className="text-sm">
@@ -308,14 +258,8 @@ export const ResultScreen = ({ onNavigate }: ResultScreenProps) => {
               <p className="text-foreground">
                 المختلس الحقيقي كان <span className="font-bold text-destructive">كريم الحسن</span>
               </p>
-              
-              <div className="p-4 rounded-lg bg-background/50">
-                <p className="text-sm text-muted-foreground mb-2">التحليل الذي كان يجب إجراؤه:</p>
-                <p className="text-foreground">{CASE_SOLUTION.analysisRequired}</p>
-              </div>
-              
               <p className="text-muted-foreground text-sm">
-                الأدلة الرئيسية التي فاتتك:
+                كان يجب الانتباه إلى:
               </p>
               <ul className="space-y-1">
                 {CASE_SOLUTION.keyEvidence.slice(0, 3).map((e, i) => (

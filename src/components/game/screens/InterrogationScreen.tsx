@@ -44,8 +44,17 @@ export const InterrogationScreen = ({ onNavigate }: InterrogationScreenProps) =>
   const handleAskQuestion = (question: typeof SUSPECTS[0]["questions"][0]) => {
     if (!selectedSuspect || !canAskMoreQuestions(selectedSuspect.id)) return;
     
-    askQuestion(selectedSuspect.id, question.id);
+    askQuestion(selectedSuspect.id, question.id, question.clue);
     setCurrentResponse(question.response);
+    
+    if (question.revealsClue && question.clue) {
+      addNote({
+        type: "clue",
+        text: question.clue,
+        source: "interrogation",
+        suspectId: selectedSuspect.id,
+      });
+    }
     
     playSound("reveal");
   };
