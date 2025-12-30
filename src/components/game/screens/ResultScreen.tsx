@@ -210,7 +210,7 @@ export const ResultScreen = ({ onNavigate }: ResultScreenProps) => {
               
               <div className="p-4 rounded-lg bg-background/50">
                 <p className="text-sm text-muted-foreground mb-1">المبلغ المختلس</p>
-                <p className="text-2xl font-bold text-destructive">{CASE_SOLUTION.totalStolen.toLocaleString()} ريال</p>
+                <p className="text-2xl font-bold text-destructive">{CASE_SOLUTION.totalAmount.toLocaleString()} ريال</p>
               </div>
               
               <div className="p-4 rounded-lg bg-background/50">
@@ -231,7 +231,8 @@ export const ResultScreen = ({ onNavigate }: ResultScreenProps) => {
                 <ul className="space-y-2">
                   {CASE_SOLUTION.misleadingClues.map((mc, i) => (
                     <li key={i} className="text-sm">
-                      <p className="text-foreground font-medium">{mc}</p>
+                      <p className="text-foreground font-medium">{mc.clue}</p>
+                      <p className="text-muted-foreground text-xs">{mc.explanation}</p>
                     </li>
                   ))}
                 </ul>
