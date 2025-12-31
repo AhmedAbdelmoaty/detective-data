@@ -1,4 +1,3 @@
-import { useState } from "react";
 import { motion } from "framer-motion";
 import { AnimatedCharacter } from "../AnimatedCharacter";
 
@@ -10,7 +9,7 @@ interface IntroScreenProps {
 export const IntroScreen = ({ onStart, onNavigate }: IntroScreenProps) => {
   const handleStart = () => {
     if (onNavigate) {
-      onNavigate("office");
+      onNavigate("onboarding");
     } else if (onStart) {
       onStart();
     }
@@ -79,17 +78,17 @@ export const IntroScreen = ({ onStart, onNavigate }: IntroScreenProps) => {
           animate={{ y: 0, opacity: 1 }}
           transition={{ duration: 1 }}
         >
-          {/* Magnifying glass icon */}
+          {/* Building icon for real estate */}
           <motion.div
             className="text-8xl mb-6"
-            animate={{ rotate: [0, -10, 10, 0] }}
+            animate={{ scale: [1, 1.05, 1] }}
             transition={{ duration: 3, repeat: Infinity }}
           >
-            🔍
+            🏢
           </motion.div>
 
           <h1
-            className="text-5xl md:text-7xl font-bold mb-4"
+            className="text-4xl md:text-6xl font-bold mb-4"
             style={{
               background: "linear-gradient(135deg, hsl(var(--primary)), hsl(var(--accent)), hsl(var(--gold)))",
               WebkitBackgroundClip: "text",
@@ -97,13 +96,13 @@ export const IntroScreen = ({ onStart, onNavigate }: IntroScreenProps) => {
               textShadow: "0 0 40px hsl(var(--primary) / 0.5)",
             }}
           >
-            Data Detective
+            نواة كابيتال
           </h1>
-          <h2 className="text-2xl md:text-3xl text-gold font-bold mb-2">وكالة المحققين</h2>
-          <p className="text-muted-foreground text-lg">حل اللغز بالأرقام</p>
+          <h2 className="text-2xl md:text-3xl text-gold font-bold mb-2">للتطوير العقاري</h2>
+          <p className="text-muted-foreground text-lg">محقق البيانات</p>
         </motion.div>
 
-        {/* Detective character with real image */}
+        {/* Data Analyst character */}
         <motion.div
           className="relative mb-8"
           initial={{ scale: 0, opacity: 0 }}
@@ -144,7 +143,7 @@ export const IntroScreen = ({ onStart, onNavigate }: IntroScreenProps) => {
             animate={{ x: ["-200%", "200%"] }}
             transition={{ duration: 2, repeat: Infinity, repeatDelay: 1 }}
           />
-          <span className="relative z-10 flex items-center gap-3">🚀 ابدأ التحقيق</span>
+          <span className="relative z-10 flex items-center gap-3">📊 ابدأ التحقيق</span>
         </motion.button>
 
         {/* Case teaser */}
@@ -157,13 +156,13 @@ export const IntroScreen = ({ onStart, onNavigate }: IntroScreenProps) => {
           <div className="p-4 rounded-lg bg-card/30 backdrop-blur-sm border border-primary/30">
             <h3 className="text-primary font-bold mb-2">📁 القضية الجديدة</h3>
             <p className="text-sm text-muted-foreground">
-              "الأموال المفقودة" - شركة تجارية اكتشفت اختفاء 45,000 ريال. ثلاثة مشتبهين. أدلة مالية.
-              مهمتك: كشف الحقيقة.
+              "هبوط الأرباح المفاجئ" - شركة نواة كابيتال للتطوير العقاري تواجه انخفاضاً في الأرباح رغم استقرار عدد العقود.
+              مهمتك: اكتشاف السبب الحقيقي.
             </p>
 
-            {/* Mini suspect preview */}
+            {/* Key characters preview */}
             <div className="flex justify-center gap-4 mt-4">
-              {(["ahmed", "sara", "karim"] as const).map((id, i) => (
+              {(["cfo", "salesManager"] as const).map((id, i) => (
                 <motion.div
                   key={id}
                   initial={{ opacity: 0, y: 20 }}
@@ -174,7 +173,7 @@ export const IntroScreen = ({ onStart, onNavigate }: IntroScreenProps) => {
                     characterId={id}
                     size="sm"
                     showName={false}
-                    mood={id === "karim" ? "nervous" : "neutral"}
+                    mood="neutral"
                   />
                 </motion.div>
               ))}
