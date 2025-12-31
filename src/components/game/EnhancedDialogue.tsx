@@ -2,8 +2,8 @@ import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { AnimatedCharacter } from "./AnimatedCharacter";
 
-interface DialogueLine {
-  characterId: "ahmed" | "sara" | "karim" | "detective";
+export interface DialogueLine {
+  characterId: "ahmed" | "sara" | "karim" | "detective" | "cfo" | "salesManager";
   text: string;
   mood?: "neutral" | "happy" | "nervous" | "angry" | "suspicious";
 }
@@ -16,7 +16,7 @@ interface EnhancedDialogueProps {
   onIndexChange?: (index: number) => void;
 }
 
-const characterColors = {
+const characterColors: Record<string, { bg: string; border: string; name: string }> = {
   ahmed: {
     bg: "from-cyan-900/90 to-cyan-950/90",
     border: "border-cyan-500/50",
@@ -37,13 +37,25 @@ const characterColors = {
     border: "border-amber-500/50",
     name: "text-amber-400",
   },
+  cfo: {
+    bg: "from-blue-900/90 to-blue-950/90",
+    border: "border-blue-500/50",
+    name: "text-blue-400",
+  },
+  salesManager: {
+    bg: "from-green-900/90 to-green-950/90",
+    border: "border-green-500/50",
+    name: "text-green-400",
+  },
 };
 
-const characterNames = {
+const characterNames: Record<string, { ar: string; en: string }> = {
   ahmed: { ar: "أحمد", en: "Ahmed" },
   sara: { ar: "سارة", en: "Sara" },
   karim: { ar: "كريم", en: "Karim" },
   detective: { ar: "المحقق", en: "Detective" },
+  cfo: { ar: "م. طارق", en: "CFO" },
+  salesManager: { ar: "أ. سامي", en: "Sales Manager" },
 };
 
 export const EnhancedDialogue = ({

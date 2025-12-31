@@ -1,9 +1,9 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, ArrowLeft, FileText, Building, User, Calendar, DollarSign } from "lucide-react";
+import { X, ArrowLeft, FileText, Building, User, Calendar } from "lucide-react";
 import { useGame } from "@/contexts/GameContext";
 import { CASE_INFO, SAMPLE_CONTRACTS } from "@/data/newCase";
-import { InteractiveRoom } from "../InteractiveRoom";
+import { InteractiveRoom, Hotspot } from "../InteractiveRoom";
 import evidenceBackground from "@/assets/rooms/evidence-room.png";
 
 interface ContractsArchiveScreenProps {
@@ -15,7 +15,7 @@ export const ContractsArchiveScreen = ({ onNavigate }: ContractsArchiveScreenPro
   const [activePanel, setActivePanel] = useState<string | null>(null);
   const [selectedContract, setSelectedContract] = useState<typeof SAMPLE_CONTRACTS[0] | null>(null);
 
-  const hotspots = [
+  const hotspots: Hotspot[] = [
     { id: "cabinet", x: 50, y: 50, label: "خزانة العقود", icon: "📁" },
   ];
 
@@ -138,39 +138,34 @@ export const ContractsArchiveScreen = ({ onNavigate }: ContractsArchiveScreenPro
               </p>
 
               <div className="space-y-3">
-                {SAMPLE_CONTRACTS.map((contract, index) => {
-                  const priceDiff = contract.list_price - contract.final_price;
-                  const diffPercent = (priceDiff / contract.list_price) * 100;
-                  
-                  return (
-                    <motion.div
-                      key={contract.contract_id}
-                      className="p-4 rounded-xl bg-background border border-border hover:border-primary/50 cursor-pointer transition-colors"
-                      initial={{ x: -20, opacity: 0 }}
-                      animate={{ x: 0, opacity: 1 }}
-                      transition={{ delay: index * 0.1 }}
-                      onClick={() => handleViewContract(contract)}
-                    >
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-4">
-                          <div className="w-12 h-12 rounded-lg bg-primary/20 flex items-center justify-center">
-                            <FileText className="w-6 h-6 text-primary" />
-                          </div>
-                          <div>
-                            <p className="font-bold text-foreground">{contract.contract_id}</p>
-                            <p className="text-sm text-muted-foreground">
-                              {contract.project} - {contract.unit}
-                            </p>
-                          </div>
+                {SAMPLE_CONTRACTS.map((contract, index) => (
+                  <motion.div
+                    key={contract.contract_id}
+                    className="p-4 rounded-xl bg-background border border-border hover:border-primary/50 cursor-pointer transition-colors"
+                    initial={{ x: -20, opacity: 0 }}
+                    animate={{ x: 0, opacity: 1 }}
+                    transition={{ delay: index * 0.1 }}
+                    onClick={() => handleViewContract(contract)}
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-4">
+                        <div className="w-12 h-12 rounded-lg bg-primary/20 flex items-center justify-center">
+                          <FileText className="w-6 h-6 text-primary" />
                         </div>
-                        <div className="text-left">
-                          <p className="text-sm text-muted-foreground">{contract.salesperson}</p>
-                          <p className="text-xs text-muted-foreground">{contract.date}</p>
+                        <div>
+                          <p className="font-bold text-foreground">{contract.contract_id}</p>
+                          <p className="text-sm text-muted-foreground">
+                            {contract.project} - {contract.unit}
+                          </p>
                         </div>
                       </div>
-                    </motion.div>
-                  );
-                })}
+                      <div className="text-left">
+                        <p className="text-sm text-muted-foreground">{contract.salesperson}</p>
+                        <p className="text-xs text-muted-foreground">{contract.date}</p>
+                      </div>
+                    </div>
+                  </motion.div>
+                ))}
               </div>
 
               <motion.button

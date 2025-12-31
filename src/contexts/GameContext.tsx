@@ -1,130 +1,69 @@
-import React, { createContext, useContext, useState, useCallback, ReactNode } from "react";
+import { createContext, useContext, useState, useCallback, ReactNode } from "react";
+import { CONCLUSION_OPTIONS } from "@/data/newCase";
 
 // Types
 export interface Evidence {
   id: string;
   name: string;
-  type: "spreadsheet" | "email" | "document" | "log";
+  type: string;
   collected: boolean;
-  analyzed: boolean;
 }
 
 export interface InvestigationNote {
   id: string;
-  type: "discovery" | "clue" | "suspicion" | "key" | "pattern";
-  text: string;
-  source: string;
-  timestamp: number;
-  suspectId?: string;
-}
-
-export interface SuspectInterrogation {
-  suspectId: string;
-  questionsAsked: string[];
-  cluesRevealed: string[];
+  content: string;
+  timestamp: Date;
 }
 
 export interface GameState {
-  // التقدم
-  currentPhase: "intro" | "onboarding" | "investigation" | "conclusion";
-  progress: number;
-  
-  // نظام الثقة
-  trust: number;
-  maxTrust: number;
-  
-  // الأدلة
+  phase: "intro" | "investigation" | "conclusion" | "result";
   collectedEvidence: string[];
   viewedEvidence: string[];
-  
-  // دفتر التحقيق
-  investigationNotes: InvestigationNote[];
-  
-  // الفرضيات
-  activeHypothesis: string | null;
-  testedHypotheses: string[];
-  
-  // الاستجواب
-  interrogations: SuspectInterrogation[];
-  totalQuestionsAsked: number;
-  
-  // نظام الاتهام - 3 محاولات
-  accusation: string | null;
-  accusationAttempts: number;
-  maxAccusationAttempts: number;
-  caseCompleted: boolean;
-  score: number;
-  
-  // تتبع المفاتيح والأنماط المكتشفة
-  keysDiscovered: string[];
+  notes: InvestigationNote[];
   patternsDiscovered: string[];
+  score: number;
+  trust: number;
   
-  // حالة الحوار
-  hasSeenIntroDialogue: boolean;
+  // New case specific
+  hasSeenCFOIntro: boolean;
+  hasRequestedDataset: boolean;
+  conclusionAttempts: number;
+  conclusion: {
+    cause: string;
+    project: string;
+    salesperson: string;
+  } | null;
+  isCorrect: boolean | null;
 }
 
-interface GameContextType {
+export interface GameContextType {
   state: GameState;
-  
-  // Evidence actions
-  collectEvidence: (id: string) => void;
-  viewEvidence: (id: string) => void;
-  
-  // Investigation notes
-  addNote: (note: Omit<InvestigationNote, "id" | "timestamp">) => void;
-  
-  // Hypothesis actions
-  setActiveHypothesis: (id: string) => void;
-  
-  // Trust actions
-  addTrust: (amount: number) => void;
-  removeTrust: (amount: number) => void;
-  
-  // Interrogation actions
-  askQuestion: (suspectId: string, questionId: string, clue?: string) => void;
-  getQuestionsAskedForSuspect: (suspectId: string) => string[];
-  canAskMoreQuestions: (suspectId: string) => boolean;
-  
-  // Key/Pattern discovery
-  discoverKey: (keyId: string) => void;
-  hasDiscoveredKey: (keyId: string) => boolean;
-  discoverPattern: (patternId: string, description: string) => void;
-  hasDiscoveredPattern: (patternId: string) => boolean;
-  
-  // Game actions
-  setPhase: (phase: GameState["currentPhase"]) => void;
-  makeAccusation: (suspectId: string) => { correct: boolean; attemptsLeft: number; gameOver: boolean };
+  collectEvidence: (evidenceId: string) => void;
+  hasCollectedEvidence: (evidenceId: string) => boolean;
+  viewEvidence: (evidenceId: string) => void;
+  addNote: (content: string) => void;
+  discoverPattern: (pattern: string) => void;
+  hasDiscoveredPattern: (pattern: string) => boolean;
+  requestDataset: () => void;
+  markCFOIntroSeen: () => void;
+  submitConclusion: (conclusion: { cause: string; project: string; salesperson: string }) => { correct: boolean; feedback: string };
   resetGame: () => void;
-  markIntroSeen: () => void;
-  
-  // Helpers
-  canAccuse: () => boolean;
   getProgress: () => number;
-  getTrustLevel: () => "critical" | "low" | "medium" | "high";
-  getInterrogationProgress: () => { asked: number; total: number };
-  getRemainingAttempts: () => number;
 }
 
 const initialState: GameState = {
-  currentPhase: "intro",
-  progress: 0,
-  trust: 100,
-  maxTrust: 100,
+  phase: "intro",
   collectedEvidence: [],
   viewedEvidence: [],
-  investigationNotes: [],
-  activeHypothesis: null,
-  testedHypotheses: [],
-  interrogations: [],
-  totalQuestionsAsked: 0,
-  accusation: null,
-  accusationAttempts: 0,
-  maxAccusationAttempts: 3,
-  caseCompleted: false,
-  score: 0,
-  keysDiscovered: [],
+  notes: [],
   patternsDiscovered: [],
-  hasSeenIntroDialogue: false,
+  score: 0,
+  trust: 100,
+  hasSeenCFOIntro: false,
+  hasRequestedDataset: false,
+  conclusionAttempts: 0,
+  conclusion: null,
+  isCorrect: null,
 };
 
 const GameContext = createContext<GameContextType | undefined>(undefined);
@@ -132,301 +71,122 @@ const GameContext = createContext<GameContextType | undefined>(undefined);
 export const GameProvider = ({ children }: { children: ReactNode }) => {
   const [state, setState] = useState<GameState>(initialState);
 
-  const collectEvidence = useCallback((id: string) => {
+  const collectEvidence = useCallback((evidenceId: string) => {
     setState(prev => {
-      if (prev.collectedEvidence.includes(id)) return prev;
-      
-      const newCollected = [...prev.collectedEvidence, id];
-      const trustBonus = 5;
-      
+      if (prev.collectedEvidence.includes(evidenceId)) return prev;
       return {
         ...prev,
-        collectedEvidence: newCollected,
-        trust: Math.min(prev.maxTrust, prev.trust + trustBonus),
-        progress: Math.min(prev.progress + 10, 100),
-        score: prev.score + 25,
-      };
-    });
-  }, []);
-
-  const viewEvidence = useCallback((id: string) => {
-    setState(prev => {
-      if (prev.viewedEvidence.includes(id)) return prev;
-      return {
-        ...prev,
-        viewedEvidence: [...prev.viewedEvidence, id],
-      };
-    });
-  }, []);
-
-  const addNote = useCallback((note: Omit<InvestigationNote, "id" | "timestamp">) => {
-    setState(prev => {
-      const newNote: InvestigationNote = {
-        ...note,
-        id: `note-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-        timestamp: Date.now(),
-      };
-      
-      const trustBonus = note.type === "key" ? 10 : note.type === "clue" ? 5 : note.type === "pattern" ? 15 : 0;
-      
-      return {
-        ...prev,
-        investigationNotes: [...prev.investigationNotes, newNote],
-        trust: Math.min(prev.maxTrust, prev.trust + trustBonus),
-        score: prev.score + (note.type === "key" ? 50 : note.type === "clue" ? 20 : note.type === "pattern" ? 40 : 5),
-      };
-    });
-  }, []);
-
-  const setActiveHypothesis = useCallback((id: string) => {
-    setState(prev => ({
-      ...prev,
-      activeHypothesis: id,
-      score: prev.score + 30,
-    }));
-  }, []);
-
-  const addTrust = useCallback((amount: number) => {
-    setState(prev => ({
-      ...prev,
-      trust: Math.min(prev.maxTrust, prev.trust + amount),
-    }));
-  }, []);
-
-  const removeTrust = useCallback((amount: number) => {
-    setState(prev => ({
-      ...prev,
-      trust: Math.max(0, prev.trust - amount),
-    }));
-  }, []);
-
-  const askQuestion = useCallback((suspectId: string, questionId: string, clue?: string) => {
-    setState(prev => {
-      const existingInterrogation = prev.interrogations.find(i => i.suspectId === suspectId);
-      
-      let newInterrogations: SuspectInterrogation[];
-      
-      if (existingInterrogation) {
-        if (existingInterrogation.questionsAsked.includes(questionId)) {
-          return prev;
-        }
-        
-        newInterrogations = prev.interrogations.map(i => 
-          i.suspectId === suspectId 
-            ? {
-                ...i,
-                questionsAsked: [...i.questionsAsked, questionId],
-                cluesRevealed: clue ? [...i.cluesRevealed, clue] : i.cluesRevealed,
-              }
-            : i
-        );
-      } else {
-        newInterrogations = [
-          ...prev.interrogations,
-          {
-            suspectId,
-            questionsAsked: [questionId],
-            cluesRevealed: clue ? [clue] : [],
-          },
-        ];
-      }
-      
-      const newNotes = clue 
-        ? [
-            ...prev.investigationNotes,
-            {
-              id: `note-${Date.now()}`,
-              type: "clue" as const,
-              text: clue,
-              source: "interrogation",
-              timestamp: Date.now(),
-              suspectId,
-            },
-          ]
-        : prev.investigationNotes;
-      
-      return {
-        ...prev,
-        interrogations: newInterrogations,
-        totalQuestionsAsked: prev.totalQuestionsAsked + 1,
-        investigationNotes: newNotes,
-        progress: Math.min(prev.progress + 5, 100),
-        score: prev.score + 15,
-      };
-    });
-  }, []);
-
-  const getQuestionsAskedForSuspect = useCallback((suspectId: string): string[] => {
-    const interrogation = state.interrogations.find(i => i.suspectId === suspectId);
-    return interrogation?.questionsAsked || [];
-  }, [state.interrogations]);
-
-  const canAskMoreQuestions = useCallback((suspectId: string): boolean => {
-    const questionsAsked = getQuestionsAskedForSuspect(suspectId);
-    return questionsAsked.length < 3;
-  }, [getQuestionsAskedForSuspect]);
-
-  const discoverKey = useCallback((keyId: string) => {
-    setState(prev => {
-      if (prev.keysDiscovered.includes(keyId)) return prev;
-      
-      return {
-        ...prev,
-        keysDiscovered: [...prev.keysDiscovered, keyId],
-        trust: Math.min(prev.maxTrust, prev.trust + 10),
-        score: prev.score + 75,
-      };
-    });
-  }, []);
-
-  const hasDiscoveredKey = useCallback((keyId: string): boolean => {
-    return state.keysDiscovered.includes(keyId);
-  }, [state.keysDiscovered]);
-
-  const discoverPattern = useCallback((patternId: string, description: string) => {
-    setState(prev => {
-      if (prev.patternsDiscovered.includes(patternId)) return prev;
-      
-      const newNote: InvestigationNote = {
-        id: `pattern-${Date.now()}`,
-        type: "pattern",
-        text: description,
-        source: "analysis",
-        timestamp: Date.now(),
-      };
-      
-      return {
-        ...prev,
-        patternsDiscovered: [...prev.patternsDiscovered, patternId],
-        investigationNotes: [...prev.investigationNotes, newNote],
-        trust: Math.min(prev.maxTrust, prev.trust + 15),
+        collectedEvidence: [...prev.collectedEvidence, evidenceId],
         score: prev.score + 50,
       };
     });
   }, []);
 
-  const hasDiscoveredPattern = useCallback((patternId: string): boolean => {
-    return state.patternsDiscovered.includes(patternId);
-  }, [state.patternsDiscovered]);
+  const hasCollectedEvidence = useCallback((evidenceId: string) => {
+    return state.collectedEvidence.includes(evidenceId);
+  }, [state.collectedEvidence]);
 
-  const setPhase = useCallback((phase: GameState["currentPhase"]) => {
-    setState(prev => ({ ...prev, currentPhase: phase }));
+  const viewEvidence = useCallback((evidenceId: string) => {
+    setState(prev => {
+      if (prev.viewedEvidence.includes(evidenceId)) return prev;
+      return {
+        ...prev,
+        viewedEvidence: [...prev.viewedEvidence, evidenceId],
+      };
+    });
   }, []);
 
-  const makeAccusation = useCallback((suspectId: string): { correct: boolean; attemptsLeft: number; gameOver: boolean } => {
-    const isCorrect = suspectId === "karim";
-    
-    let result = { correct: isCorrect, attemptsLeft: 0, gameOver: false };
-    
+  const addNote = useCallback((content: string) => {
+    setState(prev => ({
+      ...prev,
+      notes: [
+        ...prev.notes,
+        { id: `note-${Date.now()}`, content, timestamp: new Date() }
+      ],
+    }));
+  }, []);
+
+  const discoverPattern = useCallback((pattern: string) => {
     setState(prev => {
-      const newAttempts = prev.accusationAttempts + 1;
-      const attemptsLeft = prev.maxAccusationAttempts - newAttempts;
-      
-      if (isCorrect) {
-        // نجاح!
-        const evidenceBonus = prev.collectedEvidence.length * 50;
-        const notesBonus = prev.investigationNotes.filter(n => n.type === "key" || n.type === "pattern").length * 100;
-        const trustBonus = Math.floor(prev.trust / 10) * 20;
-        const questionsBonus = prev.totalQuestionsAsked * 10;
-        
-        const finalScore = prev.score + 500 + evidenceBonus + notesBonus + trustBonus + questionsBonus;
-        
-        result = { correct: true, attemptsLeft, gameOver: true };
-        
-        return {
-          ...prev,
-          accusation: suspectId,
-          accusationAttempts: newAttempts,
-          caseCompleted: true,
-          score: finalScore,
-        };
-      } else {
-        // محاولة خاطئة
-        const trustPenalty = 25;
-        const newTrust = Math.max(0, prev.trust - trustPenalty);
-        const isGameOver = newAttempts >= prev.maxAccusationAttempts || newTrust <= 0;
-        
-        result = { correct: false, attemptsLeft, gameOver: isGameOver };
-        
-        return {
-          ...prev,
-          accusationAttempts: newAttempts,
-          trust: newTrust,
-          caseCompleted: isGameOver,
-          accusation: isGameOver ? suspectId : prev.accusation,
-          score: isGameOver ? Math.max(0, prev.score - 200) : prev.score,
-        };
-      }
+      if (prev.patternsDiscovered.includes(pattern)) return prev;
+      return {
+        ...prev,
+        patternsDiscovered: [...prev.patternsDiscovered, pattern],
+        score: prev.score + 100,
+      };
     });
+  }, []);
+
+  const hasDiscoveredPattern = useCallback((pattern: string) => {
+    return state.patternsDiscovered.includes(pattern);
+  }, [state.patternsDiscovered]);
+
+  const requestDataset = useCallback(() => {
+    setState(prev => ({
+      ...prev,
+      hasRequestedDataset: true,
+      score: prev.score + 25,
+    }));
+  }, []);
+
+  const markCFOIntroSeen = useCallback(() => {
+    setState(prev => ({ ...prev, hasSeenCFOIntro: true }));
+  }, []);
+
+  const submitConclusion = useCallback((conclusion: { cause: string; project: string; salesperson: string }) => {
+    const causeCorrect = CONCLUSION_OPTIONS.causes.find(c => c.id === conclusion.cause)?.correct;
+    const projectCorrect = CONCLUSION_OPTIONS.projects.find(p => p.id === conclusion.project)?.correct;
+    const salespersonCorrect = CONCLUSION_OPTIONS.salespeople.find(s => s.id === conclusion.salesperson)?.correct;
     
-    return result;
+    const allCorrect = causeCorrect && projectCorrect && salespersonCorrect;
+    
+    setState(prev => ({
+      ...prev,
+      conclusionAttempts: prev.conclusionAttempts + 1,
+      conclusion,
+      isCorrect: allCorrect ?? false,
+      trust: allCorrect ? prev.trust : Math.max(0, prev.trust - 25),
+      score: allCorrect ? prev.score + 500 : prev.score,
+    }));
+
+    if (allCorrect) {
+      return { correct: true, feedback: "أحسنت! استنتاجك صحيح تماماً. لقد حددت المشكلة بدقة." };
+    }
+    
+    let feedback = "استنتاجك غير دقيق. ";
+    if (!causeCorrect) feedback += "السبب الرئيسي غير صحيح. ";
+    if (!projectCorrect) feedback += "المشروع المحدد غير صحيح. ";
+    if (!salespersonCorrect) feedback += "المندوب المحدد غير صحيح. ";
+    feedback += "راجع تحليلك وحاول مرة أخرى.";
+    
+    return { correct: false, feedback };
   }, []);
 
   const resetGame = useCallback(() => {
     setState(initialState);
   }, []);
 
-  const markIntroSeen = useCallback(() => {
-    setState(prev => ({ ...prev, hasSeenIntroDialogue: true }));
-  }, []);
-
-  const canAccuse = useCallback(() => {
-    const suspectsInterrogated = state.interrogations.filter(i => i.questionsAsked.length > 0).length;
-    return state.collectedEvidence.length >= 3 && 
-           suspectsInterrogated >= 2 &&
-           state.trust > 20 &&
-           state.accusationAttempts < state.maxAccusationAttempts;
-  }, [state]);
-
   const getProgress = useCallback(() => {
-    const evidenceProgress = (state.collectedEvidence.length / 4) * 40;
-    const interrogationProgress = (state.interrogations.filter(i => i.questionsAsked.length > 0).length / 3) * 40;
-    const notesProgress = Math.min(state.investigationNotes.length / 10, 1) * 20;
-    return Math.round(evidenceProgress + interrogationProgress + notesProgress);
-  }, [state]);
-
-  const getTrustLevel = useCallback((): "critical" | "low" | "medium" | "high" => {
-    if (state.trust <= 20) return "critical";
-    if (state.trust <= 40) return "low";
-    if (state.trust <= 70) return "medium";
-    return "high";
-  }, [state.trust]);
-
-  const getInterrogationProgress = useCallback(() => {
-    const asked = state.totalQuestionsAsked;
-    const total = 9;
-    return { asked, total };
-  }, [state.totalQuestionsAsked]);
-
-  const getRemainingAttempts = useCallback(() => {
-    return state.maxAccusationAttempts - state.accusationAttempts;
-  }, [state.maxAccusationAttempts, state.accusationAttempts]);
+    const evidenceProgress = (state.collectedEvidence.length / 5) * 40;
+    const patternProgress = (state.patternsDiscovered.length / 3) * 40;
+    const datasetProgress = state.hasRequestedDataset ? 20 : 0;
+    return Math.min(100, evidenceProgress + patternProgress + datasetProgress);
+  }, [state.collectedEvidence.length, state.patternsDiscovered.length, state.hasRequestedDataset]);
 
   return (
     <GameContext.Provider value={{
       state,
       collectEvidence,
+      hasCollectedEvidence,
       viewEvidence,
       addNote,
-      setActiveHypothesis,
-      addTrust,
-      removeTrust,
-      askQuestion,
-      getQuestionsAskedForSuspect,
-      canAskMoreQuestions,
-      discoverKey,
-      hasDiscoveredKey,
       discoverPattern,
       hasDiscoveredPattern,
-      setPhase,
-      makeAccusation,
+      requestDataset,
+      markCFOIntroSeen,
+      submitConclusion,
       resetGame,
-      markIntroSeen,
-      canAccuse,
       getProgress,
-      getTrustLevel,
-      getInterrogationProgress,
-      getRemainingAttempts,
     }}>
       {children}
     </GameContext.Provider>
@@ -436,7 +196,7 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
 export const useGame = () => {
   const context = useContext(GameContext);
   if (!context) {
-    throw new Error("useGame must be used within a GameProvider");
+    throw new Error("useGame must be used within GameProvider");
   }
   return context;
 };

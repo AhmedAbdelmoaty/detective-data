@@ -1,16 +1,15 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, FileText, TrendingDown, ClipboardList, MessageSquare, ArrowLeft, Database } from "lucide-react";
+import { X, FileText, TrendingDown, ClipboardList, ArrowLeft, Database } from "lucide-react";
 import { useGame } from "@/contexts/GameContext";
 import { 
   CASE_INFO, 
   WEEKLY_PROFITS, 
   WEEKLY_CONTRACTS, 
-  CFO_DIALOGUES,
-  CHARACTERS 
+  CFO_DIALOGUES 
 } from "@/data/newCase";
-import { InteractiveRoom } from "../InteractiveRoom";
-import { EnhancedDialogue } from "../EnhancedDialogue";
+import { InteractiveRoom, Hotspot } from "../InteractiveRoom";
+import { EnhancedDialogue, DialogueLine } from "../EnhancedDialogue";
 import officeBackground from "@/assets/rooms/detective-office.png";
 
 interface CFOOfficeScreenProps {
@@ -23,7 +22,7 @@ export const CFOOfficeScreen = ({ onNavigate }: CFOOfficeScreenProps) => {
   const [showDialogue, setShowDialogue] = useState(!state.hasSeenCFOIntro);
   const [dialoguePhase, setDialoguePhase] = useState<"intro" | "afterReports" | "dataset">("intro");
 
-  const hotspots = [
+  const hotspots: Hotspot[] = [
     { id: "cfo", x: 50, y: 40, label: "المدير المالي", icon: "👔" },
     { id: "reports", x: 25, y: 55, label: "التقارير", icon: "📊" },
     { id: "request-data", x: 75, y: 55, label: "طلب بيانات", icon: "📁" },
@@ -47,9 +46,7 @@ export const CFOOfficeScreen = ({ onNavigate }: CFOOfficeScreenProps) => {
 
   const handleDialogueComplete = () => {
     setShowDialogue(false);
-    if (dialoguePhase === "intro") {
-      // Mark CFO intro as seen
-    } else if (dialoguePhase === "dataset") {
+    if (dialoguePhase === "dataset") {
       requestDataset();
       addNote("تم الحصول على بيانات الصفقات التفصيلية - متاحة الآن في مكتبي");
     }
@@ -60,23 +57,23 @@ export const CFOOfficeScreen = ({ onNavigate }: CFOOfficeScreenProps) => {
     addNote(`تم جمع: ${evidenceId === "weekly-profits" ? "ملخص الأرباح" : "تقرير العقود"}`);
   };
 
-  const getCurrentDialogues = () => {
+  const getCurrentDialogues = (): DialogueLine[] => {
     switch (dialoguePhase) {
       case "intro":
         return CFO_DIALOGUES.intro.map(d => ({
-          characterId: d.speaker === "cfo" ? "detective" : "detective",
+          characterId: "cfo" as const,
           text: d.text,
           mood: "neutral" as const
         }));
       case "afterReports":
         return CFO_DIALOGUES.afterReports.map(d => ({
-          characterId: "detective",
+          characterId: "cfo" as const,
           text: d.text,
           mood: "neutral" as const
         }));
       case "dataset":
         return CFO_DIALOGUES.datasetRequest.map(d => ({
-          characterId: "detective",
+          characterId: "cfo" as const,
           text: d.text,
           mood: "happy" as const
         }));
