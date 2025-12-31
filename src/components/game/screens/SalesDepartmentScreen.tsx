@@ -1,15 +1,14 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, ArrowLeft, Trophy, MessageSquare } from "lucide-react";
+import { X, ArrowLeft, Trophy } from "lucide-react";
 import { useGame } from "@/contexts/GameContext";
 import { 
   CASE_INFO, 
   SALES_LEADERBOARD, 
-  SALES_MANAGER_DIALOGUES,
-  CHARACTERS 
+  SALES_MANAGER_DIALOGUES 
 } from "@/data/newCase";
-import { InteractiveRoom } from "../InteractiveRoom";
-import { EnhancedDialogue } from "../EnhancedDialogue";
+import { InteractiveRoom, Hotspot } from "../InteractiveRoom";
+import { EnhancedDialogue, DialogueLine } from "../EnhancedDialogue";
 import evidenceBackground from "@/assets/rooms/evidence-room.png";
 
 interface SalesDepartmentScreenProps {
@@ -23,7 +22,7 @@ export const SalesDepartmentScreen = ({ onNavigate }: SalesDepartmentScreenProps
   const [dialoguePhase, setDialoguePhase] = useState<"intro" | "defensive" | "leaderboard">("intro");
   const [hasSpokenToManager, setHasSpokenToManager] = useState(false);
 
-  const hotspots = [
+  const hotspots: Hotspot[] = [
     { id: "manager", x: 35, y: 45, label: "مدير المبيعات", icon: "👔" },
     { id: "leaderboard", x: 65, y: 40, label: "لوحة الأداء", icon: "🏆" },
   ];
@@ -53,7 +52,7 @@ export const SalesDepartmentScreen = ({ onNavigate }: SalesDepartmentScreenProps
     addNote("تم جمع: لوحة أداء المبيعات - محمد علي في المركز الأول بـ 18 صفقة");
   };
 
-  const getCurrentDialogues = () => {
+  const getCurrentDialogues = (): DialogueLine[] => {
     let dialogues = [];
     switch (dialoguePhase) {
       case "intro":
@@ -67,7 +66,7 @@ export const SalesDepartmentScreen = ({ onNavigate }: SalesDepartmentScreenProps
         break;
     }
     return dialogues.map(d => ({
-      characterId: "detective" as const,
+      characterId: "salesManager" as const,
       text: d.text,
       mood: "neutral" as const
     }));
