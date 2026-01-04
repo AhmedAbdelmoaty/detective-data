@@ -1,31 +1,36 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { MessageSquare, Scale, Users, AlertTriangle } from "lucide-react";
+import { MessageSquare, Scale, Users, AlertTriangle, User } from "lucide-react";
 import { InteractiveRoom } from "../InteractiveRoom";
 import { SceneTransition } from "../SceneTransition";
 import { NavigationButton } from "../NavigationButton";
 import { useGame } from "@/contexts/GameContext";
 import { useSound } from "@/hooks/useSoundEffects";
-import { SUSPECTS, CASE_SOLUTION } from "@/data/case1";
+import { CHARACTERS } from "@/data/case1";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
-import interrogationRoom from "@/assets/rooms/interrogation-room.png";
-import suspectArrested from "@/assets/scenes/suspect-arrested.png";
-import suspectEscaped from "@/assets/scenes/suspect-escaped.png";
-import ahmedImg from "@/assets/characters/ahmed.png";
-import saraImg from "@/assets/characters/sara.png";
-import karimImg from "@/assets/characters/karim.png";
+import projectsRoom from "@/assets/rooms/projects-room.png";
 
 interface InterrogationScreenProps {
   onNavigate: (screen: string) => void;
 }
 
-const suspectImages: Record<string, string> = { ahmed: ahmedImg, sara: saraImg, karim: karimImg };
-
 export const InterrogationScreen = ({ onNavigate }: InterrogationScreenProps) => {
-  const { state, askQuestion, getQuestionsAskedForSuspect, canAskMoreQuestions, makeAccusation, canAccuse, addNote, getRemainingAttempts } = useGame();
+  const { 
+    state, 
+    addNote,
+    makeAccusation, 
+    canAccuse, 
+    getRemainingAttempts,
+    modifyTrust,
+    unlockEvidence,
+    completeDialogue,
+    hasCompletedDialogue,
+    hasInsight,
+  } = useGame();
   const { playSound } = useSound();
-  const [selectedSuspect, setSelectedSuspect] = useState<typeof SUSPECTS[0] | null>(null);
+  
+  const [selectedCharacter, setSelectedCharacter] = useState<typeof CHARACTERS[0] | null>(null);
   const [showQuestions, setShowQuestions] = useState(false);
   const [currentResponse, setCurrentResponse] = useState<string | null>(null);
   const [showAccusePanel, setShowAccusePanel] = useState(false);
@@ -34,45 +39,66 @@ export const InterrogationScreen = ({ onNavigate }: InterrogationScreenProps) =>
 
   const remainingAttempts = getRemainingAttempts();
 
-  const handleSelectSuspect = (suspect: typeof SUSPECTS[0]) => {
-    setSelectedSuspect(suspect);
+  const handleSelectCharacter = (char: typeof CHARACTERS[0]) => {
+    setSelectedCharacter(char);
     setShowQuestions(true);
-    setCurrentResponse(suspect.initialStatement);
+    setCurrentResponse(char.initialStatement);
     playSound("click");
   };
 
-  const handleAskQuestion = (question: typeof SUSPECTS[0]["questions"][0]) => {
-    if (!selectedSuspect || !canAskMoreQuestions(selectedSuspect.id)) return;
+  const handleDialogueChoice = (choice: any, dialogueId: string) => {
+    if (!selectedCharacter) return;
     
-    askQuestion(selectedSuspect.id, question.id, question.clue);
-    setCurrentResponse(question.response);
+    completeDialogue(dialogueId);
     
-    if (question.revealsClue && question.clue) {
-      addNote({
-        type: "clue",
-        text: question.clue,
-        source: "interrogation",
-        suspectId: selectedSuspect.id,
-      });
+    switch (choice.result) {
+      case "unlock":
+        if (choice.unlockEvidence) {
+          unlockEvidence(choice.unlockEvidence);
+          toast.success("تم فتح دليل جديد!");
+        }
+        break;
+      case "clue":
+        if (choice.clue) {
+          addNote({
+            type: "clue",
+            text: choice.clue,
+            source: "interrogation",
+            characterId: selectedCharacter.id,
+          });
+          toast.success("تم تسجيل معلومة جديدة!");
+        }
+        break;
+      case "trust_up":
+      case "trust_down":
+        if (choice.trustChange) {
+          modifyTrust(choice.trustChange.entity, choice.trustChange.amount);
+          if (choice.trustChange.amount < 0) {
+            toast.error("انخفضت الثقة!");
+          }
+        }
+        break;
+    }
+    
+    if (choice.followUp) {
+      setCurrentResponse(choice.followUp);
     }
     
     playSound("reveal");
   };
 
-  const handleAccuse = (suspectId: string) => {
+  const handleAccuse = (characterId: string) => {
     playSound("click");
-    const result = makeAccusation(suspectId);
+    const result = makeAccusation(characterId);
     
     if (result.correct) {
-      // نجاح!
       setIsCorrectAccusation(true);
       setShowAccusePanel(false);
       setTimeout(() => {
         setShowResult(true);
         playSound("success");
       }, 500);
-    } else if (result.gameOver) {
-      // فشل نهائي - استنفذ كل المحاولات
+    } else if (result.attemptsLeft <= 0) {
       setIsCorrectAccusation(false);
       setShowAccusePanel(false);
       setTimeout(() => {
@@ -80,34 +106,52 @@ export const InterrogationScreen = ({ onNavigate }: InterrogationScreenProps) =>
         playSound("error");
       }, 500);
     } else {
-      // محاولة خاطئة - لكن لا يزال لديه محاولات
       setShowAccusePanel(false);
       toast.error(`اتهام خاطئ! تبقى لك ${result.attemptsLeft} محاولة`, {
-        description: "فكر جيداً قبل الاتهام التالي. الثقة انخفضت 25%.",
+        description: "فكر جيداً قبل الاتهام التالي.",
         duration: 5000,
       });
       playSound("error");
     }
   };
 
-  const questionsAsked = selectedSuspect ? getQuestionsAskedForSuspect(selectedSuspect.id) : [];
+  // Get available dialogues for character
+  const getAvailableDialogues = () => {
+    if (!selectedCharacter) return [];
+    
+    return selectedCharacter.dialogues.filter(d => {
+      if (hasCompletedDialogue(d.id)) return false;
+      
+      if (d.trigger === "first_visit") return true;
+      if (d.trigger === "has_insight" && d.requiredInsight) {
+        return hasInsight(d.requiredInsight);
+      }
+      if (d.trigger === "after_analysis") {
+        return state.discoveredInsights.length >= 1;
+      }
+      return false;
+    });
+  };
+
+  const availableDialogues = getAvailableDialogues();
 
   return (
     <>
       <InteractiveRoom
-        backgroundImage={interrogationRoom}
+        backgroundImage={projectsRoom}
         hotspots={[]}
         onHotspotClick={() => {}}
-        activeHotspot={selectedSuspect?.id || null}
-        overlayContent={showQuestions && selectedSuspect ? (
+        activeHotspot={selectedCharacter?.id || null}
+        overlayContent={showQuestions && selectedCharacter ? (
           <motion.div className="bg-background/95 backdrop-blur-xl border border-primary/30 rounded-2xl p-6 max-w-3xl w-full max-h-[80vh] overflow-auto">
-            {/* Suspect header */}
+            {/* Character header */}
             <div className="flex items-center gap-4 mb-6 pb-4 border-b border-border">
-              <img src={suspectImages[selectedSuspect.id]} alt={selectedSuspect.name} className="w-20 h-20 object-contain" />
+              <div className="w-16 h-16 rounded-full bg-primary/20 flex items-center justify-center">
+                <User className="w-8 h-8 text-primary" />
+              </div>
               <div>
-                <h3 className="text-2xl font-bold">{selectedSuspect.name}</h3>
-                <p className="text-muted-foreground">{selectedSuspect.role}</p>
-                <p className="text-sm text-primary">{questionsAsked.length}/3 أسئلة</p>
+                <h3 className="text-2xl font-bold text-foreground">{selectedCharacter.name}</h3>
+                <p className="text-muted-foreground">{selectedCharacter.role}</p>
               </div>
             </div>
 
@@ -122,33 +166,36 @@ export const InterrogationScreen = ({ onNavigate }: InterrogationScreenProps) =>
               </motion.div>
             )}
 
-            {/* Questions */}
-            {canAskMoreQuestions(selectedSuspect.id) ? (
-              <div className="space-y-3">
-                <p className="text-sm text-muted-foreground mb-2">اختر سؤالاً:</p>
-                {selectedSuspect.questions
-                  .filter(q => !questionsAsked.includes(q.id))
-                  .map((q, i) => (
-                    <motion.button
-                      key={q.id}
-                      onClick={() => handleAskQuestion(q)}
-                      className="w-full p-4 rounded-xl bg-card/50 border border-border hover:border-primary text-right transition-all"
-                      initial={{ opacity: 0, x: -20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: i * 0.1 }}
-                      whileHover={{ scale: 1.02 }}
-                    >
-                      <MessageSquare className="w-4 h-4 inline-block ml-2 text-primary" />
-                      {q.text}
-                    </motion.button>
-                  ))}
+            {/* Dialogues */}
+            {availableDialogues.length > 0 ? (
+              <div className="space-y-4">
+                {availableDialogues.map((dialogue) => (
+                  <div key={dialogue.id} className="p-4 rounded-xl bg-card/50 border border-border">
+                    <p className="text-foreground mb-4">{dialogue.text}</p>
+                    <div className="space-y-2">
+                      {dialogue.choices.map((choice) => (
+                        <motion.button
+                          key={choice.id}
+                          onClick={() => handleDialogueChoice(choice, dialogue.id)}
+                          className="w-full p-3 rounded-lg bg-secondary/50 border border-border hover:border-primary text-right text-foreground transition-all"
+                          whileHover={{ x: -5 }}
+                        >
+                          <MessageSquare className="w-4 h-4 inline-block ml-2 text-primary" />
+                          {choice.text}
+                        </motion.button>
+                      ))}
+                    </div>
+                  </div>
+                ))}
               </div>
             ) : (
-              <p className="text-center text-amber-400">استنفدت جميع الأسئلة لهذا المشتبه</p>
+              <p className="text-center text-muted-foreground py-8">
+                لا توجد حوارات متاحة حالياً. اجمع المزيد من الأدلة أو حلل البيانات لفتح حوارات جديدة.
+              </p>
             )}
 
             <button
-              onClick={() => { setShowQuestions(false); setSelectedSuspect(null); }}
+              onClick={() => { setShowQuestions(false); setSelectedCharacter(null); }}
               className="mt-6 w-full py-3 rounded-xl bg-secondary text-foreground"
             >
               إغلاق
@@ -159,12 +206,11 @@ export const InterrogationScreen = ({ onNavigate }: InterrogationScreenProps) =>
             <div className="flex items-center gap-4 mb-6 pb-4 border-b border-border">
               <Scale className="w-8 h-8 text-destructive" />
               <div>
-                <h3 className="text-2xl font-bold">اتخذ قرارك النهائي</h3>
-                <p className="text-muted-foreground">من هو المختلس؟</p>
+                <h3 className="text-2xl font-bold text-foreground">اتخذ قرارك النهائي</h3>
+                <p className="text-muted-foreground">من هو المذنب؟</p>
               </div>
             </div>
 
-            {/* Attempts Warning */}
             <motion.div
               className="p-4 rounded-xl bg-destructive/10 border border-destructive/30 mb-6"
               initial={{ opacity: 0 }}
@@ -175,26 +221,32 @@ export const InterrogationScreen = ({ onNavigate }: InterrogationScreenProps) =>
                 <div>
                   <p className="font-bold text-destructive">المحاولات المتبقية: {remainingAttempts}</p>
                   <p className="text-sm text-muted-foreground">
-                    كل اتهام خاطئ يقلل الثقة 25%. إذا استنفدت المحاولات أو وصلت الثقة للصفر، تفشل القضية.
+                    كل اتهام خاطئ يقلل من فرصك في حل القضية.
                   </p>
                 </div>
               </div>
             </motion.div>
 
-            <div className="grid grid-cols-3 gap-6">
-              {SUSPECTS.map((suspect, i) => (
+            <div className="grid grid-cols-2 gap-4">
+              {CHARACTERS.map((char, i) => (
                 <motion.button
-                  key={suspect.id}
-                  onClick={() => handleAccuse(suspect.id)}
-                  className="p-4 rounded-xl bg-card/50 border-2 border-destructive/30 hover:border-destructive transition-all"
+                  key={char.id}
+                  onClick={() => handleAccuse(char.id)}
+                  className="p-4 rounded-xl bg-card/50 border-2 border-destructive/30 hover:border-destructive transition-all text-right"
                   initial={{ opacity: 0, y: 30 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: i * 0.1 }}
-                  whileHover={{ scale: 1.03 }}
+                  whileHover={{ scale: 1.02 }}
                 >
-                  <img src={suspectImages[suspect.id]} alt={suspect.name} className="w-full h-32 object-contain mb-4" />
-                  <h4 className="font-bold">{suspect.name}</h4>
-                  <p className="text-sm text-muted-foreground">{suspect.role}</p>
+                  <div className="flex items-center gap-3">
+                    <div className="w-12 h-12 rounded-full bg-destructive/20 flex items-center justify-center">
+                      <User className="w-6 h-6 text-destructive" />
+                    </div>
+                    <div>
+                      <h4 className="font-bold text-foreground">{char.name}</h4>
+                      <p className="text-sm text-muted-foreground">{char.role}</p>
+                    </div>
+                  </div>
                 </motion.button>
               ))}
             </div>
@@ -213,32 +265,34 @@ export const InterrogationScreen = ({ onNavigate }: InterrogationScreenProps) =>
         <motion.div className="absolute top-6 left-1/2 -translate-x-1/2 z-20">
           <div className="flex items-center gap-4 px-6 py-3 rounded-full bg-background/90 backdrop-blur-xl border border-primary/30">
             <Users className="w-5 h-5 text-primary" />
-            <span className="font-bold">غرفة الاستجواب</span>
-            <span className="text-primary font-mono">{state.totalQuestionsAsked}/9</span>
+            <span className="font-bold text-foreground">غرفة الاستجواب</span>
             <span className="text-muted-foreground">|</span>
             <span className="text-destructive font-bold">محاولات: {remainingAttempts}/3</span>
           </div>
         </motion.div>
 
-        {/* Suspects */}
+        {/* Characters */}
         <div className="absolute inset-0 pointer-events-none z-10">
-          {SUSPECTS.map((suspect, i) => {
-            const pos = [{ left: "12%", bottom: "25%" }, { left: "45%", bottom: "20%" }, { left: "78%", bottom: "25%" }][i];
-            const asked = getQuestionsAskedForSuspect(suspect.id).length;
+          {CHARACTERS.map((char, i) => {
+            const positions = [
+              { left: "12%", bottom: "25%" },
+              { left: "38%", bottom: "20%" },
+              { left: "62%", bottom: "25%" },
+              { left: "85%", bottom: "20%" },
+            ];
             return (
               <motion.div 
-                key={suspect.id} 
+                key={char.id} 
                 className="absolute pointer-events-auto cursor-pointer" 
-                style={pos}
-                onClick={() => handleSelectSuspect(suspect)}
+                style={positions[i]}
+                onClick={() => handleSelectCharacter(char)}
                 whileHover={{ scale: 1.1 }}
               >
-                <motion.img src={suspectImages[suspect.id]} alt={suspect.name} className="w-24 h-24 object-contain drop-shadow-2xl" />
-                <div className={cn(
-                  "absolute -bottom-8 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full text-xs font-bold whitespace-nowrap",
-                  asked > 0 ? "bg-primary/80 text-primary-foreground" : "bg-background/90"
-                )}>
-                  {suspect.name} {asked > 0 && `(${asked}/3)`}
+                <div className="w-20 h-20 rounded-full bg-primary/30 flex items-center justify-center border-2 border-primary/50">
+                  <User className="w-10 h-10 text-primary" />
+                </div>
+                <div className="absolute -bottom-8 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full bg-background/90 text-xs font-bold whitespace-nowrap text-foreground">
+                  {char.name}
                 </div>
               </motion.div>
             );
@@ -261,18 +315,23 @@ export const InterrogationScreen = ({ onNavigate }: InterrogationScreenProps) =>
         </AnimatePresence>
 
         {/* Navigation */}
-        <div className="absolute bottom-8 left-8 z-20"><NavigationButton iconEmoji="🏢" label="المكتب" onClick={() => onNavigate("office")} /></div>
-        <div className="absolute bottom-8 right-8 z-20"><NavigationButton iconEmoji="📁" label="الأدلة" onClick={() => onNavigate("evidence")} /></div>
-        <div className="absolute bottom-8 left-1/2 -translate-x-1/2 z-20"><NavigationButton iconEmoji="📊" label="التحليل" onClick={() => onNavigate("analysis")} /></div>
+        <div className="absolute bottom-8 left-8 z-20">
+          <NavigationButton iconEmoji="🏢" label="المكتب" onClick={() => onNavigate("office")} />
+        </div>
+        <div className="absolute bottom-8 right-8 z-20">
+          <NavigationButton iconEmoji="📁" label="الأدلة" onClick={() => onNavigate("evidence")} />
+        </div>
+        <div className="absolute bottom-8 left-1/2 -translate-x-1/2 z-20">
+          <NavigationButton iconEmoji="📊" label="التحليل" onClick={() => onNavigate("analysis")} />
+        </div>
       </InteractiveRoom>
 
       {/* Result */}
       <SceneTransition 
         isVisible={showResult} 
         type={isCorrectAccusation ? "success" : "failure"} 
-        backgroundImage={isCorrectAccusation ? suspectArrested : suspectEscaped} 
         title={isCorrectAccusation ? "🎉 القضية محلولة!" : "💨 المجرم هرب!"} 
-        subtitle={isCorrectAccusation ? `أحسنت! كريم كان المختلس.` : "اتهمت الشخص الخطأ."}
+        subtitle={isCorrectAccusation ? "أحسنت! كشفت المذنب الحقيقي." : "اتهمت الشخص الخطأ."}
       >
         <motion.button 
           className={cn("px-8 py-4 rounded-xl font-bold text-lg", isCorrectAccusation ? "bg-green-500 text-white" : "bg-destructive text-white")} 
