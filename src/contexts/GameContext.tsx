@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useCallback, ReactNode } from "react";
-import { EVIDENCE_ITEMS, INSIGHTS, HYPOTHESES, ENDINGS, CHARACTERS } from "@/data/case1";
+import { EVIDENCE_ITEMS, INSIGHTS, HYPOTHESES, ENDINGS, CHARACTERS } from "@/data/case001";
 
 // ============================================
 // Types
