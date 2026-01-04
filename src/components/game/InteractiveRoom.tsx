@@ -3,12 +3,12 @@ import { motion, AnimatePresence } from "framer-motion";
 import { X } from "lucide-react";
 import { useSound } from "@/hooks/useSoundEffects";
 
-export interface Hotspot {
+interface Hotspot {
   id: string;
   x: number;
   y: number;
-  width?: number;
-  height?: number;
+  width: number;
+  height: number;
   label: string;
   icon?: string;
   glowColor?: string;
@@ -18,11 +18,10 @@ interface InteractiveRoomProps {
   backgroundImage: string;
   hotspots: Hotspot[];
   onHotspotClick: (hotspotId: string) => void;
-  activeHotspot?: string | null;
+  activeHotspot: string | null;
   children?: ReactNode;
   overlayContent?: ReactNode;
   onCloseOverlay?: () => void;
-  roomName?: string;
 }
 
 export const InteractiveRoom = ({
@@ -75,8 +74,8 @@ export const InteractiveRoom = ({
           style={{
             left: `${hotspot.x}%`,
             top: `${hotspot.y}%`,
-            width: `${hotspot.width || 12}%`,
-            height: `${hotspot.height || 15}%`,
+            width: `${hotspot.width}%`,
+            height: `${hotspot.height}%`,
           }}
           onClick={() => handleHotspotClick(hotspot.id)}
           onMouseEnter={() => handleHover(hotspot.id)}

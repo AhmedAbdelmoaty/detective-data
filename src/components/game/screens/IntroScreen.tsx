@@ -1,5 +1,6 @@
 import { motion } from "framer-motion";
 import { AnimatedCharacter } from "../AnimatedCharacter";
+import { CASE_INFO, CHARACTERS } from "@/data/case1";
 
 interface IntroScreenProps {
   onStart?: () => void;
@@ -9,11 +10,14 @@ interface IntroScreenProps {
 export const IntroScreen = ({ onStart, onNavigate }: IntroScreenProps) => {
   const handleStart = () => {
     if (onNavigate) {
-      onNavigate("onboarding");
+      onNavigate("office");
     } else if (onStart) {
       onStart();
     }
   };
+
+  // Get the 4 characters for preview (excluding detective)
+  const previewCharacters = CHARACTERS.slice(0, 4);
 
   return (
     <div className="relative min-h-screen overflow-hidden bg-gradient-to-b from-gray-900 via-gray-800 to-black">
@@ -78,17 +82,17 @@ export const IntroScreen = ({ onStart, onNavigate }: IntroScreenProps) => {
           animate={{ y: 0, opacity: 1 }}
           transition={{ duration: 1 }}
         >
-          {/* Building icon for real estate */}
+          {/* Magnifying glass icon */}
           <motion.div
             className="text-8xl mb-6"
-            animate={{ scale: [1, 1.05, 1] }}
+            animate={{ rotate: [0, -10, 10, 0] }}
             transition={{ duration: 3, repeat: Infinity }}
           >
-            🏢
+            🔍
           </motion.div>
 
           <h1
-            className="text-4xl md:text-6xl font-bold mb-4"
+            className="text-5xl md:text-7xl font-bold mb-4"
             style={{
               background: "linear-gradient(135deg, hsl(var(--primary)), hsl(var(--accent)), hsl(var(--gold)))",
               WebkitBackgroundClip: "text",
@@ -96,13 +100,13 @@ export const IntroScreen = ({ onStart, onNavigate }: IntroScreenProps) => {
               textShadow: "0 0 40px hsl(var(--primary) / 0.5)",
             }}
           >
-            نواة كابيتال
+            Data Detective
           </h1>
-          <h2 className="text-2xl md:text-3xl text-gold font-bold mb-2">للتطوير العقاري</h2>
-          <p className="text-muted-foreground text-lg">محقق البيانات</p>
+          <h2 className="text-2xl md:text-3xl text-gold font-bold mb-2">محقق البيانات</h2>
+          <p className="text-muted-foreground text-lg">حل اللغز بالأرقام</p>
         </motion.div>
 
-        {/* Data Analyst character */}
+        {/* Detective character with real image */}
         <motion.div
           className="relative mb-8"
           initial={{ scale: 0, opacity: 0 }}
@@ -143,10 +147,10 @@ export const IntroScreen = ({ onStart, onNavigate }: IntroScreenProps) => {
             animate={{ x: ["-200%", "200%"] }}
             transition={{ duration: 2, repeat: Infinity, repeatDelay: 1 }}
           />
-          <span className="relative z-10 flex items-center gap-3">📊 ابدأ التحقيق</span>
+          <span className="relative z-10 flex items-center gap-3">🚀 ابدأ التحقيق</span>
         </motion.button>
 
-        {/* Case teaser */}
+        {/* Case teaser - NEW CASE INFO */}
         <motion.div
           className="mt-12 max-w-md text-center"
           initial={{ opacity: 0 }}
@@ -154,27 +158,30 @@ export const IntroScreen = ({ onStart, onNavigate }: IntroScreenProps) => {
           transition={{ delay: 1.5 }}
         >
           <div className="p-4 rounded-lg bg-card/30 backdrop-blur-sm border border-primary/30">
-            <h3 className="text-primary font-bold mb-2">📁 القضية الجديدة</h3>
+            <h3 className="text-primary font-bold mb-2">📁 {CASE_INFO.title}</h3>
             <p className="text-sm text-muted-foreground">
-              "هبوط الأرباح المفاجئ" - شركة نواة كابيتال للتطوير العقاري تواجه انخفاضاً في الأرباح رغم استقرار عدد العقود.
-              مهمتك: اكتشاف السبب الحقيقي.
+              {CASE_INFO.description}
+              <br />
+              <span className="text-amber-400">مهمتك: اكتشف مين بيسحب فلوس الشركة... بالدليل!</span>
             </p>
 
-            {/* Key characters preview */}
-            <div className="flex justify-center gap-4 mt-4">
-              {(["cfo", "salesManager"] as const).map((id, i) => (
+            {/* Characters preview */}
+            <div className="flex justify-center gap-3 mt-4">
+              {previewCharacters.map((char, i) => (
                 <motion.div
-                  key={id}
+                  key={char.id}
+                  className="text-center"
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 1.8 + i * 0.2 }}
+                  transition={{ delay: 1.8 + i * 0.15 }}
                 >
-                  <AnimatedCharacter
-                    characterId={id}
-                    size="sm"
-                    showName={false}
-                    mood="neutral"
-                  />
+                  <div className="w-12 h-12 rounded-full bg-primary/20 border border-primary/30 flex items-center justify-center text-2xl">
+                    {char.id === "moataz" && "👔"}
+                    {char.id === "sara" && "👩‍💼"}
+                    {char.id === "mahmoud" && "👷"}
+                    {char.id === "fadi" && "📋"}
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-1">{char.name}</p>
                 </motion.div>
               ))}
             </div>

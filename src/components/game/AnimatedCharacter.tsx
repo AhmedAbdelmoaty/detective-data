@@ -8,7 +8,7 @@ import karimImg from "@/assets/characters/karim.png";
 import detectiveImg from "@/assets/characters/detective.png";
 
 interface AnimatedCharacterProps {
-  characterId: "ahmed" | "sara" | "karim" | "detective" | "cfo" | "salesManager";
+  characterId: "ahmed" | "sara" | "karim" | "detective";
   size?: "sm" | "md" | "lg" | "xl";
   isActive?: boolean;
   isSpeaking?: boolean;
@@ -52,22 +52,6 @@ const characterData = {
     image: detectiveImg,
     color: "gold",
   },
-  cfo: {
-    name: "م. طارق",
-    nameEn: "CFO Tarek",
-    role: "المدير المالي",
-    roleEn: "CFO",
-    image: ahmedImg, // Using ahmed image temporarily
-    color: "blue",
-  },
-  salesManager: {
-    name: "أ. سامي",
-    nameEn: "Sales Manager",
-    role: "مدير المبيعات",
-    roleEn: "Sales Manager",
-    image: karimImg, // Using karim image temporarily
-    color: "green",
-  },
 };
 
 const sizeClasses = {
@@ -101,18 +85,6 @@ const colorClasses = {
     glow: "shadow-[0_0_30px_rgba(245,158,11,0.5)]",
     bg: "bg-amber-500/20",
     text: "text-amber-400",
-  },
-  blue: {
-    border: "border-blue-500",
-    glow: "shadow-[0_0_30px_rgba(59,130,246,0.5)]",
-    bg: "bg-blue-500/20",
-    text: "text-blue-400",
-  },
-  green: {
-    border: "border-green-500",
-    glow: "shadow-[0_0_30px_rgba(34,197,94,0.5)]",
-    bg: "bg-green-500/20",
-    text: "text-green-400",
   },
 };
 
