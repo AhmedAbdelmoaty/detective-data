@@ -1,6 +1,6 @@
 import { motion } from "framer-motion";
 import { AnimatedCharacter } from "../AnimatedCharacter";
-import { CASE_INFO, CHARACTERS } from "@/data/case1";
+import { CASE_INFO, CHARACTERS } from "@/data/case001";
 
 interface IntroScreenProps {
   onStart?: () => void;

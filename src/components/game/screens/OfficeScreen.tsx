@@ -7,7 +7,7 @@ import { GameCard } from "../GameCard";
 import { ProgressBar } from "../ProgressBar";
 import { useGame } from "@/contexts/GameContext";
 import { useSound } from "@/hooks/useSoundEffects";
-import { CASE_INFO, CHARACTERS, EVIDENCE_ITEMS } from "@/data/case1";
+import { CASE_INFO, CHARACTERS, EVIDENCE_ITEMS } from "@/data/case001";
 import { cn } from "@/lib/utils";
 import managerOffice from "@/assets/rooms/manager-office.png";
 
@@ -22,18 +22,30 @@ const hotspots = [
 ];
 
 const introDialogues = [
-  { characterId: "detective" as const, text: "أهلاً بك في مكتبي. لدينا قضية جديدة تحتاج لحلها...", mood: "neutral" as const },
-  { characterId: "detective" as const, text: "شركة صغيرة لاحظت زيادة كبيرة في مصاريف الخامات... والمخزن مش باين فيه الزيادة.", mood: "suspicious" as const },
-  { characterId: "detective" as const, text: "مهمتك: اكتشف مين بيسحب فلوس الشركة وإزاي... بدليل!", mood: "happy" as const },
+  {
+    characterId: "detective" as const,
+    text: "أهلاً بك في مكتبي. لدينا قضية جديدة تحتاج لحلها...",
+    mood: "neutral" as const,
+  },
+  {
+    characterId: "detective" as const,
+    text: "شركة صغيرة لاحظت زيادة كبيرة في مصاريف الخامات... والمخزن مش باين فيه الزيادة.",
+    mood: "suspicious" as const,
+  },
+  {
+    characterId: "detective" as const,
+    text: "مهمتك: اكتشف مين بيسحب فلوس الشركة وإزاي... بدليل!",
+    mood: "happy" as const,
+  },
 ];
 
 export const OfficeScreen = ({ onNavigate }: OfficeScreenProps) => {
-  const { 
-    state, 
-    getProgress, 
-    getOverallTrust, 
+  const {
+    state,
+    getProgress,
+    getOverallTrust,
     getTrustLevel,
-    getRemainingAttempts, 
+    getRemainingAttempts,
     markIntroSeen,
     isEvidenceCollected,
   } = useGame();
@@ -60,11 +72,16 @@ export const OfficeScreen = ({ onNavigate }: OfficeScreenProps) => {
 
   const getTrustColor = (level: string) => {
     switch (level) {
-      case "critical": return "text-destructive";
-      case "low": return "text-orange-400";
-      case "medium": return "text-yellow-400";
-      case "high": return "text-green-400";
-      default: return "text-foreground";
+      case "critical":
+        return "text-destructive";
+      case "low":
+        return "text-orange-400";
+      case "medium":
+        return "text-yellow-400";
+      case "high":
+        return "text-green-400";
+      default:
+        return "text-foreground";
     }
   };
 
@@ -135,9 +152,11 @@ export const OfficeScreen = ({ onNavigate }: OfficeScreenProps) => {
               <motion.div
                 className={cn(
                   "p-4 rounded-xl border text-center",
-                  trust > 70 ? "bg-green-500/10 border-green-500/30" :
-                  trust > 40 ? "bg-yellow-500/10 border-yellow-500/30" :
-                  "bg-destructive/10 border-destructive/30"
+                  trust > 70
+                    ? "bg-green-500/10 border-green-500/30"
+                    : trust > 40
+                      ? "bg-yellow-500/10 border-yellow-500/30"
+                      : "bg-destructive/10 border-destructive/30",
                 )}
                 initial={{ scale: 0.9, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
@@ -154,14 +173,20 @@ export const OfficeScreen = ({ onNavigate }: OfficeScreenProps) => {
                 {Object.entries(state.trust).map(([key, value]) => (
                   <div key={key} className="flex items-center justify-between">
                     <span className="text-sm text-muted-foreground">
-                      {key === "manager" ? "المدير" : key === "accounting" ? "المحاسبة" : key === "warehouse" ? "المخزن" : "المشاريع"}
+                      {key === "manager"
+                        ? "المدير"
+                        : key === "accounting"
+                          ? "المحاسبة"
+                          : key === "warehouse"
+                            ? "المخزن"
+                            : "المشاريع"}
                     </span>
                     <div className="flex items-center gap-2">
                       <div className="w-20 h-2 bg-muted rounded-full overflow-hidden">
-                        <div 
+                        <div
                           className={cn(
                             "h-full transition-all",
-                            value > 70 ? "bg-green-500" : value > 40 ? "bg-amber-500" : "bg-destructive"
+                            value > 70 ? "bg-green-500" : value > 40 ? "bg-amber-500" : "bg-destructive",
                           )}
                           style={{ width: `${value}%` }}
                         />
@@ -181,7 +206,9 @@ export const OfficeScreen = ({ onNavigate }: OfficeScreenProps) => {
                       key={i}
                       className={cn(
                         "w-8 h-8 rounded-full flex items-center justify-center font-bold",
-                        i <= remainingAttempts ? "bg-destructive text-destructive-foreground" : "bg-secondary text-muted-foreground"
+                        i <= remainingAttempts
+                          ? "bg-destructive text-destructive-foreground"
+                          : "bg-secondary text-muted-foreground",
                       )}
                     >
                       {i <= remainingAttempts ? "⚖️" : "✗"}
@@ -193,7 +220,12 @@ export const OfficeScreen = ({ onNavigate }: OfficeScreenProps) => {
               {/* Progress */}
               <div className="space-y-4">
                 <ProgressBar label="التقدم الإجمالي" value={progress} max={100} color="primary" />
-                <ProgressBar label="الأدلة المجمعة" value={state.collectedEvidence.length} max={EVIDENCE_ITEMS.length} color="accent" />
+                <ProgressBar
+                  label="الأدلة المجمعة"
+                  value={state.collectedEvidence.length}
+                  max={EVIDENCE_ITEMS.length}
+                  color="accent"
+                />
                 <ProgressBar label="الاكتشافات" value={state.discoveredInsights.length} max={7} color="success" />
               </div>
 
@@ -257,7 +289,7 @@ export const OfficeScreen = ({ onNavigate }: OfficeScreenProps) => {
                   <Target className="w-4 h-4 text-accent" />
                   الاكتشافات ({state.discoveredInsights.length})
                 </h4>
-                
+
                 {state.discoveredInsights.length === 0 ? (
                   <div className="text-center py-8 text-muted-foreground">
                     <p className="text-4xl mb-2">🔍</p>
@@ -267,7 +299,7 @@ export const OfficeScreen = ({ onNavigate }: OfficeScreenProps) => {
                 ) : (
                   <div className="grid gap-3 max-h-32 overflow-auto">
                     {state.investigationNotes
-                      .filter(n => n.type === "insight")
+                      .filter((n) => n.type === "insight")
                       .map((note, i) => (
                         <motion.div
                           key={note.id}
@@ -336,12 +368,16 @@ export const OfficeScreen = ({ onNavigate }: OfficeScreenProps) => {
           <div className="px-4 py-2 rounded-lg bg-background/80 backdrop-blur-sm border border-border">
             <span className="text-amber-400 font-bold">{state.score} نقطة</span>
           </div>
-          <div className={cn(
-            "px-4 py-2 rounded-lg backdrop-blur-sm border",
-            trust > 70 ? "bg-green-500/20 border-green-500/30" :
-            trust > 40 ? "bg-amber-500/20 border-amber-500/30" :
-            "bg-destructive/20 border-destructive/30"
-          )}>
+          <div
+            className={cn(
+              "px-4 py-2 rounded-lg backdrop-blur-sm border",
+              trust > 70
+                ? "bg-green-500/20 border-green-500/30"
+                : trust > 40
+                  ? "bg-amber-500/20 border-amber-500/30"
+                  : "bg-destructive/20 border-destructive/30",
+            )}
+          >
             <span className="font-bold text-foreground">{trust}% ثقة</span>
           </div>
         </motion.div>
@@ -356,11 +392,7 @@ export const OfficeScreen = ({ onNavigate }: OfficeScreenProps) => {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
           >
-            <EnhancedDialogue
-              dialogues={introDialogues}
-              isActive={true}
-              onComplete={handleDialogueComplete}
-            />
+            <EnhancedDialogue dialogues={introDialogues} isActive={true} onComplete={handleDialogueComplete} />
           </motion.div>
         )}
       </AnimatePresence>

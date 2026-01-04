@@ -2,7 +2,7 @@ import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ChevronLeft, ChevronRight, Play } from "lucide-react";
 import { AnimatedCharacter } from "../AnimatedCharacter";
-import { CASE_INFO, CHARACTERS, ROOMS } from "@/data/case1";
+import { CASE_INFO, CHARACTERS, ROOMS } from "@/data/case001";
 
 interface OnboardingScreenProps {
   onComplete: () => void;
@@ -69,13 +69,13 @@ export const OnboardingScreen = ({ onComplete }: OnboardingScreenProps) => {
 
   const nextSlide = () => {
     if (currentSlide < slides.length - 1) {
-      setCurrentSlide(prev => prev + 1);
+      setCurrentSlide((prev) => prev + 1);
     }
   };
 
   const prevSlide = () => {
     if (currentSlide > 0) {
-      setCurrentSlide(prev => prev - 1);
+      setCurrentSlide((prev) => prev - 1);
     }
   };
 
@@ -105,9 +105,7 @@ export const OnboardingScreen = ({ onComplete }: OnboardingScreenProps) => {
           {slides.map((_, i) => (
             <motion.div
               key={i}
-              className={`w-3 h-3 rounded-full transition-colors ${
-                i === currentSlide ? "bg-primary" : "bg-muted"
-              }`}
+              className={`w-3 h-3 rounded-full transition-colors ${i === currentSlide ? "bg-primary" : "bg-muted"}`}
               animate={{ scale: i === currentSlide ? 1.2 : 1 }}
             />
           ))}
@@ -118,9 +116,7 @@ export const OnboardingScreen = ({ onComplete }: OnboardingScreenProps) => {
           <motion.div
             key={slide.id}
             className={`max-w-2xl w-full p-8 rounded-2xl border backdrop-blur-xl ${
-              slide.isWarning 
-                ? "bg-amber-950/50 border-amber-500/30" 
-                : "bg-card/50 border-primary/20"
+              slide.isWarning ? "bg-amber-950/50 border-amber-500/30" : "bg-card/50 border-primary/20"
             }`}
             initial={{ opacity: 0, x: 50 }}
             animate={{ opacity: 1, x: 0 }}
@@ -131,18 +127,14 @@ export const OnboardingScreen = ({ onComplete }: OnboardingScreenProps) => {
             <div className="flex items-center gap-4 mb-6">
               <motion.div
                 className={`w-16 h-16 rounded-2xl flex items-center justify-center text-3xl ${
-                  slide.isWarning 
-                    ? "bg-amber-500/20" 
-                    : "bg-primary/20"
+                  slide.isWarning ? "bg-amber-500/20" : "bg-primary/20"
                 }`}
                 animate={{ rotate: [0, -5, 5, 0] }}
                 transition={{ duration: 2, repeat: Infinity }}
               >
                 {slide.icon}
               </motion.div>
-              <h2 className={`text-2xl font-bold ${
-                slide.isWarning ? "text-amber-400" : "text-foreground"
-              }`}>
+              <h2 className={`text-2xl font-bold ${slide.isWarning ? "text-amber-400" : "text-foreground"}`}>
                 {slide.title}
               </h2>
             </div>
@@ -154,13 +146,7 @@ export const OnboardingScreen = ({ onComplete }: OnboardingScreenProps) => {
 
             {/* Detective character */}
             <div className="flex justify-center mb-8">
-              <AnimatedCharacter
-                characterId="detective"
-                size="lg"
-                isActive
-                mood={slide.mood}
-                showName={false}
-              />
+              <AnimatedCharacter characterId="detective" size="lg" isActive mood={slide.mood} showName={false} />
             </div>
           </motion.div>
         </AnimatePresence>

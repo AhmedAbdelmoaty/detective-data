@@ -1,7 +1,7 @@
 import { motion } from "framer-motion";
 import { Trophy, Star, RotateCcw, CheckCircle, XCircle, Shield } from "lucide-react";
 import { useGame } from "@/contexts/GameContext";
-import { CASE_INFO, CHARACTERS, ENDINGS } from "@/data/case1";
+import { CASE_INFO, CHARACTERS, ENDINGS } from "@/data/case001";
 import { cn } from "@/lib/utils";
 
 interface ResultScreenProps {
@@ -13,11 +13,11 @@ export const ResultScreen = ({ onNavigate }: ResultScreenProps) => {
 
   const ending = getEnding();
   const isWin = ending?.type === "best" || ending?.type === "partial";
-  const accusedCharacter = state.accusation ? CHARACTERS.find(c => c.id === state.accusation) : null;
+  const accusedCharacter = state.accusation ? CHARACTERS.find((c) => c.id === state.accusation) : null;
   const trust = getOverallTrust();
   const totalPossibleScore = 1000;
   const scorePercentage = Math.round((state.score / totalPossibleScore) * 100);
-  
+
   const getRank = () => {
     if (scorePercentage >= 90) return { title: "محقق أسطوري", icon: "🏆", color: "text-yellow-400" };
     if (scorePercentage >= 75) return { title: "محقق خبير", icon: "🥇", color: "text-amber-400" };
@@ -25,7 +25,7 @@ export const ResultScreen = ({ onNavigate }: ResultScreenProps) => {
     if (scorePercentage >= 25) return { title: "محقق مبتدئ", icon: "🥉", color: "text-amber-600" };
     return { title: "متدرب", icon: "📚", color: "text-muted-foreground" };
   };
-  
+
   const rank = getRank();
 
   const handleReplay = () => {
@@ -41,21 +41,20 @@ export const ResultScreen = ({ onNavigate }: ResultScreenProps) => {
   ];
 
   return (
-    <div className={cn(
-      "min-h-screen relative overflow-hidden",
-      isWin 
-        ? "bg-gradient-to-b from-green-950 via-green-900/50 to-background" 
-        : "bg-gradient-to-b from-red-950 via-red-900/50 to-background"
-    )}>
+    <div
+      className={cn(
+        "min-h-screen relative overflow-hidden",
+        isWin
+          ? "bg-gradient-to-b from-green-950 via-green-900/50 to-background"
+          : "bg-gradient-to-b from-red-950 via-red-900/50 to-background",
+      )}
+    >
       {/* Particles */}
       <div className="absolute inset-0 overflow-hidden">
         {[...Array(20)].map((_, i) => (
           <motion.div
             key={i}
-            className={cn(
-              "absolute w-2 h-2 rounded-full",
-              isWin ? "bg-green-400/30" : "bg-red-400/30"
-            )}
+            className={cn("absolute w-2 h-2 rounded-full", isWin ? "bg-green-400/30" : "bg-red-400/30")}
             style={{ left: `${Math.random() * 100}%`, top: `${Math.random() * 100}%` }}
             animate={{ y: [0, -30, 0], opacity: [0.2, 0.8, 0.2] }}
             transition={{ duration: 3 + Math.random() * 2, repeat: Infinity, delay: Math.random() * 2 }}
@@ -73,11 +72,11 @@ export const ResultScreen = ({ onNavigate }: ResultScreenProps) => {
           >
             {ending?.title?.split(" ")[0] || (isWin ? "🎉" : "❌")}
           </motion.div>
-          
+
           <h1 className={cn("text-4xl md:text-5xl font-bold mb-2", isWin ? "text-green-400" : "text-red-400")}>
             {ending?.title || (isWin ? "القضية محلولة!" : "فشل التحقيق")}
           </h1>
-          
+
           <p className="text-muted-foreground text-lg">{ending?.description}</p>
         </motion.div>
 
@@ -95,10 +94,12 @@ export const ResultScreen = ({ onNavigate }: ResultScreenProps) => {
                 <p className="text-2xl font-bold text-foreground">{accusedCharacter.name}</p>
                 <p className="text-muted-foreground">{accusedCharacter.role}</p>
               </div>
-              <div className={cn(
-                "px-4 py-2 rounded-xl font-bold",
-                accusedCharacter.isGuilty ? "bg-green-500/20 text-green-400" : "bg-destructive/20 text-destructive"
-              )}>
+              <div
+                className={cn(
+                  "px-4 py-2 rounded-xl font-bold",
+                  accusedCharacter.isGuilty ? "bg-green-500/20 text-green-400" : "bg-destructive/20 text-destructive",
+                )}
+              >
                 {accusedCharacter.isGuilty ? "✓ الشخص الصحيح" : "✗ شخص بريء"}
               </div>
             </div>
@@ -110,7 +111,7 @@ export const ResultScreen = ({ onNavigate }: ResultScreenProps) => {
           <motion.div
             className={cn(
               "p-6 rounded-2xl border mb-6",
-              isWin ? "bg-green-500/10 border-green-500/30" : "bg-red-500/10 border-red-500/30"
+              isWin ? "bg-green-500/10 border-green-500/30" : "bg-red-500/10 border-red-500/30",
             )}
             initial={{ y: 20, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
@@ -126,7 +127,13 @@ export const ResultScreen = ({ onNavigate }: ResultScreenProps) => {
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: 0.4 + i * 0.1 }}
                 >
-                  <span>{isWin ? <CheckCircle className="w-5 h-5 text-green-400" /> : <XCircle className="w-5 h-5 text-destructive" />}</span>
+                  <span>
+                    {isWin ? (
+                      <CheckCircle className="w-5 h-5 text-green-400" />
+                    ) : (
+                      <XCircle className="w-5 h-5 text-destructive" />
+                    )}
+                  </span>
                   <span>{c}</span>
                 </motion.li>
               ))}
@@ -151,7 +158,11 @@ export const ResultScreen = ({ onNavigate }: ResultScreenProps) => {
             </div>
 
             <div className="text-center">
-              <motion.div className="text-6xl mb-2" animate={{ scale: [1, 1.2, 1] }} transition={{ duration: 1.5, repeat: Infinity }}>
+              <motion.div
+                className="text-6xl mb-2"
+                animate={{ scale: [1, 1.2, 1] }}
+                transition={{ duration: 1.5, repeat: Infinity }}
+              >
                 {rank.icon}
               </motion.div>
               <p className={cn("text-2xl font-bold", rank.color)}>{rank.title}</p>
@@ -185,7 +196,8 @@ export const ResultScreen = ({ onNavigate }: ResultScreenProps) => {
             >
               <span className="text-2xl mb-2 block">{stat.icon}</span>
               <p className="text-2xl font-bold text-foreground">
-                {stat.value}<span className="text-muted-foreground text-sm">/{stat.max}</span>
+                {stat.value}
+                <span className="text-muted-foreground text-sm">/{stat.max}</span>
               </p>
               <p className="text-xs text-muted-foreground">{stat.label}</p>
             </motion.div>
@@ -207,9 +219,12 @@ export const ResultScreen = ({ onNavigate }: ResultScreenProps) => {
             <RotateCcw className="w-6 h-6" />
             🔄 العب مرة أخرى
           </motion.button>
-          
+
           <motion.button
-            onClick={() => { resetGame(); onNavigate("intro"); }}
+            onClick={() => {
+              resetGame();
+              onNavigate("intro");
+            }}
             className="flex items-center justify-center gap-3 px-8 py-4 rounded-xl bg-secondary text-foreground font-bold text-lg border border-border"
             whileHover={{ scale: 1.05 }}
           >
