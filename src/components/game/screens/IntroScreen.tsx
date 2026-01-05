@@ -1,6 +1,6 @@
 import { motion } from "framer-motion";
 import { AnimatedCharacter } from "../AnimatedCharacter";
-import { CASE_INFO, CHARACTERS } from "@/data/case001";
+import { CASE_INFO, CHARACTERS } from "@/data/case1";
 
 interface IntroScreenProps {
   onStart?: () => void;
@@ -176,10 +176,10 @@ export const IntroScreen = ({ onStart, onNavigate }: IntroScreenProps) => {
                   transition={{ delay: 1.8 + i * 0.15 }}
                 >
                   <div className="w-12 h-12 rounded-full bg-primary/20 border border-primary/30 flex items-center justify-center text-2xl">
-                    {char.id === "ahmed" && "📈"}
-                    {char.id === "sara" && "🎯"}
-                    {char.id === "mohammed" && "👔"}
+                    {char.id === "moataz" && "👔"}
+                    {char.id === "sara" && "👩‍💼"}
                     {char.id === "mahmoud" && "👷"}
+                    {char.id === "fadi" && "📋"}
                   </div>
                   <p className="text-xs text-muted-foreground mt-1">{char.name}</p>
                 </motion.div>

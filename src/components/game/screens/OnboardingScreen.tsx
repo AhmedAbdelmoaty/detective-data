@@ -2,41 +2,17 @@ import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ChevronLeft, ChevronRight, Play } from "lucide-react";
 import { AnimatedCharacter } from "../AnimatedCharacter";
-import { CASE_INFO, CHARACTERS, ROOMS } from "@/data/case001";
+import { CASE_INFO, CHARACTERS, ROOMS } from "@/data/case1";
 
 interface OnboardingScreenProps {
   onComplete: () => void;
 }
 
-const MAIN_CHARACTER_IDS = ["sara", "ahmed", "mohammed"] as const;
-
-const MAIN_CHARACTERS = MAIN_CHARACTER_IDS.map((id) =>
-  CHARACTERS.find((character) => character.id === id)
-).filter(Boolean) as typeof CHARACTERS;
-
-const charactersSlideContent = `ستقابل ثلاث شخصيات أساسيات داخل الشركة:
-
-${MAIN_CHARACTERS.map((character, index) => {
-  if (!character) return "";
-
-  const roleNotes = [
-    "(تدافع عن قوة الحملة)",
-    "(يركز على إغلاق الصفقات)",
-    "(ينتظر نتيجة سريعة وواضحة)",
-  ];
-
-  return `• ${character.name} - ${character.role} ${roleNotes[index] ?? ""}`.trim();
-})
-  .filter(Boolean)
-  .join("\n")}
-
-كل شخص سيحاول تفسير الأزمة بطريقته… لكن الحقيقة تحتاج ربط الأدلة.`;
-
 const slides = [
   {
     id: 1,
     title: "مرحباً بك في مهمة التحقيق",
-    content: `أنت محقق بيانات تم استدعاؤك لحل أزمة داخل شركة الأمل العقارية.
+    content: `أنت محقق بيانات تم استدعاؤك لحل قضية مالية.
 
 ${CASE_INFO.briefing}`,
     icon: "🔍",
@@ -44,70 +20,47 @@ ${CASE_INFO.briefing}`,
   },
   {
     id: 2,
-    title: "ملخص القضية",
-    content: `انخفضت المبيعات بنسبة 40% خلال آخر 10 أيام بشكل مفاجئ.
-
-المثير للقلق: تم مضاعفة ميزانية التسويق خلال نفس الفترة، ومع ذلك… النتائج انهارت.
-
-مهمتك: كشف السبب الحقيقي قبل أن تبدأ الإدارة في اتخاذ قرارات خاطئة.`,
-    icon: "📉",
-    mood: "neutral" as const,
-  },
-  {
-    id: 3,
     title: "الشخصيات",
-    content: charactersSlideContent,
+    content: `ستقابل 4 شخصيات رئيسية:
+
+• ${CHARACTERS[0].name} - ${CHARACTERS[0].role} (يريد حل سريع)
+• ${CHARACTERS[1].name} - ${CHARACTERS[1].role} (تبدو محترفة)
+• ${CHARACTERS[2].name} - ${CHARACTERS[2].role} (فوضوي لكن صادق)
+• ${CHARACTERS[3].name} - ${CHARACTERS[3].role} (مشغول ومتوتر)
+
+أحدهم متورط... لكن من؟`,
     icon: "👥",
     mood: "suspicious" as const,
   },
   {
-    id: 4,
+    id: 3,
     title: "الغرف والأدلة",
-    content: `ستتنقل بين غرف التحقيق داخل الشركة:
+    content: `ستتنقل بين 5 غرف:
 
-🏢 مكتب الرئيس التنفيذي - بداية القضية ونهاية التقرير
-📂 غرفة الأدلة - جمع الأدلة وتثبيت 5 أدلة
-🧠 مكتب المحقق - تحليل البيانات وربط المعلومات
-🗣️ غرفة المقابلات - مقابلة شخصين فقط
-📝 التحليل والاستنتاج - تجهيز التقرير قبل تسليمه
+📊 مكتب المدير - البداية ولوحة القضية
+📑 المحاسبة - الفواتير والمدفوعات
+📦 المخزن - دفاتر الاستلام والصرف
+📋 إدارة المشاريع - قوائم الاستهلاك
+🔬 غرفة التحليل - أدوات الفلترة والمقارنة
 
-كل غرفة لها دور حقيقي… لا يوجد مكان بلا هدف.`,
+اجمع الأدلة وحللها لتصل للحقيقة!`,
     icon: "🗺️",
     mood: "neutral" as const,
   },
   {
-    id: 5,
-    title: "نظام الوقت والثقة",
+    id: 4,
+    title: "نظام الثقة",
     content: `⚠️ انتبه لتصرفاتك!
 
-لديك موارد محدودة:
+كل قرار تاخده يؤثر على ثقة الشخصيات فيك:
+• لو خسرت ثقة حد = هيقفل معلومات مهمة
+• لو اتهمت الشخص الغلط = هتخسر محاولة
 
-⏱ الوقت ينخفض عند:
-• تثبيت الأدلة
-• تشغيل التحليل
-• طرح الأسئلة
-
-🤝 الثقة تتغير حسب منطق اختياراتك وطريقة إدارتك للتحقيق.
-
-الضغط موجود… والـCEO ينتظر قراراً.`,
-    icon: "⏱️",
+عندك 3 محاولات للاتهام فقط.
+استخدم التحليل والأدلة قبل أي قرار!`,
+    icon: "⚠️",
     mood: "nervous" as const,
     isWarning: true,
-  },
-  {
-    id: 6,
-    title: "قواعد التحقيق",
-    content: `قبل أن تبدأ… هذه القواعد لا يمكن كسرها:
-
-• لديك 8 أدلة فقط.
-• يجب تثبيت 5 أدلة على لوحة التحقيق للتقدم.
-• قراءة الأدلة مجانية… التثبيت يستهلك وقتاً.
-• يمكنك مقابلة شخصين فقط.
-• كل شخصية لديها 3 أسئلة… تختار سؤالاً واحداً فقط.
-
-لا توجد إجابة جاهزة… ستصل للحقيقة عبر الصورة الكاملة.`,
-    icon: "📌",
-    mood: "neutral" as const,
   },
 ];
 
@@ -116,13 +69,13 @@ export const OnboardingScreen = ({ onComplete }: OnboardingScreenProps) => {
 
   const nextSlide = () => {
     if (currentSlide < slides.length - 1) {
-      setCurrentSlide((prev) => prev + 1);
+      setCurrentSlide(prev => prev + 1);
     }
   };
 
   const prevSlide = () => {
     if (currentSlide > 0) {
-      setCurrentSlide((prev) => prev - 1);
+      setCurrentSlide(prev => prev - 1);
     }
   };
 
@@ -152,7 +105,9 @@ export const OnboardingScreen = ({ onComplete }: OnboardingScreenProps) => {
           {slides.map((_, i) => (
             <motion.div
               key={i}
-              className={`w-3 h-3 rounded-full transition-colors ${i === currentSlide ? "bg-primary" : "bg-muted"}`}
+              className={`w-3 h-3 rounded-full transition-colors ${
+                i === currentSlide ? "bg-primary" : "bg-muted"
+              }`}
               animate={{ scale: i === currentSlide ? 1.2 : 1 }}
             />
           ))}
@@ -163,7 +118,9 @@ export const OnboardingScreen = ({ onComplete }: OnboardingScreenProps) => {
           <motion.div
             key={slide.id}
             className={`max-w-2xl w-full p-8 rounded-2xl border backdrop-blur-xl ${
-              slide.isWarning ? "bg-amber-950/50 border-amber-500/30" : "bg-card/50 border-primary/20"
+              slide.isWarning 
+                ? "bg-amber-950/50 border-amber-500/30" 
+                : "bg-card/50 border-primary/20"
             }`}
             initial={{ opacity: 0, x: 50 }}
             animate={{ opacity: 1, x: 0 }}
@@ -174,14 +131,18 @@ export const OnboardingScreen = ({ onComplete }: OnboardingScreenProps) => {
             <div className="flex items-center gap-4 mb-6">
               <motion.div
                 className={`w-16 h-16 rounded-2xl flex items-center justify-center text-3xl ${
-                  slide.isWarning ? "bg-amber-500/20" : "bg-primary/20"
+                  slide.isWarning 
+                    ? "bg-amber-500/20" 
+                    : "bg-primary/20"
                 }`}
                 animate={{ rotate: [0, -5, 5, 0] }}
                 transition={{ duration: 2, repeat: Infinity }}
               >
                 {slide.icon}
               </motion.div>
-              <h2 className={`text-2xl font-bold ${slide.isWarning ? "text-amber-400" : "text-foreground"}`}>
+              <h2 className={`text-2xl font-bold ${
+                slide.isWarning ? "text-amber-400" : "text-foreground"
+              }`}>
                 {slide.title}
               </h2>
             </div>
@@ -193,7 +154,13 @@ export const OnboardingScreen = ({ onComplete }: OnboardingScreenProps) => {
 
             {/* Detective character */}
             <div className="flex justify-center mb-8">
-              <AnimatedCharacter characterId="detective" size="lg" isActive mood={slide.mood} showName={false} />
+              <AnimatedCharacter
+                characterId="detective"
+                size="lg"
+                isActive
+                mood={slide.mood}
+                showName={false}
+              />
             </div>
           </motion.div>
         </AnimatePresence>
