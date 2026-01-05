@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useCallback, ReactNode } from "react";
-import { EVIDENCE_ITEMS, INSIGHTS, HYPOTHESES, ENDINGS, CHARACTERS } from "@/data/case1";
+import { EVIDENCE_ITEMS, INSIGHTS, ENDINGS, CHARACTERS, SOLUTION_OPTIONS, REQUIRED_EVIDENCE_IDS, CASE_INFO } from "@/data/case1";
 
 // ============================================
 // Types
@@ -14,50 +14,39 @@ export interface InvestigationNote {
   characterId?: string;
 }
 
-export interface TrustLevels {
-  manager: number;
-  accounting: number;
-  warehouse: number;
-  projects: number;
-}
-
 export interface GameState {
-  // التنقل
+  // Resources
+  time: number;
+  trust: number;
+  
+  // Evidence
+  visitedEvidenceIds: string[];
+  pinnedEvidenceIds: string[]; // Max 5
+  
+  // Interviews
+  interviewedIds: string[]; // Question IDs that have been asked
+  
+  // Discoveries
+  discoveredInsights: string[];
+  
+  // Navigation
   currentRoom: string;
   currentPhase: "intro" | "onboarding" | "investigation" | "conclusion";
   
-  // الأدلة
-  collectedEvidence: string[];
-  unlockedEvidence: string[];
-  viewedEvidence: string[];
-  
-  // الاكتشافات
-  discoveredInsights: string[];
-  
-  // الفرضيات
-  activeHypothesis: string | null;
-  testedHypotheses: string[];
-  
-  // الثقة (4 جهات)
-  trust: TrustLevels;
-  
-  // الحوارات
-  dialoguesCompleted: string[];
+  // Dialogue
   hasSeenIntroDialogue: boolean;
   
-  // دفتر الملاحظات
+  // Notes
   investigationNotes: InvestigationNote[];
   
-  // الاتهام والنهاية
-  accusation: string | null;
-  accusationAttempts: number;
-  maxAccusationAttempts: number;
-  ending: string | null;
-  caseCompleted: boolean;
+  // Solution
+  selectedSolution: string | null;
+  solutionAttempts: number;
+  maxSolutionAttempts: number;
+  gameStatus: "briefing" | "playing" | "solved" | "failed";
   
-  // النقاط
+  // Score
   score: number;
-  progress: number;
 }
 
 interface GameContextType {
@@ -68,40 +57,31 @@ interface GameContextType {
   setPhase: (phase: GameState["currentPhase"]) => void;
   
   // Evidence
-  collectEvidence: (evidenceId: string) => void;
-  unlockEvidence: (evidenceId: string) => void;
-  viewEvidence: (evidenceId: string) => void;
-  isEvidenceUnlocked: (evidenceId: string) => boolean;
-  isEvidenceCollected: (evidenceId: string) => boolean;
+  visitEvidence: (evidenceId: string, cost: number) => void;
+  togglePinEvidence: (evidenceId: string) => void;
+  isEvidenceVisited: (evidenceId: string) => boolean;
+  isEvidencePinned: (evidenceId: string) => boolean;
+  
+  // Interviews
+  askQuestion: (questionId: string, cost: number) => void;
+  hasAskedQuestion: (questionId: string) => boolean;
   
   // Insights
   discoverInsight: (insightId: string) => void;
   hasInsight: (insightId: string) => boolean;
   
-  // Hypotheses
-  setActiveHypothesis: (hypothesisId: string) => void;
-  canUnlockHypothesis: (hypothesisId: string) => boolean;
-  getAvailableHypotheses: () => typeof HYPOTHESES;
-  
-  // Trust
-  modifyTrust: (entity: keyof TrustLevels, amount: number) => void;
-  getTrustLevel: (entity: keyof TrustLevels) => "critical" | "low" | "medium" | "high";
-  getOverallTrust: () => number;
-  
   // Dialogues
-  completeDialogue: (dialogueId: string) => void;
-  hasCompletedDialogue: (dialogueId: string) => boolean;
   markIntroSeen: () => void;
   
   // Notes
   addNote: (note: Omit<InvestigationNote, "id" | "timestamp">) => void;
   
-  // Accusation
-  makeAccusation: (characterId: string) => { correct: boolean; ending: string; attemptsLeft: number };
-  canAccuse: () => boolean;
+  // Solution
+  submitSolution: (optionId: string) => { correct: boolean; feedback: string; attemptsLeft: number };
+  canSubmitSolution: () => boolean;
   getRemainingAttempts: () => number;
   
-  // Game
+  // Game helpers
   getProgress: () => number;
   getEnding: () => typeof ENDINGS[0] | null;
   resetGame: () => void;
@@ -112,30 +92,21 @@ interface GameContextType {
 // ============================================
 
 const initialState: GameState = {
-  currentRoom: "manager-office",
-  currentPhase: "intro",
-  collectedEvidence: [],
-  unlockedEvidence: ["evidence-01"], // ملخص المصاريف متاح من البداية
-  viewedEvidence: [],
+  time: CASE_INFO.resources.initialTime,
+  trust: CASE_INFO.resources.initialTrust,
+  visitedEvidenceIds: [],
+  pinnedEvidenceIds: [],
+  interviewedIds: [],
   discoveredInsights: [],
-  activeHypothesis: null,
-  testedHypotheses: [],
-  trust: {
-    manager: 100,
-    accounting: 100,
-    warehouse: 100,
-    projects: 100,
-  },
-  dialoguesCompleted: [],
+  currentRoom: "ceo-office",
+  currentPhase: "intro",
   hasSeenIntroDialogue: false,
   investigationNotes: [],
-  accusation: null,
-  accusationAttempts: 0,
-  maxAccusationAttempts: 3,
-  ending: null,
-  caseCompleted: false,
+  selectedSolution: null,
+  solutionAttempts: 0,
+  maxSolutionAttempts: 3,
+  gameStatus: "briefing",
   score: 0,
-  progress: 0,
 };
 
 // ============================================
@@ -157,52 +128,65 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   // Evidence
-  const collectEvidence = useCallback((evidenceId: string) => {
+  const visitEvidence = useCallback((evidenceId: string, cost: number) => {
     setState(prev => {
-      if (prev.collectedEvidence.includes(evidenceId)) return prev;
+      if (prev.visitedEvidenceIds.includes(evidenceId)) return prev;
       
       const evidence = EVIDENCE_ITEMS.find(e => e.id === evidenceId);
-      const points = evidence ? 25 : 0;
+      const points = evidence?.isKey ? 25 : 10;
       
       return {
         ...prev,
-        collectedEvidence: [...prev.collectedEvidence, evidenceId],
+        visitedEvidenceIds: [...prev.visitedEvidenceIds, evidenceId],
+        time: Math.max(0, prev.time - cost),
         score: prev.score + points,
-        progress: Math.min(prev.progress + 8, 100),
       };
     });
   }, []);
 
-  const unlockEvidence = useCallback((evidenceId: string) => {
+  const togglePinEvidence = useCallback((evidenceId: string) => {
     setState(prev => {
-      if (prev.unlockedEvidence.includes(evidenceId)) return prev;
+      const isPinned = prev.pinnedEvidenceIds.includes(evidenceId);
+      if (isPinned) {
+        return { 
+          ...prev, 
+          pinnedEvidenceIds: prev.pinnedEvidenceIds.filter(id => id !== evidenceId) 
+        };
+      } else {
+        if (prev.pinnedEvidenceIds.length >= 5) return prev; // Max 5 pins
+        return { 
+          ...prev, 
+          pinnedEvidenceIds: [...prev.pinnedEvidenceIds, evidenceId] 
+        };
+      }
+    });
+  }, []);
+
+  const isEvidenceVisited = useCallback((evidenceId: string): boolean => {
+    return state.visitedEvidenceIds.includes(evidenceId);
+  }, [state.visitedEvidenceIds]);
+
+  const isEvidencePinned = useCallback((evidenceId: string): boolean => {
+    return state.pinnedEvidenceIds.includes(evidenceId);
+  }, [state.pinnedEvidenceIds]);
+
+  // Interviews
+  const askQuestion = useCallback((questionId: string, cost: number) => {
+    setState(prev => {
+      if (prev.interviewedIds.includes(questionId)) return prev;
+      
       return {
         ...prev,
-        unlockedEvidence: [...prev.unlockedEvidence, evidenceId],
+        interviewedIds: [...prev.interviewedIds, questionId],
+        time: Math.max(0, prev.time - cost),
+        score: prev.score + 15,
       };
     });
   }, []);
 
-  const viewEvidence = useCallback((evidenceId: string) => {
-    setState(prev => {
-      if (prev.viewedEvidence.includes(evidenceId)) return prev;
-      return {
-        ...prev,
-        viewedEvidence: [...prev.viewedEvidence, evidenceId],
-      };
-    });
-  }, []);
-
-  const isEvidenceUnlocked = useCallback((evidenceId: string): boolean => {
-    const evidence = EVIDENCE_ITEMS.find(e => e.id === evidenceId);
-    if (!evidence) return false;
-    if (!evidence.isLocked) return true;
-    return state.unlockedEvidence.includes(evidenceId);
-  }, [state.unlockedEvidence]);
-
-  const isEvidenceCollected = useCallback((evidenceId: string): boolean => {
-    return state.collectedEvidence.includes(evidenceId);
-  }, [state.collectedEvidence]);
+  const hasAskedQuestion = useCallback((questionId: string): boolean => {
+    return state.interviewedIds.includes(questionId);
+  }, [state.interviewedIds]);
 
   // Insights
   const discoverInsight = useCallback((insightId: string) => {
@@ -225,7 +209,6 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
         discoveredInsights: [...prev.discoveredInsights, insightId],
         investigationNotes: [...prev.investigationNotes, newNote],
         score: prev.score + points,
-        progress: Math.min(prev.progress + 10, 100),
       };
     });
   }, []);
@@ -234,90 +217,9 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
     return state.discoveredInsights.includes(insightId);
   }, [state.discoveredInsights]);
 
-  // Hypotheses
-  const setActiveHypothesis = useCallback((hypothesisId: string) => {
-    setState(prev => {
-      const hypothesis = HYPOTHESES.find(h => h.id === hypothesisId);
-      
-      const newNote: InvestigationNote = {
-        id: `hypothesis-${Date.now()}`,
-        type: "suspicion",
-        text: `فرضية جديدة: ${hypothesis?.title}`,
-        source: "analysis",
-        timestamp: Date.now(),
-      };
-      
-      return {
-        ...prev,
-        activeHypothesis: hypothesisId,
-        testedHypotheses: prev.testedHypotheses.includes(hypothesisId) 
-          ? prev.testedHypotheses 
-          : [...prev.testedHypotheses, hypothesisId],
-        investigationNotes: [...prev.investigationNotes, newNote],
-        score: prev.score + 15,
-      };
-    });
-  }, []);
-
-  const canUnlockHypothesis = useCallback((hypothesisId: string): boolean => {
-    const hypothesis = HYPOTHESES.find(h => h.id === hypothesisId);
-    if (!hypothesis) return false;
-    
-    const hasRequiredEvidence = hypothesis.requiredEvidence.every(e => 
-      state.collectedEvidence.includes(e)
-    );
-    const hasRequiredInsights = hypothesis.requiredInsights.every(i => 
-      state.discoveredInsights.includes(i)
-    );
-    
-    return hasRequiredEvidence && hasRequiredInsights;
-  }, [state.collectedEvidence, state.discoveredInsights]);
-
-  const getAvailableHypotheses = useCallback(() => {
-    return HYPOTHESES.filter(h => canUnlockHypothesis(h.id));
-  }, [canUnlockHypothesis]);
-
-  // Trust
-  const modifyTrust = useCallback((entity: keyof TrustLevels, amount: number) => {
-    setState(prev => ({
-      ...prev,
-      trust: {
-        ...prev.trust,
-        [entity]: Math.max(0, Math.min(100, prev.trust[entity] + amount)),
-      },
-    }));
-  }, []);
-
-  const getTrustLevel = useCallback((entity: keyof TrustLevels): "critical" | "low" | "medium" | "high" => {
-    const trust = state.trust[entity];
-    if (trust <= 20) return "critical";
-    if (trust <= 40) return "low";
-    if (trust <= 70) return "medium";
-    return "high";
-  }, [state.trust]);
-
-  const getOverallTrust = useCallback((): number => {
-    const { manager, accounting, warehouse, projects } = state.trust;
-    return Math.round((manager + accounting + warehouse + projects) / 4);
-  }, [state.trust]);
-
   // Dialogues
-  const completeDialogue = useCallback((dialogueId: string) => {
-    setState(prev => {
-      if (prev.dialoguesCompleted.includes(dialogueId)) return prev;
-      return {
-        ...prev,
-        dialoguesCompleted: [...prev.dialoguesCompleted, dialogueId],
-      };
-    });
-  }, []);
-
-  const hasCompletedDialogue = useCallback((dialogueId: string): boolean => {
-    return state.dialoguesCompleted.includes(dialogueId);
-  }, [state.dialoguesCompleted]);
-
   const markIntroSeen = useCallback(() => {
-    setState(prev => ({ ...prev, hasSeenIntroDialogue: true }));
+    setState(prev => ({ ...prev, hasSeenIntroDialogue: true, gameStatus: "playing" }));
   }, []);
 
   // Notes
@@ -337,70 +239,81 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
     });
   }, []);
 
-  // Accusation
-  const makeAccusation = useCallback((characterId: string): { correct: boolean; ending: string; attemptsLeft: number } => {
-    const character = CHARACTERS.find(c => c.id === characterId);
-    const isCorrect = character?.isGuilty || false;
+  // Solution
+  const submitSolution = useCallback((optionId: string): { correct: boolean; feedback: string; attemptsLeft: number } => {
+    const option = SOLUTION_OPTIONS.find(o => o.id === optionId);
+    
+    // Check if required evidence is pinned
+    const hasRequiredEvidence = REQUIRED_EVIDENCE_IDS.every(reqId => 
+      state.pinnedEvidenceIds.includes(reqId)
+    );
+    
+    const isCorrect = option?.isCorrect && hasRequiredEvidence;
+    const feedback = option?.feedback || "خطأ غير محدد";
     
     let endingId = "";
-    let result = { correct: isCorrect, ending: "", attemptsLeft: 0 };
+    if (isCorrect) {
+      endingId = "ending-best";
+    } else if (option?.isCorrect && !hasRequiredEvidence) {
+      endingId = "ending-partial";
+    } else {
+      endingId = "ending-wrong";
+    }
+    
+    const ending = ENDINGS.find(e => e.id === endingId);
     
     setState(prev => {
-      const newAttempts = prev.accusationAttempts + 1;
-      const attemptsLeft = prev.maxAccusationAttempts - newAttempts;
-      
-      if (isCorrect) {
-        // Check which ending based on insights
-        const hasAllInsights = ["insight-supplier-anomaly", "insight-gap", "insight-fast-payments", "insight-sara-enters"]
-          .every(i => prev.discoveredInsights.includes(i));
-        
-        endingId = hasAllInsights ? "ending-best" : "ending-partial";
-      } else {
-        endingId = "ending-wrong";
-      }
-      
-      const ending = ENDINGS.find(e => e.id === endingId);
-      
-      result = { correct: isCorrect, ending: endingId, attemptsLeft };
+      const newAttempts = prev.solutionAttempts + 1;
+      const attemptsLeft = prev.maxSolutionAttempts - newAttempts;
       
       return {
         ...prev,
-        accusation: characterId,
-        accusationAttempts: newAttempts,
-        ending: endingId,
-        caseCompleted: isCorrect || newAttempts >= prev.maxAccusationAttempts,
+        selectedSolution: optionId,
+        solutionAttempts: newAttempts,
+        gameStatus: isCorrect ? "solved" : (attemptsLeft <= 0 ? "failed" : prev.gameStatus),
         score: prev.score + (ending?.score || 0),
       };
     });
     
-    return result;
-  }, []);
+    const attemptsLeft = state.maxSolutionAttempts - state.solutionAttempts - 1;
+    
+    return {
+      correct: !!isCorrect,
+      feedback: isCorrect ? feedback : (attemptsLeft > 0 ? `${feedback} (تبقى ${attemptsLeft} محاولات)` : feedback),
+      attemptsLeft: Math.max(0, attemptsLeft),
+    };
+  }, [state.pinnedEvidenceIds, state.maxSolutionAttempts, state.solutionAttempts]);
 
-  const canAccuse = useCallback((): boolean => {
+  const canSubmitSolution = useCallback((): boolean => {
     return (
-      state.collectedEvidence.length >= 3 &&
-      state.discoveredInsights.length >= 2 &&
-      state.accusationAttempts < state.maxAccusationAttempts &&
-      !state.caseCompleted
+      state.visitedEvidenceIds.length >= 3 &&
+      state.solutionAttempts < state.maxSolutionAttempts &&
+      state.gameStatus === "playing"
     );
   }, [state]);
 
   const getRemainingAttempts = useCallback((): number => {
-    return state.maxAccusationAttempts - state.accusationAttempts;
-  }, [state.maxAccusationAttempts, state.accusationAttempts]);
+    return state.maxSolutionAttempts - state.solutionAttempts;
+  }, [state.maxSolutionAttempts, state.solutionAttempts]);
 
-  // Game
+  // Game helpers
   const getProgress = useCallback((): number => {
-    const evidenceProgress = (state.collectedEvidence.length / EVIDENCE_ITEMS.length) * 40;
+    const evidenceProgress = (state.visitedEvidenceIds.length / EVIDENCE_ITEMS.length) * 40;
     const insightProgress = (state.discoveredInsights.length / INSIGHTS.length) * 40;
-    const hypothesisProgress = state.activeHypothesis ? 20 : 0;
-    return Math.round(evidenceProgress + insightProgress + hypothesisProgress);
+    const interviewProgress = (state.interviewedIds.length / 9) * 20; // 9 total questions
+    return Math.round(evidenceProgress + insightProgress + interviewProgress);
   }, [state]);
 
   const getEnding = useCallback(() => {
-    if (!state.ending) return null;
-    return ENDINGS.find(e => e.id === state.ending) || null;
-  }, [state.ending]);
+    if (state.gameStatus === "solved") {
+      const hasAllRequired = REQUIRED_EVIDENCE_IDS.every(id => state.pinnedEvidenceIds.includes(id));
+      return ENDINGS.find(e => e.id === (hasAllRequired ? "ending-best" : "ending-partial")) || null;
+    }
+    if (state.gameStatus === "failed") {
+      return ENDINGS.find(e => e.id === "ending-wrong") || null;
+    }
+    return null;
+  }, [state.gameStatus, state.pinnedEvidenceIds]);
 
   const resetGame = useCallback(() => {
     setState(initialState);
@@ -411,25 +324,18 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
       state,
       setCurrentRoom,
       setPhase,
-      collectEvidence,
-      unlockEvidence,
-      viewEvidence,
-      isEvidenceUnlocked,
-      isEvidenceCollected,
+      visitEvidence,
+      togglePinEvidence,
+      isEvidenceVisited,
+      isEvidencePinned,
+      askQuestion,
+      hasAskedQuestion,
       discoverInsight,
       hasInsight,
-      setActiveHypothesis,
-      canUnlockHypothesis,
-      getAvailableHypotheses,
-      modifyTrust,
-      getTrustLevel,
-      getOverallTrust,
-      completeDialogue,
-      hasCompletedDialogue,
       markIntroSeen,
       addNote,
-      makeAccusation,
-      canAccuse,
+      submitSolution,
+      canSubmitSolution,
       getRemainingAttempts,
       getProgress,
       getEnding,

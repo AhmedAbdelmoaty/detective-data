@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowLeft, Briefcase, Target, Star, Trophy, FileText, Shield } from "lucide-react";
+import { ArrowLeft, Briefcase, Target, Star, Trophy, FileText, Clock, User, MessageSquare } from "lucide-react";
 import { InteractiveRoom } from "../InteractiveRoom";
 import { EnhancedDialogue } from "../EnhancedDialogue";
 import { GameCard } from "../GameCard";
@@ -18,29 +18,30 @@ interface OfficeScreenProps {
 const hotspots = [
   { id: "case-board", x: 20, y: 10, width: 55, height: 45, label: "لوحة القضية", icon: "📋" },
   { id: "desk", x: 25, y: 60, width: 50, height: 30, label: "مكتب المحقق", icon: "📝" },
-  { id: "filing-cabinet", x: 0, y: 30, width: 18, height: 50, label: "الأرشيف", icon: "🗄️" },
+  { id: "ceo", x: 0, y: 30, width: 18, height: 50, label: "محمد - المدير التنفيذي", icon: "👔" },
 ];
 
 const introDialogues = [
-  { characterId: "detective" as const, text: "أهلاً بك في مكتبي. لدينا قضية جديدة تحتاج لحلها...", mood: "neutral" as const },
-  { characterId: "detective" as const, text: "شركة صغيرة لاحظت زيادة كبيرة في مصاريف الخامات... والمخزن مش باين فيه الزيادة.", mood: "suspicious" as const },
-  { characterId: "detective" as const, text: "مهمتك: اكتشف مين بيسحب فلوس الشركة وإزاي... بدليل!", mood: "happy" as const },
+  { characterId: "detective" as const, text: "أهلاً بك في مكتب الرئيس التنفيذي...", mood: "neutral" as const },
+  { characterId: "detective" as const, text: "محمد قلق جداً. المبيعات انخفضت 40% فجأة رغم مضاعفة ميزانية التسويق!", mood: "suspicious" as const },
+  { characterId: "detective" as const, text: "مهمتك: حلل البيانات، استجوب الموظفين، واكشف السبب الحقيقي!", mood: "happy" as const },
 ];
 
 export const OfficeScreen = ({ onNavigate }: OfficeScreenProps) => {
   const { 
     state, 
     getProgress, 
-    getOverallTrust, 
-    getTrustLevel,
     getRemainingAttempts, 
     markIntroSeen,
-    isEvidenceCollected,
+    askQuestion,
+    hasAskedQuestion,
+    addNote,
   } = useGame();
   const { playSound } = useSound();
   const [activePanel, setActivePanel] = useState<string | null>(null);
   const [showDialogue, setShowDialogue] = useState(!state.hasSeenIntroDialogue);
   const [dialogueComplete, setDialogueComplete] = useState(state.hasSeenIntroDialogue);
+  const [ceoResponse, setCeoResponse] = useState<string | null>(null);
 
   const handleHotspotClick = (id: string) => {
     if (!dialogueComplete) return;
@@ -54,19 +55,25 @@ export const OfficeScreen = ({ onNavigate }: OfficeScreenProps) => {
     markIntroSeen();
   };
 
-  const progress = getProgress();
-  const trust = getOverallTrust();
-  const remainingAttempts = getRemainingAttempts();
-
-  const getTrustColor = (level: string) => {
-    switch (level) {
-      case "critical": return "text-destructive";
-      case "low": return "text-orange-400";
-      case "medium": return "text-yellow-400";
-      case "high": return "text-green-400";
-      default: return "text-foreground";
-    }
+  const handleAskCEO = (question: typeof CHARACTERS[0]["questions"][0]) => {
+    if (hasAskedQuestion(question.id)) return;
+    
+    askQuestion(question.id, question.cost);
+    setCeoResponse(question.response);
+    
+    addNote({
+      type: "dialogue",
+      text: `محمد (CEO): "${question.response}"`,
+      source: "ceo-office",
+      characterId: "ceo",
+    });
+    
+    playSound("reveal");
   };
+
+  const progress = getProgress();
+  const remainingAttempts = getRemainingAttempts();
+  const ceo = CHARACTERS.find(c => c.id === "ceo");
 
   const renderPanelContent = () => {
     switch (activePanel) {
@@ -106,9 +113,9 @@ export const OfficeScreen = ({ onNavigate }: OfficeScreenProps) => {
               <div>
                 <h4 className="font-bold text-foreground mb-4 flex items-center gap-2">
                   <Target className="w-4 h-4 text-destructive" />
-                  الشخصيات
+                  الشخصيات ({CHARACTERS.length})
                 </h4>
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-3 gap-3">
                   {CHARACTERS.map((char, i) => (
                     <motion.div
                       key={char.id}
@@ -117,6 +124,9 @@ export const OfficeScreen = ({ onNavigate }: OfficeScreenProps) => {
                       animate={{ scale: 1 }}
                       transition={{ delay: i * 0.1 }}
                     >
+                      <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center mx-auto mb-2">
+                        <User className="w-5 h-5 text-primary" />
+                      </div>
                       <p className="text-sm font-bold text-foreground">{char.name}</p>
                       <p className="text-xs text-muted-foreground">{char.role}</p>
                     </motion.div>
@@ -131,50 +141,22 @@ export const OfficeScreen = ({ onNavigate }: OfficeScreenProps) => {
         return (
           <GameCard title="تقدم التحقيق" iconEmoji="📊" className="w-full">
             <div className="space-y-6 p-2">
-              {/* Trust Level */}
+              {/* Time */}
               <motion.div
-                className={cn(
-                  "p-4 rounded-xl border text-center",
-                  trust > 70 ? "bg-green-500/10 border-green-500/30" :
-                  trust > 40 ? "bg-yellow-500/10 border-yellow-500/30" :
-                  "bg-destructive/10 border-destructive/30"
-                )}
+                className="p-4 rounded-xl bg-primary/10 border border-primary/30 text-center"
                 initial={{ scale: 0.9, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
               >
                 <div className="flex items-center justify-center gap-2 mb-1">
-                  <Shield className="w-6 h-6" />
-                  <span className={cn("text-3xl font-bold", getTrustColor(getTrustLevel("manager")))}>{trust}%</span>
+                  <Clock className="w-6 h-6 text-primary" />
+                  <span className="text-3xl font-bold text-primary">{state.time}</span>
                 </div>
-                <p className="text-sm text-muted-foreground">مستوى الثقة الإجمالي</p>
+                <p className="text-sm text-muted-foreground">الوقت المتبقي</p>
               </motion.div>
-
-              {/* Trust by Entity */}
-              <div className="space-y-2">
-                {Object.entries(state.trust).map(([key, value]) => (
-                  <div key={key} className="flex items-center justify-between">
-                    <span className="text-sm text-muted-foreground">
-                      {key === "manager" ? "المدير" : key === "accounting" ? "المحاسبة" : key === "warehouse" ? "المخزن" : "المشاريع"}
-                    </span>
-                    <div className="flex items-center gap-2">
-                      <div className="w-20 h-2 bg-muted rounded-full overflow-hidden">
-                        <div 
-                          className={cn(
-                            "h-full transition-all",
-                            value > 70 ? "bg-green-500" : value > 40 ? "bg-amber-500" : "bg-destructive"
-                          )}
-                          style={{ width: `${value}%` }}
-                        />
-                      </div>
-                      <span className="text-xs text-foreground w-8">{value}%</span>
-                    </div>
-                  </div>
-                ))}
-              </div>
 
               {/* Attempts */}
               <motion.div className="p-4 rounded-xl bg-destructive/10 border border-destructive/30 text-center">
-                <p className="text-sm text-muted-foreground mb-1">محاولات الاتهام المتبقية</p>
+                <p className="text-sm text-muted-foreground mb-1">محاولات التقرير المتبقية</p>
                 <div className="flex items-center justify-center gap-2">
                   {[1, 2, 3].map((i) => (
                     <div
@@ -184,7 +166,7 @@ export const OfficeScreen = ({ onNavigate }: OfficeScreenProps) => {
                         i <= remainingAttempts ? "bg-destructive text-destructive-foreground" : "bg-secondary text-muted-foreground"
                       )}
                     >
-                      {i <= remainingAttempts ? "⚖️" : "✗"}
+                      {i <= remainingAttempts ? "✓" : "✗"}
                     </div>
                   ))}
                 </div>
@@ -193,8 +175,8 @@ export const OfficeScreen = ({ onNavigate }: OfficeScreenProps) => {
               {/* Progress */}
               <div className="space-y-4">
                 <ProgressBar label="التقدم الإجمالي" value={progress} max={100} color="primary" />
-                <ProgressBar label="الأدلة المجمعة" value={state.collectedEvidence.length} max={EVIDENCE_ITEMS.length} color="accent" />
-                <ProgressBar label="الاكتشافات" value={state.discoveredInsights.length} max={7} color="success" />
+                <ProgressBar label="الأدلة المفتوحة" value={state.visitedEvidenceIds.length} max={EVIDENCE_ITEMS.length} color="accent" />
+                <ProgressBar label="الأدلة المثبتة" value={state.pinnedEvidenceIds.length} max={5} color="success" />
               </div>
 
               {/* Score */}
@@ -227,80 +209,76 @@ export const OfficeScreen = ({ onNavigate }: OfficeScreenProps) => {
                   whileHover={{ scale: 1.02 }}
                   onClick={() => onNavigate("interrogation")}
                 >
-                  🧑‍💼 غرفة الاستجواب
+                  👥 غرفة الاجتماعات
                 </motion.button>
               </div>
             </div>
           </GameCard>
         );
 
-      case "filing-cabinet":
+      case "ceo":
         return (
-          <GameCard title="إنجازاتك" iconEmoji="🏆" className="w-full">
+          <GameCard title="محمد - الرئيس التنفيذي" iconEmoji="👔" className="w-full">
             <div className="space-y-6 p-2">
-              {/* Rank */}
-              <motion.div className="p-4 rounded-lg bg-amber-500/10 border border-amber-500/30">
-                <div className="flex items-center gap-3">
-                  <Trophy className="w-8 h-8 text-amber-400" />
-                  <div>
-                    <h4 className="font-bold text-foreground">رتبتك الحالية</h4>
-                    <p className="text-2xl font-bold text-amber-400">
-                      {state.score >= 500 ? "محقق خبير" : state.score >= 200 ? "محقق متقدم" : "محقق مبتدئ"}
-                    </p>
-                  </div>
+              {/* CEO Info */}
+              <div className="flex items-center gap-4 pb-4 border-b border-border">
+                <div className="w-16 h-16 rounded-full bg-primary/20 flex items-center justify-center">
+                  <User className="w-8 h-8 text-primary" />
                 </div>
-              </motion.div>
-
-              {/* Insights Discovered */}
-              <div className="space-y-3">
-                <h4 className="font-bold text-foreground flex items-center gap-2">
-                  <Target className="w-4 h-4 text-accent" />
-                  الاكتشافات ({state.discoveredInsights.length})
-                </h4>
-                
-                {state.discoveredInsights.length === 0 ? (
-                  <div className="text-center py-8 text-muted-foreground">
-                    <p className="text-4xl mb-2">🔍</p>
-                    <p>لم تكتشف أي أنماط بعد</p>
-                    <p className="text-sm">استخدم غرفة التحليل!</p>
-                  </div>
-                ) : (
-                  <div className="grid gap-3 max-h-32 overflow-auto">
-                    {state.investigationNotes
-                      .filter(n => n.type === "insight")
-                      .map((note, i) => (
-                        <motion.div
-                          key={note.id}
-                          className="p-3 rounded-lg bg-accent/10 border border-accent/30"
-                          initial={{ opacity: 0, x: -20 }}
-                          animate={{ opacity: 1, x: 0 }}
-                          transition={{ delay: i * 0.1 }}
-                        >
-                          <p className="text-foreground text-sm">{note.text}</p>
-                        </motion.div>
-                      ))}
-                  </div>
-                )}
+                <div>
+                  <h3 className="text-xl font-bold text-foreground">{ceo?.name}</h3>
+                  <p className="text-muted-foreground">{ceo?.role}</p>
+                </div>
               </div>
 
-              {/* Stats */}
-              <div className="grid grid-cols-2 gap-3">
-                <div className="p-3 rounded-lg bg-primary/10 border border-primary/30 text-center">
-                  <p className="text-2xl font-bold text-primary">{state.collectedEvidence.length}</p>
-                  <p className="text-xs text-muted-foreground">أدلة مجمعة</p>
-                </div>
-                <div className="p-3 rounded-lg bg-accent/10 border border-accent/30 text-center">
-                  <p className="text-2xl font-bold text-accent">{state.investigationNotes.length}</p>
-                  <p className="text-xs text-muted-foreground">ملاحظات</p>
-                </div>
-                <div className="p-3 rounded-lg bg-purple-500/10 border border-purple-500/30 text-center">
-                  <p className="text-2xl font-bold text-purple-400">{state.dialoguesCompleted.length}</p>
-                  <p className="text-xs text-muted-foreground">حوارات</p>
-                </div>
-                <div className="p-3 rounded-lg bg-green-500/10 border border-green-500/30 text-center">
-                  <p className="text-2xl font-bold text-green-400">{state.testedHypotheses.length}</p>
-                  <p className="text-xs text-muted-foreground">فرضيات</p>
-                </div>
+              {/* Response */}
+              <motion.div 
+                className="p-4 rounded-xl bg-secondary/30 border border-border"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+              >
+                <p className="text-foreground text-lg">
+                  "{ceoResponse || ceo?.initialStatement}"
+                </p>
+              </motion.div>
+
+              {/* Questions */}
+              <div className="space-y-3">
+                <h4 className="font-bold text-foreground flex items-center gap-2">
+                  <MessageSquare className="w-4 h-4 text-primary" />
+                  الأسئلة المتاحة:
+                </h4>
+                {ceo?.questions.map((question) => {
+                  const isAsked = hasAskedQuestion(question.id);
+                  return (
+                    <motion.button
+                      key={question.id}
+                      onClick={() => !isAsked && handleAskCEO(question)}
+                      disabled={isAsked}
+                      className={cn(
+                        "w-full p-3 rounded-lg border text-right transition-all",
+                        isAsked 
+                          ? "bg-secondary/50 border-border opacity-60" 
+                          : "bg-card/50 border-border hover:border-primary"
+                      )}
+                      whileHover={!isAsked ? { x: -5 } : {}}
+                    >
+                      <div className="flex items-center justify-between">
+                        <span className={cn("text-sm", isAsked ? "text-muted-foreground" : "text-foreground")}>
+                          {question.text}
+                        </span>
+                        {!isAsked && (
+                          <span className="text-xs text-destructive bg-destructive/10 px-2 py-1 rounded">
+                            -{question.cost} وقت
+                          </span>
+                        )}
+                        {isAsked && (
+                          <span className="text-xs text-green-400">✓</span>
+                        )}
+                      </div>
+                    </motion.button>
+                  );
+                })}
               </div>
             </div>
           </GameCard>
@@ -336,13 +314,8 @@ export const OfficeScreen = ({ onNavigate }: OfficeScreenProps) => {
           <div className="px-4 py-2 rounded-lg bg-background/80 backdrop-blur-sm border border-border">
             <span className="text-amber-400 font-bold">{state.score} نقطة</span>
           </div>
-          <div className={cn(
-            "px-4 py-2 rounded-lg backdrop-blur-sm border",
-            trust > 70 ? "bg-green-500/20 border-green-500/30" :
-            trust > 40 ? "bg-amber-500/20 border-amber-500/30" :
-            "bg-destructive/20 border-destructive/30"
-          )}>
-            <span className="font-bold text-foreground">{trust}% ثقة</span>
+          <div className="px-4 py-2 rounded-lg bg-background/80 backdrop-blur-sm border border-border">
+            <span className="text-primary font-bold">الوقت: {state.time}</span>
           </div>
         </motion.div>
       </InteractiveRoom>

@@ -10,14 +10,11 @@ interface IntroScreenProps {
 export const IntroScreen = ({ onStart, onNavigate }: IntroScreenProps) => {
   const handleStart = () => {
     if (onNavigate) {
-      onNavigate("office");
+      onNavigate("onboarding");
     } else if (onStart) {
       onStart();
     }
   };
-
-  // Get the 4 characters for preview (excluding detective)
-  const previewCharacters = CHARACTERS.slice(0, 4);
 
   return (
     <div className="relative min-h-screen overflow-hidden bg-gradient-to-b from-gray-900 via-gray-800 to-black">
@@ -88,7 +85,7 @@ export const IntroScreen = ({ onStart, onNavigate }: IntroScreenProps) => {
             animate={{ rotate: [0, -10, 10, 0] }}
             transition={{ duration: 3, repeat: Infinity }}
           >
-            🔍
+            📊
           </motion.div>
 
           <h1
@@ -150,9 +147,9 @@ export const IntroScreen = ({ onStart, onNavigate }: IntroScreenProps) => {
           <span className="relative z-10 flex items-center gap-3">🚀 ابدأ التحقيق</span>
         </motion.button>
 
-        {/* Case teaser - NEW CASE INFO */}
+        {/* Case teaser */}
         <motion.div
-          className="mt-12 max-w-md text-center"
+          className="mt-12 max-w-lg text-center"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 1.5 }}
@@ -161,13 +158,11 @@ export const IntroScreen = ({ onStart, onNavigate }: IntroScreenProps) => {
             <h3 className="text-primary font-bold mb-2">📁 {CASE_INFO.title}</h3>
             <p className="text-sm text-muted-foreground">
               {CASE_INFO.description}
-              <br />
-              <span className="text-amber-400">مهمتك: اكتشف مين بيسحب فلوس الشركة... بالدليل!</span>
             </p>
 
             {/* Characters preview */}
-            <div className="flex justify-center gap-3 mt-4">
-              {previewCharacters.map((char, i) => (
+            <div className="flex justify-center gap-4 mt-4">
+              {CHARACTERS.map((char, i) => (
                 <motion.div
                   key={char.id}
                   className="text-center"
@@ -176,10 +171,9 @@ export const IntroScreen = ({ onStart, onNavigate }: IntroScreenProps) => {
                   transition={{ delay: 1.8 + i * 0.15 }}
                 >
                   <div className="w-12 h-12 rounded-full bg-primary/20 border border-primary/30 flex items-center justify-center text-2xl">
-                    {char.id === "moataz" && "👔"}
+                    {char.id === "ceo" && "👔"}
                     {char.id === "sara" && "👩‍💼"}
-                    {char.id === "mahmoud" && "👷"}
-                    {char.id === "fadi" && "📋"}
+                    {char.id === "ahmed" && "👨‍💼"}
                   </div>
                   <p className="text-xs text-muted-foreground mt-1">{char.name}</p>
                 </motion.div>

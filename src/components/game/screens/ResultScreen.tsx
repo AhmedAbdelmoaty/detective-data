@@ -1,7 +1,7 @@
 import { motion } from "framer-motion";
-import { Trophy, Star, RotateCcw, CheckCircle, XCircle, Shield } from "lucide-react";
+import { Trophy, Star, RotateCcw, CheckCircle, XCircle, Clock } from "lucide-react";
 import { useGame } from "@/contexts/GameContext";
-import { CASE_INFO, CHARACTERS, ENDINGS } from "@/data/case1";
+import { CASE_INFO, EVIDENCE_ITEMS, INSIGHTS } from "@/data/case1";
 import { cn } from "@/lib/utils";
 
 interface ResultScreenProps {
@@ -9,20 +9,18 @@ interface ResultScreenProps {
 }
 
 export const ResultScreen = ({ onNavigate }: ResultScreenProps) => {
-  const { state, resetGame, getEnding, getOverallTrust } = useGame();
+  const { state, resetGame, getEnding, getProgress } = useGame();
 
   const ending = getEnding();
   const isWin = ending?.type === "best" || ending?.type === "partial";
-  const accusedCharacter = state.accusation ? CHARACTERS.find(c => c.id === state.accusation) : null;
-  const trust = getOverallTrust();
-  const totalPossibleScore = 1000;
+  const totalPossibleScore = 800;
   const scorePercentage = Math.round((state.score / totalPossibleScore) * 100);
   
   const getRank = () => {
-    if (scorePercentage >= 90) return { title: "محقق أسطوري", icon: "🏆", color: "text-yellow-400" };
-    if (scorePercentage >= 75) return { title: "محقق خبير", icon: "🥇", color: "text-amber-400" };
-    if (scorePercentage >= 50) return { title: "محقق متقدم", icon: "🥈", color: "text-slate-300" };
-    if (scorePercentage >= 25) return { title: "محقق مبتدئ", icon: "🥉", color: "text-amber-600" };
+    if (scorePercentage >= 90) return { title: "محقق بيانات أسطوري", icon: "🏆", color: "text-yellow-400" };
+    if (scorePercentage >= 75) return { title: "محقق بيانات خبير", icon: "🥇", color: "text-amber-400" };
+    if (scorePercentage >= 50) return { title: "محقق بيانات متقدم", icon: "🥈", color: "text-slate-300" };
+    if (scorePercentage >= 25) return { title: "محقق بيانات مبتدئ", icon: "🥉", color: "text-amber-600" };
     return { title: "متدرب", icon: "📚", color: "text-muted-foreground" };
   };
   
@@ -34,10 +32,10 @@ export const ResultScreen = ({ onNavigate }: ResultScreenProps) => {
   };
 
   const stats = [
-    { label: "الأدلة المجمعة", value: state.collectedEvidence.length, max: 7, icon: "📁" },
-    { label: "الاكتشافات", value: state.discoveredInsights.length, max: 7, icon: "🔍" },
-    { label: "الحوارات", value: state.dialoguesCompleted.length, max: 10, icon: "💬" },
-    { label: "محاولات الاتهام", value: state.accusationAttempts, max: 3, icon: "⚖️" },
+    { label: "الأدلة المفتوحة", value: state.visitedEvidenceIds.length, max: EVIDENCE_ITEMS.length, icon: "📁" },
+    { label: "الأدلة المثبتة", value: state.pinnedEvidenceIds.length, max: 5, icon: "📌" },
+    { label: "الاكتشافات", value: state.discoveredInsights.length, max: INSIGHTS.length, icon: "💡" },
+    { label: "الأسئلة", value: state.interviewedIds.length, max: 9, icon: "💬" },
   ];
 
   return (
@@ -75,35 +73,11 @@ export const ResultScreen = ({ onNavigate }: ResultScreenProps) => {
           </motion.div>
           
           <h1 className={cn("text-4xl md:text-5xl font-bold mb-2", isWin ? "text-green-400" : "text-red-400")}>
-            {ending?.title || (isWin ? "القضية محلولة!" : "فشل التحقيق")}
+            {ending?.title || (isWin ? "تحليل ناجح!" : "تحليل خاطئ")}
           </h1>
           
           <p className="text-muted-foreground text-lg">{ending?.description}</p>
         </motion.div>
-
-        {/* Accused */}
-        {accusedCharacter && (
-          <motion.div
-            className="p-6 rounded-2xl bg-card/50 border border-border mb-6"
-            initial={{ scale: 0.8, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            transition={{ delay: 0.2 }}
-          >
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-muted-foreground text-sm mb-1">المتهم</p>
-                <p className="text-2xl font-bold text-foreground">{accusedCharacter.name}</p>
-                <p className="text-muted-foreground">{accusedCharacter.role}</p>
-              </div>
-              <div className={cn(
-                "px-4 py-2 rounded-xl font-bold",
-                accusedCharacter.isGuilty ? "bg-green-500/20 text-green-400" : "bg-destructive/20 text-destructive"
-              )}>
-                {accusedCharacter.isGuilty ? "✓ الشخص الصحيح" : "✗ شخص بريء"}
-              </div>
-            </div>
-          </motion.div>
-        )}
 
         {/* Consequences */}
         {ending?.consequences && (
@@ -159,8 +133,8 @@ export const ResultScreen = ({ onNavigate }: ResultScreenProps) => {
 
             <div className="text-center md:text-left">
               <div className="flex items-center gap-2 mb-2">
-                <Shield className="w-5 h-5 text-primary" />
-                <span className="font-bold text-foreground">{trust}% ثقة</span>
+                <Clock className="w-5 h-5 text-primary" />
+                <span className="font-bold text-foreground">الوقت المتبقي: {state.time}</span>
               </div>
               <p className="text-muted-foreground text-sm">القضية</p>
               <p className="text-xl font-bold text-foreground">{CASE_INFO.title}</p>
