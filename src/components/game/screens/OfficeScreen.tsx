@@ -9,7 +9,7 @@ import { useGame } from "@/contexts/GameContext";
 import { useSound } from "@/hooks/useSoundEffects";
 import { CASE_INFO, CHARACTERS, EVIDENCE_ITEMS } from "@/data/case1";
 import { cn } from "@/lib/utils";
-import managerOffice from "@/assets/rooms/manager-office.png";
+import detectiveOffice from "@/assets/rooms/detective-office.png";
 
 interface OfficeScreenProps {
   onNavigate: (screen: string) => void;
@@ -314,7 +314,7 @@ export const OfficeScreen = ({ onNavigate }: OfficeScreenProps) => {
   return (
     <>
       <InteractiveRoom
-        backgroundImage={managerOffice}
+        backgroundImage={detectiveOffice}
         hotspots={hotspots}
         onHotspotClick={handleHotspotClick}
         activeHotspot={activePanel}
