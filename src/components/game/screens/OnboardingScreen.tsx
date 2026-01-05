@@ -8,6 +8,30 @@ interface OnboardingScreenProps {
   onComplete: () => void;
 }
 
+const MAIN_CHARACTER_IDS = ["sara", "ahmed", "mohammed"] as const;
+
+const MAIN_CHARACTERS = MAIN_CHARACTER_IDS.map((id) =>
+  CHARACTERS.find((character) => character.id === id)
+).filter(Boolean) as typeof CHARACTERS;
+
+const charactersSlideContent = `ستقابل ثلاث شخصيات أساسيات داخل الشركة:
+
+${MAIN_CHARACTERS.map((character, index) => {
+  if (!character) return "";
+
+  const roleNotes = [
+    "(تدافع عن قوة الحملة)",
+    "(يركز على إغلاق الصفقات)",
+    "(ينتظر نتيجة سريعة وواضحة)",
+  ];
+
+  return `• ${character.name} - ${character.role} ${roleNotes[index] ?? ""}`.trim();
+})
+  .filter(Boolean)
+  .join("\n")}
+
+كل شخص سيحاول تفسير الأزمة بطريقته… لكن الحقيقة تحتاج ربط الأدلة.`;
+
 const slides = [
   {
     id: 1,
@@ -32,14 +56,7 @@ ${CASE_INFO.briefing}`,
   {
     id: 3,
     title: "الشخصيات",
-    content: `ستقابل شخصيتين أساسيتين داخل الشركة:
-
-• ${CHARACTERS[0].name} - ${CHARACTERS[0].role} (تثق في نجاح الحملة)
-• ${CHARACTERS[1].name} - ${CHARACTERS[1].role} (غاضب من جودة العملاء)
-
-بالإضافة إلى الرئيس التنفيذي الذي ينتظر تقريرك النهائي.
-
-كل شخص سيحاول تفسير الأزمة بطريقته… لكن الحقيقة تحتاج ربط الأدلة.`,
+    content: charactersSlideContent,
     icon: "👥",
     mood: "suspicious" as const,
   },
