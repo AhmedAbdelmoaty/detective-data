@@ -5,13 +5,14 @@ import { OfficeScreen } from "@/components/game/screens/OfficeScreen";
 import { EvidenceScreen } from "@/components/game/screens/EvidenceScreen";
 import { AnalysisScreen } from "@/components/game/screens/AnalysisScreen";
 import { InterrogationScreen } from "@/components/game/screens/InterrogationScreen";
+import { DashboardScreen } from "@/components/game/screens/DashboardScreen";
 import { ResultScreen } from "@/components/game/screens/ResultScreen";
 import { SoundProvider } from "@/hooks/useSoundEffects";
 import { MusicProvider, useMusic } from "@/hooks/useBackgroundMusic";
 import { SoundToggle } from "@/components/game/SoundToggle";
 import { GameProvider } from "@/contexts/GameContext";
 
-type Screen = "intro" | "onboarding" | "office" | "evidence" | "analysis" | "interrogation" | "result";
+type Screen = "intro" | "onboarding" | "office" | "evidence" | "analysis" | "interrogation" | "dashboard" | "result";
 
 const GameContent = () => {
   const [currentScreen, setCurrentScreen] = useState<Screen>("intro");
@@ -22,10 +23,9 @@ const GameContent = () => {
   };
 
   useEffect(() => {
-    // Only set room for valid room types
     const roomTypes = ["intro", "office", "evidence", "analysis", "interrogation", "result"];
     if (roomTypes.includes(currentScreen)) {
-      setCurrentRoom(currentScreen as "intro" | "office" | "evidence" | "analysis" | "interrogation" | "result");
+      setCurrentRoom(currentScreen as any);
     }
   }, [currentScreen, setCurrentRoom]);
 
@@ -38,6 +38,7 @@ const GameContent = () => {
       {currentScreen === "evidence" && <EvidenceScreen onNavigate={handleNavigate} />}
       {currentScreen === "analysis" && <AnalysisScreen onNavigate={handleNavigate} />}
       {currentScreen === "interrogation" && <InterrogationScreen onNavigate={handleNavigate} />}
+      {currentScreen === "dashboard" && <DashboardScreen onNavigate={handleNavigate} />}
       {currentScreen === "result" && <ResultScreen onNavigate={handleNavigate} />}
     </div>
   );

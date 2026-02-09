@@ -7,8 +7,10 @@ import saraImg from "@/assets/characters/sara.png";
 import karimImg from "@/assets/characters/karim.png";
 import detectiveImg from "@/assets/characters/detective.png";
 
+export type CharacterId = "ahmed" | "sara" | "karim" | "detective" | "abuSaeed" | "khaled" | "noura" | "umFahd";
+
 interface AnimatedCharacterProps {
-  characterId: "ahmed" | "sara" | "karim" | "detective";
+  characterId: CharacterId;
   size?: "sm" | "md" | "lg" | "xl";
   isActive?: boolean;
   isSpeaking?: boolean;
@@ -19,39 +21,16 @@ interface AnimatedCharacterProps {
   className?: string;
 }
 
-const characterData = {
-  ahmed: {
-    name: "أحمد",
-    nameEn: "Ahmed",
-    role: "المدير المالي",
-    roleEn: "CFO",
-    image: ahmedImg,
-    color: "cyan",
-  },
-  sara: {
-    name: "سارة",
-    nameEn: "Sara",
-    role: "محاسبة",
-    roleEn: "Accountant",
-    image: saraImg,
-    color: "purple",
-  },
-  karim: {
-    name: "كريم",
-    nameEn: "Karim",
-    role: "مسؤول المشتريات",
-    roleEn: "Procurement",
-    image: karimImg,
-    color: "red",
-  },
-  detective: {
-    name: "المحقق",
-    nameEn: "Detective",
-    role: "أنت",
-    roleEn: "You",
-    image: detectiveImg,
-    color: "gold",
-  },
+const characterData: Record<CharacterId, { name: string; nameEn: string; role: string; roleEn: string; image: string; color: string }> = {
+  ahmed: { name: "أحمد", nameEn: "Ahmed", role: "المدير المالي", roleEn: "CFO", image: ahmedImg, color: "cyan" },
+  sara: { name: "سارة", nameEn: "Sara", role: "محاسبة", roleEn: "Accountant", image: saraImg, color: "purple" },
+  karim: { name: "كريم", nameEn: "Karim", role: "مسؤول المشتريات", roleEn: "Procurement", image: karimImg, color: "red" },
+  detective: { name: "المحقق", nameEn: "Detective", role: "أنت", roleEn: "You", image: detectiveImg, color: "gold" },
+  // New characters using existing images temporarily
+  abuSaeed: { name: "أبو سعيد", nameEn: "Abu Saeed", role: "صاحب المحل", roleEn: "Shop Owner", image: detectiveImg, color: "gold" },
+  khaled: { name: "خالد", nameEn: "Khaled", role: "مدير الصالة", roleEn: "Floor Manager", image: ahmedImg, color: "cyan" },
+  noura: { name: "نورة", nameEn: "Noura", role: "الكاشير", roleEn: "Cashier", image: saraImg, color: "purple" },
+  umFahd: { name: "أم فهد", nameEn: "Um Fahd", role: "زبونة دائمة", roleEn: "Regular Customer", image: karimImg, color: "red" },
 };
 
 const sizeClasses = {
@@ -62,78 +41,26 @@ const sizeClasses = {
 };
 
 const colorClasses = {
-  cyan: {
-    border: "border-cyan-500",
-    glow: "shadow-[0_0_30px_rgba(34,211,238,0.5)]",
-    bg: "bg-cyan-500/20",
-    text: "text-cyan-400",
-  },
-  purple: {
-    border: "border-purple-500",
-    glow: "shadow-[0_0_30px_rgba(168,85,247,0.5)]",
-    bg: "bg-purple-500/20",
-    text: "text-purple-400",
-  },
-  red: {
-    border: "border-red-500",
-    glow: "shadow-[0_0_30px_rgba(239,68,68,0.5)]",
-    bg: "bg-red-500/20",
-    text: "text-red-400",
-  },
-  gold: {
-    border: "border-amber-500",
-    glow: "shadow-[0_0_30px_rgba(245,158,11,0.5)]",
-    bg: "bg-amber-500/20",
-    text: "text-amber-400",
-  },
+  cyan: { border: "border-cyan-500", glow: "shadow-[0_0_30px_rgba(34,211,238,0.5)]", bg: "bg-cyan-500/20", text: "text-cyan-400" },
+  purple: { border: "border-purple-500", glow: "shadow-[0_0_30px_rgba(168,85,247,0.5)]", bg: "bg-purple-500/20", text: "text-purple-400" },
+  red: { border: "border-red-500", glow: "shadow-[0_0_30px_rgba(239,68,68,0.5)]", bg: "bg-red-500/20", text: "text-red-400" },
+  gold: { border: "border-amber-500", glow: "shadow-[0_0_30px_rgba(245,158,11,0.5)]", bg: "bg-amber-500/20", text: "text-amber-400" },
 };
 
 const entranceVariants = {
-  "slide-left": {
-    initial: { x: -100, opacity: 0, scale: 0.8 },
-    animate: { x: 0, opacity: 1, scale: 1 },
-    exit: { x: -100, opacity: 0, scale: 0.8 },
-  },
-  "slide-right": {
-    initial: { x: 100, opacity: 0, scale: 0.8 },
-    animate: { x: 0, opacity: 1, scale: 1 },
-    exit: { x: 100, opacity: 0, scale: 0.8 },
-  },
-  fade: {
-    initial: { opacity: 0 },
-    animate: { opacity: 1 },
-    exit: { opacity: 0 },
-  },
-  zoom: {
-    initial: { scale: 0, opacity: 0 },
-    animate: { scale: 1, opacity: 1 },
-    exit: { scale: 0, opacity: 0 },
-  },
-  bounce: {
-    initial: { y: -50, opacity: 0, scale: 0.5 },
-    animate: { y: 0, opacity: 1, scale: 1 },
-    exit: { y: 50, opacity: 0, scale: 0.5 },
-  },
+  "slide-left": { initial: { x: -100, opacity: 0, scale: 0.8 }, animate: { x: 0, opacity: 1, scale: 1 }, exit: { x: -100, opacity: 0, scale: 0.8 } },
+  "slide-right": { initial: { x: 100, opacity: 0, scale: 0.8 }, animate: { x: 0, opacity: 1, scale: 1 }, exit: { x: 100, opacity: 0, scale: 0.8 } },
+  fade: { initial: { opacity: 0 }, animate: { opacity: 1 }, exit: { opacity: 0 } },
+  zoom: { initial: { scale: 0, opacity: 0 }, animate: { scale: 1, opacity: 1 }, exit: { scale: 0, opacity: 0 } },
+  bounce: { initial: { y: -50, opacity: 0, scale: 0.5 }, animate: { y: 0, opacity: 1, scale: 1 }, exit: { y: 50, opacity: 0, scale: 0.5 } },
 };
 
 const moodAnimations = {
   neutral: {},
-  happy: {
-    y: [0, -5, 0],
-    transition: { duration: 0.5, repeat: Infinity, repeatDelay: 2 },
-  },
-  nervous: {
-    x: [-2, 2, -2, 2, 0],
-    transition: { duration: 0.3, repeat: Infinity, repeatDelay: 1 },
-  },
-  angry: {
-    scale: [1, 1.05, 1],
-    transition: { duration: 0.3, repeat: Infinity, repeatDelay: 0.5 },
-  },
-  suspicious: {
-    rotate: [-2, 2, -2],
-    transition: { duration: 2, repeat: Infinity },
-  },
+  happy: { y: [0, -5, 0], transition: { duration: 0.5, repeat: Infinity, repeatDelay: 2 } },
+  nervous: { x: [-2, 2, -2, 2, 0], transition: { duration: 0.3, repeat: Infinity, repeatDelay: 1 } },
+  angry: { scale: [1, 1.05, 1], transition: { duration: 0.3, repeat: Infinity, repeatDelay: 0.5 } },
+  suspicious: { rotate: [-2, 2, -2], transition: { duration: 2, repeat: Infinity } },
 };
 
 export const AnimatedCharacter = ({
@@ -164,85 +91,34 @@ export const AnimatedCharacter = ({
       whileHover={onClick ? { scale: 1.05 } : {}}
       whileTap={onClick ? { scale: 0.95 } : {}}
     >
-      {/* Character Image Container */}
       <motion.div
-        className={`
-          relative rounded-full overflow-hidden border-4 
-          ${colors.border} ${isActive ? colors.glow : ""}
-          ${sizeClass.container}
-          transition-all duration-300
-        `}
+        className={`relative rounded-full overflow-hidden border-4 ${colors.border} ${isActive ? colors.glow : ""} ${sizeClass.container} transition-all duration-300`}
         animate={moodAnimations[mood]}
       >
-        {/* Background glow */}
         {isActive && (
-          <motion.div
-            className={`absolute inset-0 ${colors.bg}`}
-            animate={{ opacity: [0.3, 0.6, 0.3] }}
-            transition={{ duration: 2, repeat: Infinity }}
-          />
+          <motion.div className={`absolute inset-0 ${colors.bg}`} animate={{ opacity: [0.3, 0.6, 0.3] }} transition={{ duration: 2, repeat: Infinity }} />
         )}
-
-        {/* Character Image */}
         <motion.img
           src={character.image}
           alt={character.nameEn}
           className={`${sizeClass.image} object-cover rounded-full`}
-          animate={isSpeaking ? {
-            scale: [1, 1.02, 1],
-            transition: { duration: 0.3, repeat: Infinity }
-          } : {}}
+          animate={isSpeaking ? { scale: [1, 1.02, 1], transition: { duration: 0.3, repeat: Infinity } } : {}}
         />
-
-        {/* Speaking indicator */}
         <AnimatePresence>
           {isSpeaking && (
-            <motion.div
-              className="absolute -bottom-1 left-1/2 -translate-x-1/2 flex gap-1"
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: 10 }}
-            >
+            <motion.div className="absolute -bottom-1 left-1/2 -translate-x-1/2 flex gap-1" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 10 }}>
               {[0, 1, 2].map((i) => (
-                <motion.div
-                  key={i}
-                  className={`w-2 h-2 rounded-full ${colors.bg} ${colors.border} border`}
-                  animate={{
-                    y: [-3, 3, -3],
-                    opacity: [0.5, 1, 0.5],
-                  }}
-                  transition={{
-                    duration: 0.6,
-                    repeat: Infinity,
-                    delay: i * 0.15,
-                  }}
-                />
+                <motion.div key={i} className={`w-2 h-2 rounded-full ${colors.bg} ${colors.border} border`} animate={{ y: [-3, 3, -3], opacity: [0.5, 1, 0.5] }} transition={{ duration: 0.6, repeat: Infinity, delay: i * 0.15 }} />
               ))}
             </motion.div>
           )}
         </AnimatePresence>
-
-        {/* Active ring animation */}
         {isActive && (
-          <motion.div
-            className={`absolute inset-0 rounded-full border-2 ${colors.border}`}
-            animate={{
-              scale: [1, 1.2, 1],
-              opacity: [0.8, 0, 0.8],
-            }}
-            transition={{ duration: 2, repeat: Infinity }}
-          />
+          <motion.div className={`absolute inset-0 rounded-full border-2 ${colors.border}`} animate={{ scale: [1, 1.2, 1], opacity: [0.8, 0, 0.8] }} transition={{ duration: 2, repeat: Infinity }} />
         )}
       </motion.div>
-
-      {/* Name and Role */}
       {showName && (
-        <motion.div
-          className="mt-3 text-center"
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.3 }}
-        >
+        <motion.div className="mt-3 text-center" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}>
           <p className={`font-bold ${colors.text}`}>{character.name}</p>
           <p className="text-xs text-muted-foreground">{character.role}</p>
         </motion.div>
@@ -251,5 +127,4 @@ export const AnimatedCharacter = ({
   );
 };
 
-// Export character data for use elsewhere
 export { characterData };

@@ -1,86 +1,93 @@
 import React, { createContext, useContext, useState, useCallback, ReactNode } from "react";
-import { EVIDENCE_ITEMS, INSIGHTS, ENDINGS, CHARACTERS, SOLUTION_OPTIONS, REQUIRED_EVIDENCE_IDS, CASE_INFO } from "@/data/case1";
+import { HYPOTHESES, EVIDENCE_ITEMS, ENDINGS, DIAGNOSTIC_EVIDENCE_IDS } from "@/data/case1";
 
 // ============================================
 // Types
 // ============================================
 
-export interface InvestigationNote {
+export interface NotebookEntry {
   id: string;
-  type: "discovery" | "clue" | "suspicion" | "insight" | "dialogue";
   text: string;
-  source: string;
+  source: "evidence" | "interview" | "dashboard";
+  sourceId: string;
   timestamp: number;
-  characterId?: string;
 }
 
 export interface GameState {
-  // Resources
-  time: number;
-  trust: number;
-  
-  // Evidence
-  visitedEvidenceIds: string[];
-  pinnedEvidenceIds: string[]; // Max 5
-  
-  // Interviews
-  interviewedIds: string[]; // Question IDs that have been asked
-  
-  // Discoveries
-  discoveredInsights: string[];
-  
   // Navigation
-  currentRoom: string;
   currentPhase: "intro" | "onboarding" | "investigation" | "conclusion";
-  
-  // Dialogue
   hasSeenIntroDialogue: boolean;
-  
-  // Notes
-  investigationNotes: InvestigationNote[];
-  
-  // Solution
-  selectedSolution: string | null;
-  solutionAttempts: number;
-  maxSolutionAttempts: number;
   gameStatus: "briefing" | "playing" | "solved" | "failed";
-  
+
+  // Notebook
+  notebook: NotebookEntry[];
+
+  // Interviews
+  completedInterviews: string[]; // character IDs that finished all dialogue
+
+  // Evidence
+  viewedEvidence: string[]; // evidence IDs that were opened
+
+  // Dashboard
+  viewedDashboard: string[]; // dashboard item IDs
+
+  // Hypotheses
+  selectedHypotheses: string[]; // max 4 hypothesis IDs
+
+  // ACH Matrix
+  achMatrix: Record<string, Record<string, string>>; // [evidenceId][hypothesisId] = "++"|"+"|"-"|"--"
+
+  // Final answer
+  finalHypothesis: string | null;
+
   // Score
   score: number;
+
+  // Room tracking
+  currentRoom: string;
+  visitedRooms: string[];
 }
 
 interface GameContextType {
   state: GameState;
-  
+
   // Room navigation
   setCurrentRoom: (roomId: string) => void;
   setPhase: (phase: GameState["currentPhase"]) => void;
-  
-  // Evidence
-  visitEvidence: (evidenceId: string, cost: number) => void;
-  togglePinEvidence: (evidenceId: string) => void;
-  isEvidenceVisited: (evidenceId: string) => boolean;
-  isEvidencePinned: (evidenceId: string) => boolean;
-  
-  // Interviews
-  askQuestion: (questionId: string, cost: number) => void;
-  hasAskedQuestion: (questionId: string) => boolean;
-  
-  // Insights
-  discoverInsight: (insightId: string) => void;
-  hasInsight: (insightId: string) => boolean;
-  
-  // Dialogues
+
+  // Intro
   markIntroSeen: () => void;
-  
-  // Notes
-  addNote: (note: Omit<InvestigationNote, "id" | "timestamp">) => void;
-  
-  // Solution
-  submitSolution: (optionId: string) => { correct: boolean; feedback: string; attemptsLeft: number };
-  canSubmitSolution: () => boolean;
-  getRemainingAttempts: () => number;
-  
+
+  // Notebook
+  addToNotebook: (entry: Omit<NotebookEntry, "id" | "timestamp">) => void;
+  isInNotebook: (sourceId: string) => boolean;
+  removeFromNotebook: (sourceId: string) => void;
+
+  // Evidence
+  viewEvidence: (evidenceId: string) => void;
+  isEvidenceViewed: (evidenceId: string) => boolean;
+
+  // Dashboard
+  viewDashboardItem: (itemId: string) => void;
+
+  // Interviews
+  markInterviewComplete: (characterId: string) => void;
+  isInterviewComplete: (characterId: string) => boolean;
+
+  // Hypotheses
+  toggleHypothesis: (hypothesisId: string) => void;
+  isHypothesisSelected: (hypothesisId: string) => boolean;
+  canSelectHypotheses: () => boolean;
+
+  // ACH Matrix
+  setMatrixCell: (evidenceId: string, hypothesisId: string, value: string) => void;
+  getMatrixCell: (evidenceId: string, hypothesisId: string) => string | null;
+  canUseMatrix: () => boolean;
+
+  // Final answer
+  setFinalHypothesis: (hypothesisId: string) => void;
+  canSubmitFinal: () => boolean;
+
   // Game helpers
   getProgress: () => number;
   getEnding: () => typeof ENDINGS[0] | null;
@@ -92,21 +99,19 @@ interface GameContextType {
 // ============================================
 
 const initialState: GameState = {
-  time: CASE_INFO.resources.initialTime,
-  trust: CASE_INFO.resources.initialTrust,
-  visitedEvidenceIds: [],
-  pinnedEvidenceIds: [],
-  interviewedIds: [],
-  discoveredInsights: [],
-  currentRoom: "ceo-office",
   currentPhase: "intro",
   hasSeenIntroDialogue: false,
-  investigationNotes: [],
-  selectedSolution: null,
-  solutionAttempts: 0,
-  maxSolutionAttempts: 3,
   gameStatus: "briefing",
+  notebook: [],
+  completedInterviews: [],
+  viewedEvidence: [],
+  viewedDashboard: [],
+  selectedHypotheses: [],
+  achMatrix: {},
+  finalHypothesis: null,
   score: 0,
+  currentRoom: "office",
+  visitedRooms: [],
 };
 
 // ============================================
@@ -118,202 +123,206 @@ const GameContext = createContext<GameContextType | undefined>(undefined);
 export const GameProvider = ({ children }: { children: ReactNode }) => {
   const [state, setState] = useState<GameState>(initialState);
 
-  // Room navigation
   const setCurrentRoom = useCallback((roomId: string) => {
-    setState(prev => ({ ...prev, currentRoom: roomId }));
+    setState(prev => ({
+      ...prev,
+      currentRoom: roomId,
+      visitedRooms: prev.visitedRooms.includes(roomId) ? prev.visitedRooms : [...prev.visitedRooms, roomId],
+    }));
   }, []);
 
   const setPhase = useCallback((phase: GameState["currentPhase"]) => {
     setState(prev => ({ ...prev, currentPhase: phase }));
   }, []);
 
-  // Evidence
-  const visitEvidence = useCallback((evidenceId: string, cost: number) => {
+  const markIntroSeen = useCallback(() => {
+    setState(prev => ({ ...prev, hasSeenIntroDialogue: true, gameStatus: "playing" }));
+  }, []);
+
+  // Notebook
+  const addToNotebook = useCallback((entry: Omit<NotebookEntry, "id" | "timestamp">) => {
     setState(prev => {
-      if (prev.visitedEvidenceIds.includes(evidenceId)) return prev;
-      
-      const evidence = EVIDENCE_ITEMS.find(e => e.id === evidenceId);
-      const points = evidence?.isKey ? 25 : 10;
-      
+      if (prev.notebook.some(n => n.sourceId === entry.sourceId)) return prev;
+      const newEntry: NotebookEntry = {
+        ...entry,
+        id: `note-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+        timestamp: Date.now(),
+      };
       return {
         ...prev,
-        visitedEvidenceIds: [...prev.visitedEvidenceIds, evidenceId],
-        time: Math.max(0, prev.time - cost),
-        score: prev.score + points,
+        notebook: [...prev.notebook, newEntry],
+        score: prev.score + 10,
       };
     });
   }, []);
 
-  const togglePinEvidence = useCallback((evidenceId: string) => {
+  const isInNotebook = useCallback((sourceId: string): boolean => {
+    return state.notebook.some(n => n.sourceId === sourceId);
+  }, [state.notebook]);
+
+  const removeFromNotebook = useCallback((sourceId: string) => {
+    setState(prev => ({
+      ...prev,
+      notebook: prev.notebook.filter(n => n.sourceId !== sourceId),
+    }));
+  }, []);
+
+  // Evidence
+  const viewEvidence = useCallback((evidenceId: string) => {
     setState(prev => {
-      const isPinned = prev.pinnedEvidenceIds.includes(evidenceId);
-      if (isPinned) {
-        return { 
-          ...prev, 
-          pinnedEvidenceIds: prev.pinnedEvidenceIds.filter(id => id !== evidenceId) 
-        };
-      } else {
-        if (prev.pinnedEvidenceIds.length >= 5) return prev; // Max 5 pins
-        return { 
-          ...prev, 
-          pinnedEvidenceIds: [...prev.pinnedEvidenceIds, evidenceId] 
-        };
-      }
+      if (prev.viewedEvidence.includes(evidenceId)) return prev;
+      return {
+        ...prev,
+        viewedEvidence: [...prev.viewedEvidence, evidenceId],
+        score: prev.score + 5,
+      };
     });
   }, []);
 
-  const isEvidenceVisited = useCallback((evidenceId: string): boolean => {
-    return state.visitedEvidenceIds.includes(evidenceId);
-  }, [state.visitedEvidenceIds]);
+  const isEvidenceViewed = useCallback((evidenceId: string): boolean => {
+    return state.viewedEvidence.includes(evidenceId);
+  }, [state.viewedEvidence]);
 
-  const isEvidencePinned = useCallback((evidenceId: string): boolean => {
-    return state.pinnedEvidenceIds.includes(evidenceId);
-  }, [state.pinnedEvidenceIds]);
-
-  // Interviews
-  const askQuestion = useCallback((questionId: string, cost: number) => {
+  // Dashboard
+  const viewDashboardItem = useCallback((itemId: string) => {
     setState(prev => {
-      if (prev.interviewedIds.includes(questionId)) return prev;
-      
+      if (prev.viewedDashboard.includes(itemId)) return prev;
       return {
         ...prev,
-        interviewedIds: [...prev.interviewedIds, questionId],
-        time: Math.max(0, prev.time - cost),
+        viewedDashboard: [...prev.viewedDashboard, itemId],
+        score: prev.score + 5,
+      };
+    });
+  }, []);
+
+  // Interviews
+  const markInterviewComplete = useCallback((characterId: string) => {
+    setState(prev => {
+      if (prev.completedInterviews.includes(characterId)) return prev;
+      return {
+        ...prev,
+        completedInterviews: [...prev.completedInterviews, characterId],
         score: prev.score + 15,
       };
     });
   }, []);
 
-  const hasAskedQuestion = useCallback((questionId: string): boolean => {
-    return state.interviewedIds.includes(questionId);
-  }, [state.interviewedIds]);
+  const isInterviewComplete = useCallback((characterId: string): boolean => {
+    return state.completedInterviews.includes(characterId);
+  }, [state.completedInterviews]);
 
-  // Insights
-  const discoverInsight = useCallback((insightId: string) => {
+  // Hypotheses
+  const toggleHypothesis = useCallback((hypothesisId: string) => {
     setState(prev => {
-      if (prev.discoveredInsights.includes(insightId)) return prev;
-      
-      const insight = INSIGHTS.find(i => i.id === insightId);
-      const points = insight?.points || 0;
-      
-      const newNote: InvestigationNote = {
-        id: `insight-${Date.now()}`,
-        type: "insight",
-        text: insight?.description || insightId,
-        source: "analysis",
-        timestamp: Date.now(),
-      };
-      
-      return {
-        ...prev,
-        discoveredInsights: [...prev.discoveredInsights, insightId],
-        investigationNotes: [...prev.investigationNotes, newNote],
-        score: prev.score + points,
-      };
+      const isSelected = prev.selectedHypotheses.includes(hypothesisId);
+      if (isSelected) {
+        return { ...prev, selectedHypotheses: prev.selectedHypotheses.filter(id => id !== hypothesisId) };
+      }
+      if (prev.selectedHypotheses.length >= 4) return prev;
+      return { ...prev, selectedHypotheses: [...prev.selectedHypotheses, hypothesisId] };
     });
   }, []);
 
-  const hasInsight = useCallback((insightId: string): boolean => {
-    return state.discoveredInsights.includes(insightId);
-  }, [state.discoveredInsights]);
+  const isHypothesisSelected = useCallback((hypothesisId: string): boolean => {
+    return state.selectedHypotheses.includes(hypothesisId);
+  }, [state.selectedHypotheses]);
 
-  // Dialogues
-  const markIntroSeen = useCallback(() => {
-    setState(prev => ({ ...prev, hasSeenIntroDialogue: true, gameStatus: "playing" }));
+  const canSelectHypotheses = useCallback((): boolean => {
+    return state.notebook.length >= 3;
+  }, [state.notebook.length]);
+
+  // ACH Matrix
+  const setMatrixCell = useCallback((evidenceId: string, hypothesisId: string, value: string) => {
+    setState(prev => ({
+      ...prev,
+      achMatrix: {
+        ...prev.achMatrix,
+        [evidenceId]: {
+          ...(prev.achMatrix[evidenceId] || {}),
+          [hypothesisId]: value,
+        },
+      },
+    }));
   }, []);
 
-  // Notes
-  const addNote = useCallback((note: Omit<InvestigationNote, "id" | "timestamp">) => {
-    setState(prev => {
-      const newNote: InvestigationNote = {
-        ...note,
-        id: `note-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-        timestamp: Date.now(),
-      };
-      
-      return {
-        ...prev,
-        investigationNotes: [...prev.investigationNotes, newNote],
-        score: prev.score + (note.type === "insight" ? 30 : note.type === "clue" ? 15 : 5),
-      };
-    });
-  }, []);
+  const getMatrixCell = useCallback((evidenceId: string, hypothesisId: string): string | null => {
+    return state.achMatrix[evidenceId]?.[hypothesisId] || null;
+  }, [state.achMatrix]);
 
-  // Solution
-  const submitSolution = useCallback((optionId: string): { correct: boolean; feedback: string; attemptsLeft: number } => {
-    const option = SOLUTION_OPTIONS.find(o => o.id === optionId);
-    
-    // Check if required evidence is pinned
-    const hasRequiredEvidence = REQUIRED_EVIDENCE_IDS.every(reqId => 
-      state.pinnedEvidenceIds.includes(reqId)
-    );
-    
-    const isCorrect = option?.isCorrect && hasRequiredEvidence;
-    const feedback = option?.feedback || "خطأ غير محدد";
-    
-    let endingId = "";
-    if (isCorrect) {
-      endingId = "ending-best";
-    } else if (option?.isCorrect && !hasRequiredEvidence) {
-      endingId = "ending-partial";
-    } else {
-      endingId = "ending-wrong";
-    }
-    
-    const ending = ENDINGS.find(e => e.id === endingId);
-    
+  const canUseMatrix = useCallback((): boolean => {
+    return state.selectedHypotheses.length === 4;
+  }, [state.selectedHypotheses.length]);
+
+  // Final answer
+  const setFinalHypothesis = useCallback((hypothesisId: string) => {
     setState(prev => {
-      const newAttempts = prev.solutionAttempts + 1;
-      const attemptsLeft = prev.maxSolutionAttempts - newAttempts;
-      
+      const hypothesis = HYPOTHESES.find(h => h.id === hypothesisId);
+      if (!hypothesis) return prev;
+
+      // Determine ending
+      let endingType: string;
+      if (!prev.selectedHypotheses.includes("H3")) {
+        endingType = "missing";
+      } else if (hypothesis.isCorrect) {
+        const hasDiagnostic = DIAGNOSTIC_EVIDENCE_IDS.some(id =>
+          prev.notebook.some(n => n.sourceId === id)
+        );
+        const diagnosticCount = DIAGNOSTIC_EVIDENCE_IDS.filter(id =>
+          prev.notebook.some(n => n.sourceId === id)
+        ).length;
+        endingType = diagnosticCount >= 2 ? "excellent" : "partial";
+      } else {
+        endingType = "wrong";
+      }
+
+      const ending = ENDINGS.find(e => e.type === endingType);
+
       return {
         ...prev,
-        selectedSolution: optionId,
-        solutionAttempts: newAttempts,
-        gameStatus: isCorrect ? "solved" : (attemptsLeft <= 0 ? "failed" : prev.gameStatus),
+        finalHypothesis: hypothesisId,
+        gameStatus: "solved",
+        currentPhase: "conclusion",
         score: prev.score + (ending?.score || 0),
       };
     });
-    
-    const attemptsLeft = state.maxSolutionAttempts - state.solutionAttempts - 1;
-    
-    return {
-      correct: !!isCorrect,
-      feedback: isCorrect ? feedback : (attemptsLeft > 0 ? `${feedback} (تبقى ${attemptsLeft} محاولات)` : feedback),
-      attemptsLeft: Math.max(0, attemptsLeft),
-    };
-  }, [state.pinnedEvidenceIds, state.maxSolutionAttempts, state.solutionAttempts]);
+  }, []);
 
-  const canSubmitSolution = useCallback((): boolean => {
-    return (
-      state.visitedEvidenceIds.length >= 3 &&
-      state.solutionAttempts < state.maxSolutionAttempts &&
-      state.gameStatus === "playing"
-    );
-  }, [state]);
-
-  const getRemainingAttempts = useCallback((): number => {
-    return state.maxSolutionAttempts - state.solutionAttempts;
-  }, [state.maxSolutionAttempts, state.solutionAttempts]);
+  const canSubmitFinal = useCallback((): boolean => {
+    return state.selectedHypotheses.length === 4 && state.finalHypothesis === null;
+  }, [state.selectedHypotheses.length, state.finalHypothesis]);
 
   // Game helpers
   const getProgress = useCallback((): number => {
-    const evidenceProgress = (state.visitedEvidenceIds.length / EVIDENCE_ITEMS.length) * 40;
-    const insightProgress = (state.discoveredInsights.length / INSIGHTS.length) * 40;
-    const interviewProgress = (state.interviewedIds.length / 9) * 20; // 9 total questions
-    return Math.round(evidenceProgress + insightProgress + interviewProgress);
+    const evidenceP = (state.viewedEvidence.length / EVIDENCE_ITEMS.length) * 25;
+    const dashboardP = (state.viewedDashboard.length / 3) * 15;
+    const interviewP = (state.completedInterviews.length / 3) * 20;
+    const notebookP = Math.min(state.notebook.length / 8, 1) * 20;
+    const hypothesisP = (state.selectedHypotheses.length / 4) * 10;
+    const matrixP = state.finalHypothesis ? 10 : 0;
+    return Math.round(evidenceP + dashboardP + interviewP + notebookP + hypothesisP + matrixP);
   }, [state]);
 
   const getEnding = useCallback(() => {
-    if (state.gameStatus === "solved") {
-      const hasAllRequired = REQUIRED_EVIDENCE_IDS.every(id => state.pinnedEvidenceIds.includes(id));
-      return ENDINGS.find(e => e.id === (hasAllRequired ? "ending-best" : "ending-partial")) || null;
+    if (state.gameStatus !== "solved" || !state.finalHypothesis) return null;
+
+    if (!state.selectedHypotheses.includes("H3")) {
+      return ENDINGS.find(e => e.type === "missing") || null;
     }
-    if (state.gameStatus === "failed") {
-      return ENDINGS.find(e => e.id === "ending-wrong") || null;
+
+    const hypothesis = HYPOTHESES.find(h => h.id === state.finalHypothesis);
+    if (!hypothesis?.isCorrect) {
+      return ENDINGS.find(e => e.type === "wrong") || null;
     }
-    return null;
-  }, [state.gameStatus, state.pinnedEvidenceIds]);
+
+    const diagnosticCount = DIAGNOSTIC_EVIDENCE_IDS.filter(id =>
+      state.notebook.some(n => n.sourceId === id)
+    ).length;
+
+    if (diagnosticCount >= 2) {
+      return ENDINGS.find(e => e.type === "excellent") || null;
+    }
+    return ENDINGS.find(e => e.type === "partial") || null;
+  }, [state.gameStatus, state.finalHypothesis, state.selectedHypotheses, state.notebook]);
 
   const resetGame = useCallback(() => {
     setState(initialState);
@@ -324,19 +333,23 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
       state,
       setCurrentRoom,
       setPhase,
-      visitEvidence,
-      togglePinEvidence,
-      isEvidenceVisited,
-      isEvidencePinned,
-      askQuestion,
-      hasAskedQuestion,
-      discoverInsight,
-      hasInsight,
       markIntroSeen,
-      addNote,
-      submitSolution,
-      canSubmitSolution,
-      getRemainingAttempts,
+      addToNotebook,
+      isInNotebook,
+      removeFromNotebook,
+      viewEvidence,
+      isEvidenceViewed,
+      viewDashboardItem,
+      markInterviewComplete,
+      isInterviewComplete,
+      toggleHypothesis,
+      isHypothesisSelected,
+      canSelectHypotheses,
+      setMatrixCell,
+      getMatrixCell,
+      canUseMatrix,
+      setFinalHypothesis,
+      canSubmitFinal,
       getProgress,
       getEnding,
       resetGame,
