@@ -2,11 +2,13 @@ import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { BookOpen, Lightbulb, Grid3X3, CheckCircle, Lock, Trash2 } from "lucide-react";
 import { NavigationButton } from "../NavigationButton";
+import { InteractiveRoom } from "../InteractiveRoom";
 import { useGame } from "@/contexts/GameContext";
 import { HYPOTHESES } from "@/data/case1";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import analysisLabImg from "@/assets/rooms/analysis-lab.png";
 
 interface AnalysisScreenProps {
   onNavigate: (screen: string) => void;
@@ -319,7 +321,13 @@ export const AnalysisScreen = ({ onNavigate }: AnalysisScreenProps) => {
   };
 
   return (
-    <div className="min-h-screen bg-background pb-24">
+    <div className="min-h-screen pb-24 relative">
+      {/* Background */}
+      <div className="fixed inset-0 z-0">
+        <img src={analysisLabImg} alt="Analysis Room" className="w-full h-full object-cover" />
+        <div className="absolute inset-0 bg-background/85 backdrop-blur-sm" />
+      </div>
+      <div className="relative z-10">
       {/* Header */}
       <div className="sticky top-0 z-30 bg-background/90 backdrop-blur-xl border-b border-border px-6 py-4">
         <div className="flex items-center justify-between max-w-6xl mx-auto">
@@ -369,6 +377,7 @@ export const AnalysisScreen = ({ onNavigate }: AnalysisScreenProps) => {
           <p className="text-xs text-muted-foreground mt-1">تقدر دلوقتي تروح تاب الفرضيات وتبدأ تحدد الاحتمالات.</p>
         </motion.div>
       )}
+      </div>
     </div>
   );
 };
