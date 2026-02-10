@@ -18,60 +18,58 @@ export const IntroScreen = ({ onStart, onNavigate }: IntroScreenProps) => {
   const gameCharacters = CHARACTERS.filter((c) => c.id !== "abuSaeed");
 
   return (
-    <div className="relative min-h-screen overflow-hidden">
+    <div className="relative h-screen overflow-hidden">
       {/* Store front background */}
       <div className="absolute inset-0">
         <img src={storeFrontImg} alt="Store Front" className="w-full h-full object-cover" />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/60 to-black/40" />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/50 to-black/30" />
       </div>
 
-
-      <div className="relative z-10 flex flex-col items-center justify-center min-h-screen px-4">
+      <div className="relative z-10 flex flex-col items-center justify-center h-full px-4">
+        {/* Title section - compact */}
         <motion.div
-          className="text-center mb-8"
-          initial={{ y: -50, opacity: 0 }}
+          className="text-center mb-4"
+          initial={{ y: -30, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
-          transition={{ duration: 1 }}
+          transition={{ duration: 0.8 }}
         >
-          <motion.div
-            className="text-6xl mb-4"
-            animate={{ scale: [1, 1.1, 1] }}
-            transition={{ duration: 3, repeat: Infinity }}
-          >
-            📊
-          </motion.div>
           <h1
-            className="text-5xl md:text-7xl font-bold mb-4"
+            className="text-3xl md:text-4xl font-bold mb-1"
             style={{
               background: "linear-gradient(135deg, hsl(var(--primary)), hsl(var(--accent)), hsl(var(--neon-gold)))",
               WebkitBackgroundClip: "text",
               WebkitTextFillColor: "transparent",
+              textShadow: "none",
             }}
           >
             Data Analyst
           </h1>
-          <h2 className="text-2xl md:text-3xl text-accent font-bold mb-2">محلل البيانات</h2>
-          <p className="text-muted-foreground text-lg">اكتشف القصة ورا البيانات</p>
+          <h2 className="text-lg md:text-xl text-accent font-bold mb-1">محلل البيانات</h2>
+          <p className="text-muted-foreground text-sm">اكتشف القصة ورا البيانات</p>
         </motion.div>
 
-        {/* Hero character image */}
+        {/* Hero character image - small & circular */}
         <motion.div
-          className="relative mb-8"
+          className="relative mb-4"
           initial={{ scale: 0, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
-          transition={{ delay: 0.5, type: "spring", damping: 10 }}
+          transition={{ delay: 0.3, type: "spring", damping: 12 }}
         >
-          <img src={introCharImg} alt="Data Analyst" className="w-48 h-48 md:w-64 md:h-64 rounded-2xl object-cover border-4 border-primary/30 shadow-[0_0_40px_hsl(var(--primary)/0.3)]" />
-          <div className="absolute inset-0 -z-10 blur-3xl opacity-30" style={{ background: "radial-gradient(circle, hsl(var(--neon-gold)), transparent)" }} />
+          <img
+            src={introCharImg}
+            alt="Data Analyst"
+            className="w-20 h-20 md:w-24 md:h-24 rounded-full object-cover border-2 border-primary/40 shadow-[0_0_20px_hsl(var(--primary)/0.3)]"
+          />
         </motion.div>
 
+        {/* Start button */}
         <motion.button
-          className="relative px-12 py-5 rounded-xl text-xl font-bold overflow-hidden group"
+          className="relative px-8 py-3 rounded-xl text-base font-bold overflow-hidden group mb-4"
           style={{ background: "linear-gradient(135deg, hsl(var(--primary)), hsl(var(--accent)))" }}
           onClick={handleStart}
-          initial={{ y: 50, opacity: 0 }}
+          initial={{ y: 30, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
-          transition={{ delay: 1 }}
+          transition={{ delay: 0.6 }}
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
         >
@@ -80,30 +78,30 @@ export const IntroScreen = ({ onStart, onNavigate }: IntroScreenProps) => {
             animate={{ x: ["-200%", "200%"] }}
             transition={{ duration: 2, repeat: Infinity, repeatDelay: 1 }}
           />
-          <span className="relative z-10 flex items-center gap-3">🚀 ابدأ المهمة</span>
+          <span className="relative z-10 flex items-center gap-2">🚀 ابدأ المهمة</span>
         </motion.button>
 
+        {/* Case info card - compact */}
         <motion.div
-          className="mt-12 max-w-lg text-center"
+          className="max-w-md w-full"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          transition={{ delay: 1.5 }}
+          transition={{ delay: 0.9 }}
         >
-          <div className="p-4 rounded-lg bg-card/30 backdrop-blur-sm border border-primary/30">
-            <h3 className="text-primary font-bold mb-2">📁 {CASE_INFO.title}</h3>
-            <p className="text-sm text-muted-foreground">{CASE_INFO.description}</p>
-            <div className="flex justify-center gap-4 mt-4">
+          <div className="p-3 rounded-lg bg-card/30 backdrop-blur-sm border border-primary/30">
+            <h3 className="text-primary font-bold text-sm mb-1">📁 {CASE_INFO.title}</h3>
+            <p className="text-xs text-muted-foreground mb-3">{CASE_INFO.description}</p>
+            <div className="flex justify-center gap-3">
               {gameCharacters.map((char, i) => (
                 <motion.div
                   key={char.id}
                   className="text-center"
-                  initial={{ opacity: 0, y: 20 }}
+                  initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 1.8 + i * 0.15 }}
+                  transition={{ delay: 1.2 + i * 0.1 }}
                 >
                   <AnimatedCharacter characterId={char.avatarCharacterId} size="sm" showName={false} />
-                  <p className="text-xs text-muted-foreground mt-1">{char.name}</p>
-                  <p className="text-xs text-muted-foreground/60">{char.role}</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">{char.name}</p>
                 </motion.div>
               ))}
             </div>
