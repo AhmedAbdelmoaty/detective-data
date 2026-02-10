@@ -59,7 +59,7 @@ export interface GameCharacter {
   nameEn: string;
   role: string;
   roleEn: string;
-  avatarCharacterId: "detective" | "ahmed" | "sara" | "karim"; // maps to AnimatedCharacter IDs
+  avatarCharacterId: "detective" | "ahmed" | "sara" | "karim" | "abuSaeed" | "khaled" | "noura" | "umFahd"; // maps to AnimatedCharacter IDs
   dialogues: InterviewDialogue[];
 }
 
@@ -70,7 +70,7 @@ export const CHARACTERS: GameCharacter[] = [
     nameEn: "Abu Saeed",
     role: "صاحب المحل",
     roleEn: "Shop Owner",
-    avatarCharacterId: "ahmed",
+    avatarCharacterId: "abuSaeed",
     dialogues: [], // intro dialogues are separate
   },
   {
@@ -79,7 +79,7 @@ export const CHARACTERS: GameCharacter[] = [
     nameEn: "Khaled",
     role: "مدير الصالة",
     roleEn: "Floor Manager",
-    avatarCharacterId: "karim",
+    avatarCharacterId: "khaled",
     dialogues: [
       { characterId: "detective", text: "خالد، في حد من الزباين اشتكى من حاجة الفترة دي؟", mood: "neutral" },
       {
@@ -107,7 +107,7 @@ export const CHARACTERS: GameCharacter[] = [
     nameEn: "Noura",
     role: "الكاشير",
     roleEn: "Cashier",
-    avatarCharacterId: "sara",
+    avatarCharacterId: "noura",
     dialogues: [
       { characterId: "detective", text: "نورة، النظام شغال كويس معاكي؟", mood: "neutral" },
       {
@@ -135,7 +135,7 @@ export const CHARACTERS: GameCharacter[] = [
     nameEn: "Amira",
     role: "زبونة دائمة",
     roleEn: "Regular Customer",
-    avatarCharacterId: "sara",
+    avatarCharacterId: "umFahd",
     dialogues: [
       { characterId: "detective", text: "أميرة، اشتريتي من المحل الأسبوع ده؟", mood: "neutral" },
       {
