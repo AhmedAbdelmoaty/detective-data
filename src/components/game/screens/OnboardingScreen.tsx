@@ -4,6 +4,7 @@ import { ChevronLeft, ChevronRight, Play } from "lucide-react";
 import { AnimatedCharacter } from "../AnimatedCharacter";
 import { CASE_INFO } from "@/data/case1";
 import storeFrontImg from "@/assets/scenes/store-front.png";
+import introCharImg from "@/assets/scenes/intro-character.png";
 
 interface OnboardingScreenProps {
   onComplete: () => void;
@@ -95,7 +96,7 @@ export const OnboardingScreen = ({ onComplete }: OnboardingScreenProps) => {
             </div>
             <div className="text-lg text-muted-foreground leading-relaxed whitespace-pre-line mb-8">{slide.content}</div>
             <div className="flex justify-center mb-8">
-              <AnimatedCharacter characterId="detective" size="lg" isActive mood={slide.mood} showName={false} />
+              <img src={introCharImg} alt="Data Analyst" className="w-32 h-32 rounded-2xl object-cover border-4 border-primary/30 shadow-[0_0_30px_rgba(var(--primary),0.3)]" />
             </div>
           </motion.div>
         </AnimatePresence>

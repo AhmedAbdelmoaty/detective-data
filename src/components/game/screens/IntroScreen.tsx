@@ -2,6 +2,7 @@ import { motion } from "framer-motion";
 import { AnimatedCharacter } from "../AnimatedCharacter";
 import { CASE_INFO, CHARACTERS } from "@/data/case1";
 import storeFrontImg from "@/assets/scenes/store-front.png";
+import introCharImg from "@/assets/scenes/intro-character.png";
 
 interface IntroScreenProps {
   onStart?: () => void;
@@ -53,6 +54,16 @@ export const IntroScreen = ({ onStart, onNavigate }: IntroScreenProps) => {
           <p className="text-muted-foreground text-lg">اكتشف القصة ورا البيانات</p>
         </motion.div>
 
+        {/* Hero character image */}
+        <motion.div
+          className="relative mb-8"
+          initial={{ scale: 0, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          transition={{ delay: 0.5, type: "spring", damping: 10 }}
+        >
+          <img src={introCharImg} alt="Data Analyst" className="w-48 h-48 md:w-64 md:h-64 rounded-2xl object-cover border-4 border-primary/30 shadow-[0_0_40px_hsl(var(--primary)/0.3)]" />
+          <div className="absolute inset-0 -z-10 blur-3xl opacity-30" style={{ background: "radial-gradient(circle, hsl(var(--neon-gold)), transparent)" }} />
+        </motion.div>
 
         <motion.button
           className="relative px-12 py-5 rounded-xl text-xl font-bold overflow-hidden group"
