@@ -27,21 +27,21 @@ const characterColors: Record<string, { bg: string; border: string; name: string
   sara: { bg: "from-purple-900/90 to-purple-950/90", border: "border-purple-500/50", name: "text-purple-400" },
   karim: { bg: "from-red-900/90 to-red-950/90", border: "border-red-500/50", name: "text-red-400" },
   detective: { bg: "from-amber-900/90 to-amber-950/90", border: "border-amber-500/50", name: "text-amber-400" },
-  abuSaeed: { bg: "from-amber-900/90 to-amber-950/90", border: "border-amber-500/50", name: "text-amber-400" },
-  khaled: { bg: "from-cyan-900/90 to-cyan-950/90", border: "border-cyan-500/50", name: "text-cyan-400" },
+  abuSaeed: { bg: "from-teal-900/90 to-teal-950/90", border: "border-teal-500/50", name: "text-teal-400" },
+  khaled: { bg: "from-red-900/90 to-red-950/90", border: "border-red-500/50", name: "text-red-400" },
   noura: { bg: "from-purple-900/90 to-purple-950/90", border: "border-purple-500/50", name: "text-purple-400" },
-  umFahd: { bg: "from-red-900/90 to-red-950/90", border: "border-red-500/50", name: "text-red-400" },
+  umFahd: { bg: "from-cyan-900/90 to-cyan-950/90", border: "border-cyan-500/50", name: "text-cyan-400" },
 };
 
 const characterNames: Record<string, { ar: string; en: string }> = {
   ahmed: { ar: "أحمد", en: "Ahmed" },
   sara: { ar: "سارة", en: "Sara" },
   karim: { ar: "كريم", en: "Karim" },
-  detective: { ar: "المحقق", en: "Detective" },
+  detective: { ar: "المحلل", en: "Analyst" },
   abuSaeed: { ar: "أبو سعيد", en: "Abu Saeed" },
   khaled: { ar: "خالد", en: "Khaled" },
   noura: { ar: "نورة", en: "Noura" },
-  umFahd: { ar: "أم فهد", en: "Um Fahd" },
+  umFahd: { ar: "أميرة", en: "Amira" },
 };
 
 export const EnhancedDialogue = ({
@@ -83,7 +83,6 @@ export const EnhancedDialogue = ({
       } else {
         setIsTyping(false);
         clearInterval(typingInterval);
-        // Show save button after typing completes if saveable
         if (currentDialogue.isSaveable) {
           setShowSaveButton(true);
         }
@@ -120,7 +119,6 @@ export const EnhancedDialogue = ({
   if (!isActive || !currentDialogue) return null;
 
   const isSaved = currentDialogue.saveId ? savedNoteIds.includes(currentDialogue.saveId) : false;
-  // Map characterId to a valid CharacterId for AnimatedCharacter
   const validCharacterIds: CharacterId[] = ["ahmed", "sara", "karim", "detective", "abuSaeed", "khaled", "noura", "umFahd"];
   const animCharId = validCharacterIds.includes(currentDialogue.characterId as CharacterId)
     ? (currentDialogue.characterId as CharacterId)
@@ -135,7 +133,6 @@ export const EnhancedDialogue = ({
         exit={{ y: 200, opacity: 0 }}
         transition={{ type: "spring", damping: 20 }}
       >
-        {/* Character spotlight */}
         <motion.div
           className="flex justify-center mb-4"
           key={currentDialogue.characterId}
@@ -154,7 +151,6 @@ export const EnhancedDialogue = ({
           />
         </motion.div>
 
-        {/* Dialogue box */}
         <motion.div
           className={`mx-4 mb-4 rounded-xl border backdrop-blur-md cursor-pointer bg-gradient-to-r ${colors.bg} ${colors.border} p-6`}
           onClick={handleNext}
@@ -162,7 +158,6 @@ export const EnhancedDialogue = ({
           whileTap={{ scale: 0.99 }}
           layoutId="dialogue-box"
         >
-          {/* Speaker name */}
           <motion.div
             className="flex items-center gap-3 mb-3"
             key={currentDialogue.characterId}
@@ -177,7 +172,6 @@ export const EnhancedDialogue = ({
             </span>
           </motion.div>
 
-          {/* Dialogue text */}
           <p className="text-foreground text-lg leading-relaxed" dir="rtl">
             {displayedText}
             {isTyping && (
@@ -189,7 +183,6 @@ export const EnhancedDialogue = ({
             )}
           </p>
 
-          {/* Save to notebook button */}
           <AnimatePresence>
             {showSaveButton && onSaveNote && currentDialogue.isSaveable && (
               <motion.button
@@ -209,7 +202,6 @@ export const EnhancedDialogue = ({
             )}
           </AnimatePresence>
 
-          {/* Continue indicator */}
           <AnimatePresence>
             {!isTyping && (
               <motion.div

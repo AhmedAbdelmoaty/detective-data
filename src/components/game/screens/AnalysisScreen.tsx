@@ -201,9 +201,9 @@ export const AnalysisScreen = ({ onNavigate }: AnalysisScreenProps) => {
             <tbody>
               {notebookItems.map((note) => (
                 <tr key={note.id} className="border-b border-border/50">
-                  <td className="p-3 text-foreground text-xs">
+                  <td className="p-3 text-foreground text-xs" title={note.text}>
                     <span className="mr-1">{note.source === "evidence" ? "📁" : note.source === "interview" ? "👤" : "📊"}</span>
-                    {note.sourceId}
+                    {note.text.length > 40 ? note.text.slice(0, 40) + "..." : note.text}
                   </td>
                   {selectedH.map(h => {
                     const cellValue = getMatrixCell(note.sourceId, h.id);

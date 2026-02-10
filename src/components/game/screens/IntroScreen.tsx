@@ -41,16 +41,16 @@ export const IntroScreen = ({ onStart, onNavigate }: IntroScreenProps) => {
       <div className="relative z-10 flex flex-col items-center justify-center min-h-screen px-4">
         <motion.div className="text-center mb-8" initial={{ y: -50, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ duration: 1 }}>
           <motion.div className="text-8xl mb-6" animate={{ rotate: [0, -10, 10, 0] }} transition={{ duration: 3, repeat: Infinity }}>
-            🔍
+            📊
           </motion.div>
           <h1 className="text-5xl md:text-7xl font-bold mb-4" style={{
             background: "linear-gradient(135deg, hsl(var(--primary)), hsl(var(--accent)), hsl(var(--neon-gold)))",
             WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent",
           }}>
-            Data Detective
+            Data Analyst
           </h1>
-          <h2 className="text-2xl md:text-3xl text-accent font-bold mb-2">محقق البيانات</h2>
-          <p className="text-muted-foreground text-lg">حل اللغز بالأرقام</p>
+          <h2 className="text-2xl md:text-3xl text-accent font-bold mb-2">محلل البيانات</h2>
+          <p className="text-muted-foreground text-lg">اكتشف القصة ورا الأرقام</p>
         </motion.div>
 
         <motion.div className="relative mb-8" initial={{ scale: 0, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ delay: 0.5, type: "spring", damping: 10 }}>
@@ -66,7 +66,7 @@ export const IntroScreen = ({ onStart, onNavigate }: IntroScreenProps) => {
           <motion.div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent"
             animate={{ x: ["-200%", "200%"] }} transition={{ duration: 2, repeat: Infinity, repeatDelay: 1 }}
           />
-          <span className="relative z-10 flex items-center gap-3">🚀 ابدأ التحقيق</span>
+          <span className="relative z-10 flex items-center gap-3">🚀 ابدأ المهمة</span>
         </motion.button>
 
         <motion.div className="mt-12 max-w-lg text-center" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 1.5 }}>
@@ -84,10 +84,6 @@ export const IntroScreen = ({ onStart, onNavigate }: IntroScreenProps) => {
             </div>
           </div>
         </motion.div>
-
-        <motion.p className="absolute bottom-8 text-muted-foreground text-sm" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 2 }}>
-          تعلم تحليل البيانات بطريقة ممتعة 📊
-        </motion.p>
       </div>
     </div>
   );

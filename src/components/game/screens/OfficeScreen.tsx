@@ -6,7 +6,7 @@ import { EnhancedDialogue } from "../EnhancedDialogue";
 import { NavigationButton } from "../NavigationButton";
 import { useGame } from "@/contexts/GameContext";
 import { useSound } from "@/hooks/useSoundEffects";
-import { CASE_INFO, CHARACTERS, INTRO_DIALOGUES, ABU_SAEED_EXTRA_DIALOGUES, ENDINGS } from "@/data/case1";
+import { CASE_INFO, CHARACTERS, INTRO_DIALOGUES, ABU_SAEED_EXTRA_DIALOGUES, ENDINGS, HYPOTHESES } from "@/data/case1";
 import detectiveOffice from "@/assets/rooms/detective-office.png";
 
 interface OfficeScreenProps {
@@ -65,6 +65,19 @@ export const OfficeScreen = ({ onNavigate }: OfficeScreenProps) => {
     const diagCount = ["E1", "E2", "I5"].filter(id => notebook.some(n => n.sourceId === id)).length;
     return diagCount >= 2 ? ENDINGS.find(e => e.type === "excellent") : ENDINGS.find(e => e.type === "partial");
   })() : null;
+
+  // Build dynamic dialogues for "wrong" ending - inject hypothesis name
+  const getEndingDialogues = () => {
+    if (!ending) return [];
+    if (ending.type === "wrong" && state.finalHypothesis) {
+      const chosenH = HYPOTHESES.find(h => h.id === state.finalHypothesis);
+      return ending.abuSaeedDialogues.map(d => ({
+        ...d,
+        text: d.text.replace("{HYPOTHESIS_NAME}", chosenH?.text || ""),
+      }));
+    }
+    return ending.abuSaeedDialogues;
+  };
 
   const renderPanelContent = () => {
     if (activePanel === "case-board") {
@@ -185,7 +198,7 @@ export const OfficeScreen = ({ onNavigate }: OfficeScreenProps) => {
       {showConclusionDialogue && ending && (
         <motion.div className="fixed inset-0 z-50 bg-black/50" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
           <EnhancedDialogue
-            dialogues={ending.abuSaeedDialogues}
+            dialogues={getEndingDialogues()}
             isActive={true}
             onComplete={() => {
               setShowConclusionDialogue(false);

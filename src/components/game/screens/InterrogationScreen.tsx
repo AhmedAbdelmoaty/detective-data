@@ -22,10 +22,6 @@ export const InterrogationScreen = ({ onNavigate }: InterrogationScreenProps) =>
   const interviewees = CHARACTERS.filter(c => c.id !== "abuSaeed");
 
   const handleCharacterClick = (charId: string) => {
-    if (isInterviewComplete(charId)) {
-      toast.info("تمت المقابلة بالفعل!");
-      return;
-    }
     setActiveCharacter(charId);
     playSound("click");
   };
