@@ -3,6 +3,8 @@ import { Trophy, Star, RotateCcw, CheckCircle, XCircle, BookOpen } from "lucide-
 import { useGame } from "@/contexts/GameContext";
 import { CASE_INFO, EVIDENCE_ITEMS, HYPOTHESES } from "@/data/case1";
 import { cn } from "@/lib/utils";
+import excellentEndingImg from "@/assets/scenes/suspect-arrested.png";
+import wrongEndingImg from "@/assets/scenes/suspect-escaped.png";
 
 interface ResultScreenProps {
   onNavigate: (screen: string) => void;
@@ -40,10 +42,14 @@ export const ResultScreen = ({ onNavigate }: ResultScreenProps) => {
   const chosenHypothesis = HYPOTHESES.find(h => h.id === state.finalHypothesis);
 
   return (
-    <div className={cn(
-      "min-h-screen relative overflow-hidden",
-      isWin ? "bg-gradient-to-b from-green-950 via-green-900/50 to-background" : "bg-gradient-to-b from-red-950 via-red-900/50 to-background"
-    )}>
+    <div className={cn("min-h-screen relative overflow-hidden")}>
+      {/* Background scene image */}
+      <div className="absolute inset-0">
+        <img src={isWin ? excellentEndingImg : wrongEndingImg} alt="Ending" className="w-full h-full object-cover" />
+        <div className={cn("absolute inset-0",
+          isWin ? "bg-gradient-to-b from-green-950/80 via-green-900/60 to-background/95" : "bg-gradient-to-b from-red-950/80 via-red-900/60 to-background/95"
+        )} />
+      </div>
       {/* Particles */}
       <div className="absolute inset-0 overflow-hidden">
         {[...Array(20)].map((_, i) => (

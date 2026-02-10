@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { ChevronLeft, ChevronRight, Play } from "lucide-react";
 import { AnimatedCharacter } from "../AnimatedCharacter";
 import { CASE_INFO } from "@/data/case1";
+import storeFrontImg from "@/assets/scenes/store-front.png";
 
 interface OnboardingScreenProps {
   onComplete: () => void;
@@ -66,12 +67,10 @@ export const OnboardingScreen = ({ onComplete }: OnboardingScreenProps) => {
   const isLastSlide = currentSlide === slides.length - 1;
 
   return (
-    <div className="relative min-h-screen overflow-hidden bg-gradient-to-b from-gray-900 via-gray-800 to-black">
-      <div className="absolute inset-0 opacity-5">
-        <div className="absolute inset-0" style={{
-          backgroundImage: `linear-gradient(to right, hsl(var(--primary) / 0.3) 1px, transparent 1px), linear-gradient(to bottom, hsl(var(--primary) / 0.3) 1px, transparent 1px)`,
-          backgroundSize: "40px 40px",
-        }} />
+    <div className="relative min-h-screen overflow-hidden">
+      <div className="absolute inset-0">
+        <img src={storeFrontImg} alt="Store Front" className="w-full h-full object-cover" />
+        <div className="absolute inset-0 bg-black/75 backdrop-blur-sm" />
       </div>
 
       <div className="relative z-10 flex flex-col items-center justify-center min-h-screen px-4 py-8">
