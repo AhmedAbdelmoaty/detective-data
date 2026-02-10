@@ -25,12 +25,11 @@ const characterData: Record<CharacterId, { name: string; nameEn: string; role: s
   ahmed: { name: "أحمد", nameEn: "Ahmed", role: "المدير المالي", roleEn: "CFO", image: ahmedImg, color: "cyan" },
   sara: { name: "سارة", nameEn: "Sara", role: "محاسبة", roleEn: "Accountant", image: saraImg, color: "purple" },
   karim: { name: "كريم", nameEn: "Karim", role: "مسؤول المشتريات", roleEn: "Procurement", image: karimImg, color: "red" },
-  detective: { name: "المحقق", nameEn: "Detective", role: "أنت", roleEn: "You", image: detectiveImg, color: "gold" },
-  // New characters using existing images temporarily
-  abuSaeed: { name: "أبو سعيد", nameEn: "Abu Saeed", role: "صاحب المحل", roleEn: "Shop Owner", image: detectiveImg, color: "gold" },
-  khaled: { name: "خالد", nameEn: "Khaled", role: "مدير الصالة", roleEn: "Floor Manager", image: ahmedImg, color: "cyan" },
+  detective: { name: "المحلل", nameEn: "Analyst", role: "أنت", roleEn: "You", image: detectiveImg, color: "gold" },
+  abuSaeed: { name: "أبو سعيد", nameEn: "Abu Saeed", role: "صاحب المحل", roleEn: "Shop Owner", image: ahmedImg, color: "teal" },
+  khaled: { name: "خالد", nameEn: "Khaled", role: "مدير الصالة", roleEn: "Floor Manager", image: karimImg, color: "red" },
   noura: { name: "نورة", nameEn: "Noura", role: "الكاشير", roleEn: "Cashier", image: saraImg, color: "purple" },
-  umFahd: { name: "أم فهد", nameEn: "Um Fahd", role: "زبونة دائمة", roleEn: "Regular Customer", image: karimImg, color: "red" },
+  umFahd: { name: "أميرة", nameEn: "Amira", role: "زبونة دائمة", roleEn: "Regular Customer", image: saraImg, color: "cyan" },
 };
 
 const sizeClasses = {
@@ -45,6 +44,7 @@ const colorClasses = {
   purple: { border: "border-purple-500", glow: "shadow-[0_0_30px_rgba(168,85,247,0.5)]", bg: "bg-purple-500/20", text: "text-purple-400" },
   red: { border: "border-red-500", glow: "shadow-[0_0_30px_rgba(239,68,68,0.5)]", bg: "bg-red-500/20", text: "text-red-400" },
   gold: { border: "border-amber-500", glow: "shadow-[0_0_30px_rgba(245,158,11,0.5)]", bg: "bg-amber-500/20", text: "text-amber-400" },
+  teal: { border: "border-teal-500", glow: "shadow-[0_0_30px_rgba(20,184,166,0.5)]", bg: "bg-teal-500/20", text: "text-teal-400" },
 };
 
 const entranceVariants = {

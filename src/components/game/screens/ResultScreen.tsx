@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { Trophy, Star, RotateCcw, CheckCircle, XCircle, BookOpen, AlertTriangle } from "lucide-react";
+import { Trophy, Star, RotateCcw, CheckCircle, XCircle, BookOpen } from "lucide-react";
 import { useGame } from "@/contexts/GameContext";
 import { CASE_INFO, EVIDENCE_ITEMS, HYPOTHESES } from "@/data/case1";
 import { cn } from "@/lib/utils";
@@ -17,9 +17,9 @@ export const ResultScreen = ({ onNavigate }: ResultScreenProps) => {
   const scorePercentage = Math.round((state.score / totalPossibleScore) * 100);
 
   const getRank = () => {
-    if (ending?.type === "excellent") return { title: "محقق بيانات أسطوري", icon: "🏆", color: "text-yellow-400" };
-    if (ending?.type === "partial") return { title: "محقق بيانات متقدم", icon: "🥈", color: "text-slate-300" };
-    if (ending?.type === "wrong") return { title: "محقق بيانات مبتدئ", icon: "📚", color: "text-amber-600" };
+    if (ending?.type === "excellent") return { title: "محلل بيانات أسطوري", icon: "🏆", color: "text-yellow-400" };
+    if (ending?.type === "partial") return { title: "محلل بيانات متقدم", icon: "🥈", color: "text-slate-300" };
+    if (ending?.type === "wrong") return { title: "محلل بيانات مبتدئ", icon: "📚", color: "text-amber-600" };
     return { title: "متدرب", icon: "🔰", color: "text-muted-foreground" };
   };
 
@@ -60,7 +60,7 @@ export const ResultScreen = ({ onNavigate }: ResultScreenProps) => {
         {/* Header */}
         <motion.div className="text-center mb-8" initial={{ y: -50, opacity: 0 }} animate={{ y: 0, opacity: 1 }}>
           <motion.div className="text-8xl mb-4" animate={{ scale: [1, 1.1, 1] }} transition={{ duration: 2, repeat: Infinity }}>
-            {ending?.rankIcon || "🔍"}
+            {ending?.rankIcon || "📊"}
           </motion.div>
           <h1 className={cn("text-4xl md:text-5xl font-bold mb-2", isWin ? "text-green-400" : "text-red-400")}>
             {ending?.title || "النتيجة"}
@@ -114,7 +114,7 @@ export const ResultScreen = ({ onNavigate }: ResultScreenProps) => {
               <p className={cn("text-2xl font-bold", rank.color)}>{rank.title}</p>
             </div>
             <div className="text-center md:text-left">
-              <p className="text-muted-foreground text-sm">القضية</p>
+              <p className="text-muted-foreground text-sm">المهمة</p>
               <p className="text-xl font-bold text-foreground">{CASE_INFO.title}</p>
             </div>
           </div>
@@ -168,12 +168,6 @@ export const ResultScreen = ({ onNavigate }: ResultScreenProps) => {
             🏠 القائمة الرئيسية
           </motion.button>
         </motion.div>
-
-        <motion.p className="text-center text-muted-foreground text-sm mt-8"
-          initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 1 }}
-        >
-          🎮 Data Detective - تعلم تحليل البيانات بطريقة ممتعة
-        </motion.p>
       </div>
     </div>
   );

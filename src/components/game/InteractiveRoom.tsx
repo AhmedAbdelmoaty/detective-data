@@ -1,6 +1,5 @@
 import { useState, ReactNode } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X } from "lucide-react";
 import { useSound } from "@/hooks/useSoundEffects";
 
 interface Hotspot {
@@ -175,15 +174,7 @@ export const InteractiveRoom = ({
               exit={{ scale: 0.8, opacity: 0, y: 50 }}
               transition={{ type: "spring", damping: 25 }}
             >
-              {/* Close button */}
-              {onCloseOverlay && (
-                <button
-                  onClick={handleCloseOverlay}
-                  className="absolute -top-2 -right-2 z-20 w-10 h-10 rounded-full bg-destructive/90 flex items-center justify-center text-destructive-foreground hover:bg-destructive transition-colors shadow-lg"
-                >
-                  <X className="w-5 h-5" />
-                </button>
-              )}
+              {/* Close button - hidden if content has its own close */}
               {overlayContent}
             </motion.div>
           </motion.div>

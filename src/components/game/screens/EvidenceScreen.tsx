@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { BookmarkPlus, Check, X, Eye } from "lucide-react";
+import { BookmarkPlus, Check, X } from "lucide-react";
 import { InteractiveRoom } from "../InteractiveRoom";
 import { NavigationButton } from "../NavigationButton";
 import { useGame } from "@/contexts/GameContext";
@@ -94,7 +94,6 @@ export const EvidenceScreen = ({ onNavigate }: EvidenceScreenProps) => {
                   </tfoot>
                 </table>
               </div>
-              <p className="text-destructive text-sm p-3 bg-destructive/10 rounded-lg">⚠️ فرق {data.totalDiff} قطعة بين المخزون والفواتير!</p>
             </div>
           );
         }
@@ -110,7 +109,6 @@ export const EvidenceScreen = ({ onNavigate }: EvidenceScreenProps) => {
               <span className="text-destructive font-bold text-xl">{data.thisYear.sales.toLocaleString()} ر.س</span>
             </div>
             <p className="text-center text-destructive font-bold text-lg">الفرق: {data.difference}</p>
-            <p className="text-sm text-muted-foreground">{data.note}</p>
           </div>
         );
 
@@ -128,7 +126,7 @@ export const EvidenceScreen = ({ onNavigate }: EvidenceScreenProps) => {
         }
         // E2 - cameras
         return (
-          <div className="p-4 bg-destructive/10 border border-destructive/30 rounded-xl space-y-4">
+          <div className="p-4 bg-secondary/30 border border-border rounded-xl space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <div className="text-center p-4 bg-card/50 rounded-lg">
                 <p className="text-3xl font-bold text-foreground">{data.bagsOut}</p>
@@ -139,8 +137,8 @@ export const EvidenceScreen = ({ onNavigate }: EvidenceScreenProps) => {
                 <p className="text-sm text-muted-foreground">فواتير مسجلة</p>
               </div>
             </div>
-            <div className="text-center p-3 bg-destructive/20 rounded-lg">
-              <p className="text-destructive font-bold text-xl">الفرق: {data.difference} عملية بدون فاتورة!</p>
+            <div className="text-center p-3 bg-card/50 rounded-lg">
+              <p className="text-foreground font-bold text-xl">الفرق: {data.difference}</p>
             </div>
             <p className="text-sm text-muted-foreground">الفترة: {data.period}</p>
           </div>
@@ -171,8 +169,8 @@ export const EvidenceScreen = ({ onNavigate }: EvidenceScreenProps) => {
           <div className="p-6 bg-card/50 rounded-xl border-2 border-dashed border-accent/30 text-center space-y-4">
             <p className="text-3xl">🏪</p>
             <h4 className="text-xl font-bold text-accent">{data.name}</h4>
-            <p className="text-foreground font-bold">{data.specialty}</p>
-            <p className="text-muted-foreground text-sm">{data.type}</p>
+            <p className="text-foreground italic">"{data.slogan}"</p>
+            <p className="text-muted-foreground text-sm">{data.offers}</p>
             <p className="text-muted-foreground text-sm">المسافة: {data.distance}</p>
           </div>
         );
@@ -182,7 +180,6 @@ export const EvidenceScreen = ({ onNavigate }: EvidenceScreenProps) => {
           <div className="p-6 bg-amber-950/30 rounded-xl border border-amber-500/20" style={{ fontFamily: "cursive" }}>
             <p className="text-foreground text-lg leading-relaxed italic">"{data.content}"</p>
             <p className="text-muted-foreground text-sm mt-4 text-left">📅 {data.date}</p>
-            <p className="text-amber-400 text-sm mt-2">💡 {data.note}</p>
           </div>
         );
 
@@ -192,63 +189,80 @@ export const EvidenceScreen = ({ onNavigate }: EvidenceScreenProps) => {
   };
 
   return (
-    <InteractiveRoom
-      backgroundImage={evidenceRoomBg}
-      hotspots={hotspots}
-      onHotspotClick={handleHotspotClick}
-      activeHotspot={selectedEvidence?.id || null}
-      overlayContent={showOverlay && selectedEvidence ? (
-        <motion.div className="bg-background/95 backdrop-blur-xl border border-primary/30 rounded-2xl p-6 max-w-2xl w-full max-h-[85vh] overflow-auto">
-          <div className="flex items-center justify-between mb-6 pb-4 border-b border-border">
-            <div className="flex items-center gap-3">
-              <span className="text-3xl">{selectedEvidence.icon}</span>
-              <div>
-                <h3 className="text-xl font-bold text-foreground">{selectedEvidence.name}</h3>
-                <p className="text-sm text-muted-foreground">{selectedEvidence.description}</p>
-              </div>
-            </div>
-            <button onClick={() => setShowOverlay(false)} className="p-2 rounded-lg hover:bg-secondary">
-              <X className="w-5 h-5 text-foreground" />
-            </button>
+    <>
+      <InteractiveRoom
+        backgroundImage={evidenceRoomBg}
+        hotspots={hotspots}
+        onHotspotClick={handleHotspotClick}
+        activeHotspot={null}
+        overlayContent={undefined}
+      >
+        {/* Status bar */}
+        <motion.div className="absolute top-6 left-1/2 -translate-x-1/2 z-20">
+          <div className="flex items-center gap-4 px-6 py-3 rounded-full bg-background/90 backdrop-blur-xl border border-primary/30">
+            <span className="font-bold text-foreground">📁 غرفة الأدلة</span>
+            <span className="text-muted-foreground">|</span>
+            <span className="text-foreground">{state.viewedEvidence.length}/{EVIDENCE_ITEMS.length} مشاهدة</span>
+            <span className="text-muted-foreground">|</span>
+            <span className="text-primary font-bold">📓 {state.notebook.length}</span>
           </div>
-
-          {renderEvidenceContent(selectedEvidence)}
-
-          <motion.button
-            onClick={handleSaveToNotebook}
-            disabled={isSaved}
-            className={`mt-6 w-full py-4 rounded-xl font-bold flex items-center justify-center gap-2 ${
-              isSaved
-                ? "bg-neon-green/20 border border-neon-green/50 text-neon-green"
-                : "bg-primary text-primary-foreground hover:bg-primary/90"
-            }`}
-            whileHover={!isSaved ? { scale: 1.02 } : {}}
-          >
-            {isSaved ? <Check className="w-5 h-5" /> : <BookmarkPlus className="w-5 h-5" />}
-            {isSaved ? "✓ محفوظ في الدفتر" : "📓 احفظ في الدفتر"}
-          </motion.button>
         </motion.div>
-      ) : null}
-      onCloseOverlay={() => setShowOverlay(false)}
-    >
-      {/* Status bar */}
-      <motion.div className="absolute top-6 left-1/2 -translate-x-1/2 z-20">
-        <div className="flex items-center gap-4 px-6 py-3 rounded-full bg-background/90 backdrop-blur-xl border border-primary/30">
-          <span className="font-bold text-foreground">📁 غرفة الأدلة</span>
-          <span className="text-muted-foreground">|</span>
-          <span className="text-foreground">{state.viewedEvidence.length}/{EVIDENCE_ITEMS.length} مشاهدة</span>
-          <span className="text-muted-foreground">|</span>
-          <span className="text-primary font-bold">📓 {state.notebook.length}</span>
-        </div>
-      </motion.div>
 
-      {/* Navigation */}
-      <div className="absolute bottom-8 left-0 right-0 z-20 flex justify-center gap-4 px-4">
-        <NavigationButton iconEmoji="🏢" label="المكتب" onClick={() => onNavigate("office")} />
-        <NavigationButton iconEmoji="👥" label="الاجتماعات" onClick={() => onNavigate("interrogation")} />
-        <NavigationButton iconEmoji="📊" label="البيانات" onClick={() => onNavigate("dashboard")} />
-        <NavigationButton iconEmoji="🔬" label="التحليل" onClick={() => onNavigate("analysis")} />
-      </div>
-    </InteractiveRoom>
+        {/* Navigation */}
+        <div className="absolute bottom-8 left-0 right-0 z-20 flex justify-center gap-4 px-4">
+          <NavigationButton iconEmoji="🏢" label="المكتب" onClick={() => onNavigate("office")} />
+          <NavigationButton iconEmoji="👥" label="الاجتماعات" onClick={() => onNavigate("interrogation")} />
+          <NavigationButton iconEmoji="📊" label="البيانات" onClick={() => onNavigate("dashboard")} />
+          <NavigationButton iconEmoji="🔬" label="التحليل" onClick={() => onNavigate("analysis")} />
+        </div>
+      </InteractiveRoom>
+
+      {/* Evidence overlay - clean centered box */}
+      {showOverlay && selectedEvidence && (
+        <motion.div
+          className="fixed inset-0 z-50 flex items-center justify-center"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+        >
+          <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" onClick={() => setShowOverlay(false)} />
+          <motion.div
+            className="relative z-10 bg-background/95 backdrop-blur-xl border border-primary/30 rounded-2xl p-6 max-w-2xl w-full mx-4 max-h-[80vh] overflow-auto"
+            initial={{ scale: 0.8, opacity: 0, y: 50 }}
+            animate={{ scale: 1, opacity: 1, y: 0 }}
+            transition={{ type: "spring", damping: 25 }}
+          >
+            <div className="flex items-center justify-between mb-6 pb-4 border-b border-border">
+              <div className="flex items-center gap-3">
+                <span className="text-3xl">{selectedEvidence.icon}</span>
+                <div>
+                  <h3 className="text-xl font-bold text-foreground">{selectedEvidence.name}</h3>
+                  <p className="text-sm text-muted-foreground">{selectedEvidence.description}</p>
+                </div>
+              </div>
+              <button onClick={() => setShowOverlay(false)} className="p-2 rounded-lg hover:bg-secondary">
+                <X className="w-5 h-5 text-foreground" />
+              </button>
+            </div>
+
+            {renderEvidenceContent(selectedEvidence)}
+
+            <motion.button
+              onClick={handleSaveToNotebook}
+              disabled={isSaved}
+              className={`mt-6 w-full py-4 rounded-xl font-bold flex items-center justify-center gap-2 ${
+                isSaved
+                  ? "bg-neon-green/20 border border-neon-green/50 text-neon-green"
+                  : "bg-primary text-primary-foreground hover:bg-primary/90"
+              }`}
+              whileHover={!isSaved ? { scale: 1.02 } : {}}
+            >
+              {isSaved ? <Check className="w-5 h-5" /> : <BookmarkPlus className="w-5 h-5" />}
+              {isSaved ? "✓ محفوظ في الدفتر" : "📓 احفظ في الدفتر"}
+            </motion.button>
+          </motion.div>
+        </motion.div>
+      )}
+    </>
   );
 };
