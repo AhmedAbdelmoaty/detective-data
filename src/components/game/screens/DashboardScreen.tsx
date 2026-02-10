@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { BookmarkPlus, Check, BarChart3 } from "lucide-react";
+import { BookmarkPlus, Check, BarChart3, X } from "lucide-react";
 import { InteractiveRoom } from "../InteractiveRoom";
 import { NavigationButton } from "../NavigationButton";
 import { useGame } from "@/contexts/GameContext";
@@ -14,14 +14,22 @@ interface DashboardScreenProps {
   onNavigate: (screen: string) => void;
 }
 
+// Hotspots placed on the room image
+const hotspots = [
+  { id: "item-0", x: 5, y: 15, width: 28, height: 50, label: "عداد الباب - حركة الزباين", icon: "📊" },
+  { id: "item-1", x: 36, y: 20, width: 28, height: 45, label: "ملخص الفواتير", icon: "🧾" },
+  { id: "item-2", x: 68, y: 10, width: 28, height: 55, label: "فواتير vs حركة الزباين", icon: "📈" },
+];
+
 export const DashboardScreen = ({ onNavigate }: DashboardScreenProps) => {
   const { state, addToNotebook, isInNotebook, viewDashboardItem } = useGame();
   const { playSound } = useSound();
-  const [selectedItem, setSelectedItem] = useState<string | null>(null);
+  const [activeItem, setActiveItem] = useState<string | null>(null);
 
-  const handleSelectItem = (itemId: string) => {
-    setSelectedItem(itemId);
-    viewDashboardItem(itemId);
+  const handleHotspotClick = (hotspotId: string) => {
+    const index = parseInt(hotspotId.replace("item-", ""));
+    setActiveItem(hotspotId);
+    viewDashboardItem(DASHBOARD_DATA[index]?.id || "");
     playSound("click");
   };
 
@@ -33,38 +41,45 @@ export const DashboardScreen = ({ onNavigate }: DashboardScreenProps) => {
     }
   };
 
-  const renderDashboardItem = (item: typeof DASHBOARD_DATA[0]) => {
-    const saved = isInNotebook(item.saveId);
+  const activeIndex = activeItem ? parseInt(activeItem.replace("item-", "")) : -1;
+  const currentItem = activeIndex >= 0 ? DASHBOARD_DATA[activeIndex] : null;
+
+  const renderOverlay = () => {
+    if (!currentItem) return undefined;
+    const saved = isInNotebook(currentItem.saveId);
 
     return (
-      <motion.div key={item.id} className="p-6 rounded-xl bg-card/50 border border-border"
-        initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
-      >
+      <div className="bg-background/95 backdrop-blur-xl border border-primary/30 rounded-2xl p-6 max-w-3xl w-full max-h-[85vh] overflow-auto">
         <div className="flex items-center justify-between mb-4">
           <h3 className="font-bold text-lg text-foreground flex items-center gap-2">
             <BarChart3 className="w-5 h-5 text-primary" />
-            {item.name}
+            {currentItem.name}
           </h3>
-          <button
-            onClick={() => handleSave(item)}
-            disabled={saved}
-            className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-bold ${
-              saved ? "bg-neon-green/20 text-neon-green" : "bg-primary text-primary-foreground hover:bg-primary/90"
-            }`}
-          >
-            {saved ? <Check className="w-4 h-4" /> : <BookmarkPlus className="w-4 h-4" />}
-            {saved ? "محفوظ" : "احفظ"}
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => handleSave(currentItem)}
+              disabled={saved}
+              className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-bold ${
+                saved ? "bg-neon-green/20 text-neon-green" : "bg-primary text-primary-foreground hover:bg-primary/90"
+              }`}
+            >
+              {saved ? <Check className="w-4 h-4" /> : <BookmarkPlus className="w-4 h-4" />}
+              {saved ? "محفوظ" : "احفظ"}
+            </button>
+            <button onClick={() => setActiveItem(null)} className="p-2 rounded-lg hover:bg-secondary/50 text-muted-foreground">
+              <X className="w-5 h-5" />
+            </button>
+          </div>
         </div>
-        <p className="text-sm text-muted-foreground mb-4">{item.description}</p>
+        <p className="text-sm text-muted-foreground mb-4">{currentItem.description}</p>
 
-        {item.type === "bar" && (
+        {currentItem.type === "bar" && (
           <div className="h-[280px] w-full" dir="ltr">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={item.data.labels.map((label: string, i: number) => ({
+              <BarChart data={currentItem.data.labels.map((label: string, i: number) => ({
                 day: label,
-                thisWeek: item.data.thisWeek[i],
-                lastWeek: item.data.lastWeek[i],
+                thisWeek: currentItem.data.thisWeek[i],
+                lastWeek: currentItem.data.lastWeek[i],
               }))}>
                 <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                 <XAxis dataKey="day" stroke="hsl(var(--muted-foreground))" fontSize={12} />
@@ -78,31 +93,31 @@ export const DashboardScreen = ({ onNavigate }: DashboardScreenProps) => {
           </div>
         )}
 
-        {item.type === "table" && (
+        {currentItem.type === "table" && (
           <div className="grid grid-cols-2 gap-4">
             <div className="p-4 bg-secondary/30 rounded-lg text-center">
-              <p className="text-2xl font-bold text-foreground">{item.data.totalInvoices}</p>
+              <p className="text-2xl font-bold text-foreground">{currentItem.data.totalInvoices}</p>
               <p className="text-sm text-muted-foreground">فاتورة مسجلة</p>
             </div>
             <div className="p-4 bg-secondary/30 rounded-lg text-center">
-              <p className="text-2xl font-bold text-foreground">{item.data.totalValue.toLocaleString()}</p>
+              <p className="text-2xl font-bold text-foreground">{currentItem.data.totalValue.toLocaleString()}</p>
               <p className="text-sm text-muted-foreground">ر.س إجمالي</p>
             </div>
             <div className="p-4 bg-secondary/30 rounded-lg text-center">
-              <p className="text-2xl font-bold text-foreground">{item.data.avgPerInvoice}</p>
+              <p className="text-2xl font-bold text-foreground">{currentItem.data.avgPerInvoice}</p>
               <p className="text-sm text-muted-foreground">ر.س متوسط الفاتورة</p>
             </div>
             <div className="p-4 bg-secondary/30 rounded-lg text-center">
-              <p className="text-2xl font-bold text-primary">{item.data.cashPercentage}%</p>
+              <p className="text-2xl font-bold text-primary">{currentItem.data.cashPercentage}%</p>
               <p className="text-sm text-muted-foreground">نسبة الكاش</p>
             </div>
           </div>
         )}
 
-        {item.type === "grouped-bar" && (
+        {currentItem.type === "grouped-bar" && (
           <div className="h-[280px] w-full" dir="ltr">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={item.data.periods}>
+              <BarChart data={currentItem.data.periods}>
                 <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                 <XAxis dataKey="time" stroke="hsl(var(--muted-foreground))" fontSize={11} />
                 <YAxis stroke="hsl(var(--muted-foreground))" fontSize={12} />
@@ -114,37 +129,36 @@ export const DashboardScreen = ({ onNavigate }: DashboardScreenProps) => {
             </ResponsiveContainer>
           </div>
         )}
-      </motion.div>
+      </div>
     );
   };
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* Header */}
-      <div className="sticky top-0 z-30 bg-background/90 backdrop-blur-xl border-b border-border px-6 py-4">
-        <div className="flex items-center justify-between max-w-6xl mx-auto">
-          <h2 className="text-xl font-bold text-foreground flex items-center gap-2">
-            📊 غرفة البيانات
-          </h2>
-          <div className="flex items-center gap-3">
-            <span className="text-muted-foreground text-sm">بيانات: {state.viewedDashboard.length}/3</span>
-            <span className="text-primary font-bold text-sm">📓 {state.notebook.length}</span>
-          </div>
+    <InteractiveRoom
+      backgroundImage={analysisRoomBg}
+      hotspots={hotspots}
+      onHotspotClick={handleHotspotClick}
+      activeHotspot={activeItem}
+      overlayContent={activeItem ? renderOverlay() : undefined}
+      onCloseOverlay={() => setActiveItem(null)}
+    >
+      {/* Score */}
+      <motion.div className="absolute top-4 right-4 z-20 flex items-center gap-3">
+        <div className="px-4 py-2 rounded-lg bg-background/80 backdrop-blur-sm border border-border">
+          <span className="text-muted-foreground text-sm">بيانات: {state.viewedDashboard.length}/3</span>
         </div>
-      </div>
-
-      {/* Dashboard items */}
-      <div className="max-w-5xl mx-auto p-6 space-y-6">
-        {DASHBOARD_DATA.map(item => renderDashboardItem(item))}
-      </div>
+        <div className="px-4 py-2 rounded-lg bg-background/80 backdrop-blur-sm border border-border">
+          <span className="text-primary font-bold">📓 {state.notebook.length}</span>
+        </div>
+      </motion.div>
 
       {/* Navigation */}
-      <div className="fixed bottom-8 left-0 right-0 z-20 flex justify-center gap-4 px-4">
+      <div className="absolute bottom-8 left-0 right-0 z-20 flex justify-center gap-4 px-4">
         <NavigationButton iconEmoji="🏢" label="المكتب" onClick={() => onNavigate("office")} />
         <NavigationButton iconEmoji="📁" label="الأدلة" onClick={() => onNavigate("evidence")} />
         <NavigationButton iconEmoji="👥" label="الاجتماعات" onClick={() => onNavigate("interrogation")} />
         <NavigationButton iconEmoji="🔬" label="التحليل" onClick={() => onNavigate("analysis")} />
       </div>
-    </div>
+    </InteractiveRoom>
   );
 };
