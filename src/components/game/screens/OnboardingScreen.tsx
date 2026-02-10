@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ChevronLeft, ChevronRight, Play } from "lucide-react";
-import { AnimatedCharacter } from "../AnimatedCharacter";
 import { CASE_INFO } from "@/data/case1";
 import storeFrontImg from "@/assets/scenes/store-front.png";
 import introCharImg from "@/assets/scenes/intro-character.png";
@@ -14,50 +13,26 @@ const slides = [
   {
     id: 1,
     title: "مرحباً بك في المهمة",
-    content: `أنت محلل بيانات تم استدعاؤك لحل مشكلة في محل ملابس.
-
-${CASE_INFO.briefing}`,
+    content: `أنت محلل بيانات تم استدعاؤك لحل مشكلة في محل ملابس.\n\n${CASE_INFO.briefing}`,
     icon: "📊",
-    mood: "happy" as const,
   },
   {
     id: 2,
     title: "الشخصيات",
-    content: `ستقابل 3 شخصيات في غرفة الاجتماعات:
-
-• خالد - مدير الصالة (يعرف حركة المحل)
-• نورة - الكاشير (تتعامل مع النظام يومياً)
-• أميرة - زبونة دائمة (شاهدة من الخارج)
-
-تكلم معاهم واحفظ المعلومات المهمة في دفتر الملاحظات!`,
+    content: `ستقابل 3 شخصيات في غرفة الاجتماعات:\n\n• خالد - مدير الصالة\n• نورة - الكاشير\n• أميرة - زبونة دائمة\n\nتكلم معاهم واحفظ المعلومات المهمة!`,
     icon: "👥",
-    mood: "suspicious" as const,
   },
   {
     id: 3,
     title: "الغرف الخمس",
-    content: `ستتنقل بين 5 غرف بحرية كاملة:
-
-🏢 مكتب أبو سعيد - سماع القصة وتقديم التقرير النهائي
-📁 غرفة الأدلة - تقارير ومستندات مادية
-👥 غرفة الاجتماعات - حوارات مع الشخصيات
-📊 غرفة البيانات - داشبورد وإحصائيات
-🔬 غرفة التحليل - الفرضيات والمصفوفة والدفتر`,
+    content: `🏢 مكتب أبو سعيد - القصة والتقرير النهائي\n📁 غرفة الأدلة - تقارير ومستندات\n👥 غرفة الاجتماعات - حوارات\n📊 غرفة البيانات - داشبورد وإحصائيات\n🔬 غرفة التحليل - الفرضيات والمصفوفة`,
     icon: "🗺️",
-    mood: "neutral" as const,
   },
   {
     id: 4,
     title: "طريقة اللعب",
-    content: `1️⃣ اجمع الأدلة واحفظ المهم في دفتر الملاحظات
-2️⃣ بعد جمع 3 أدلة على الأقل: اختر 4 فرضيات من 8
-3️⃣ ابنِ مصفوفة التحليل (ACH) - قيّم كل دليل مع كل فرضية
-4️⃣ الفرضية اللي ما عندهاش تناقض هي الأرجح
-5️⃣ اختر فرضيتك النهائية وقدم تقريرك لأبو سعيد
-
-💡 المفتاح: الاستبعاد مش التأكيد!`,
+    content: `1️⃣ اجمع الأدلة واحفظ المهم في الدفتر\n2️⃣ بعد 3 أدلة: اختر 4 فرضيات\n3️⃣ ابنِ مصفوفة التحليل (ACH)\n4️⃣ اختر فرضيتك وقدم التقرير\n\n💡 المفتاح: الاستبعاد مش التأكيد!`,
     icon: "🎯",
-    mood: "nervous" as const,
     isWarning: true,
   },
 ];
@@ -68,66 +43,66 @@ export const OnboardingScreen = ({ onComplete }: OnboardingScreenProps) => {
   const isLastSlide = currentSlide === slides.length - 1;
 
   return (
-    <div className="relative min-h-screen overflow-hidden">
+    <div className="relative h-screen overflow-hidden">
       <div className="absolute inset-0">
         <img src={storeFrontImg} alt="Store Front" className="w-full h-full object-cover" />
         <div className="absolute inset-0 bg-black/75 backdrop-blur-sm" />
       </div>
 
-      <div className="relative z-10 flex flex-col items-center justify-center min-h-screen px-4 py-8">
-        <div className="absolute top-8 left-1/2 -translate-x-1/2 flex gap-3">
+      <div className="relative z-10 flex flex-col items-center justify-center h-full px-4">
+        {/* Progress dots */}
+        <div className="absolute top-6 left-1/2 -translate-x-1/2 flex gap-2">
           {slides.map((_, i) => (
-            <motion.div key={i} className={`w-3 h-3 rounded-full transition-colors ${i === currentSlide ? "bg-primary" : "bg-muted"}`} animate={{ scale: i === currentSlide ? 1.2 : 1 }} />
+            <motion.div key={i} className={`w-2.5 h-2.5 rounded-full transition-colors ${i === currentSlide ? "bg-primary" : "bg-muted"}`} animate={{ scale: i === currentSlide ? 1.2 : 1 }} />
           ))}
         </div>
 
         <AnimatePresence mode="wait">
           <motion.div key={slide.id}
-            className={`max-w-2xl w-full p-8 rounded-2xl border backdrop-blur-xl ${slide.isWarning ? "bg-amber-950/50 border-amber-500/30" : "bg-card/50 border-primary/20"}`}
+            className={`max-w-lg w-full p-5 rounded-2xl border backdrop-blur-xl ${slide.isWarning ? "bg-amber-950/50 border-amber-500/30" : "bg-card/50 border-primary/20"}`}
             initial={{ opacity: 0, x: 50 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -50 }} transition={{ duration: 0.3 }}
           >
-            <div className="flex items-center gap-4 mb-6">
-              <motion.div className={`w-16 h-16 rounded-2xl flex items-center justify-center text-3xl ${slide.isWarning ? "bg-amber-500/20" : "bg-primary/20"}`}
-                animate={{ rotate: [0, -5, 5, 0] }} transition={{ duration: 2, repeat: Infinity }}
-              >
+            <div className="flex items-center gap-3 mb-4">
+              <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-xl ${slide.isWarning ? "bg-amber-500/20" : "bg-primary/20"}`}>
                 {slide.icon}
-              </motion.div>
-              <h2 className={`text-2xl font-bold ${slide.isWarning ? "text-amber-400" : "text-foreground"}`}>{slide.title}</h2>
+              </div>
+              <h2 className={`text-lg font-bold ${slide.isWarning ? "text-amber-400" : "text-foreground"}`}>{slide.title}</h2>
             </div>
-            <div className="text-lg text-muted-foreground leading-relaxed whitespace-pre-line mb-8">{slide.content}</div>
-            <div className="flex justify-center mb-8">
-              <img src={introCharImg} alt="Data Analyst" className="w-32 h-32 rounded-2xl object-cover border-4 border-primary/30 shadow-[0_0_30px_rgba(var(--primary),0.3)]" />
+            <div className="text-sm text-muted-foreground leading-relaxed whitespace-pre-line mb-4">{slide.content}</div>
+            <div className="flex justify-center">
+              <img src={introCharImg} alt="Data Analyst" className="w-16 h-16 rounded-full object-cover border-2 border-primary/30 shadow-[0_0_15px_hsl(var(--primary)/0.2)]" />
             </div>
           </motion.div>
         </AnimatePresence>
 
-        <div className="flex items-center gap-6 mt-8">
+        {/* Navigation buttons */}
+        <div className="flex items-center gap-4 mt-6">
           <motion.button onClick={() => setCurrentSlide(p => Math.max(0, p - 1))} disabled={currentSlide === 0}
-            className={`flex items-center gap-2 px-6 py-3 rounded-xl font-bold transition-all ${currentSlide === 0 ? "bg-muted text-muted-foreground cursor-not-allowed" : "bg-secondary text-foreground hover:bg-secondary/80"}`}
+            className={`flex items-center gap-1 px-4 py-2 rounded-lg text-sm font-bold transition-all ${currentSlide === 0 ? "bg-muted text-muted-foreground cursor-not-allowed" : "bg-secondary text-foreground hover:bg-secondary/80"}`}
             whileHover={currentSlide > 0 ? { scale: 1.05 } : {}} whileTap={currentSlide > 0 ? { scale: 0.95 } : {}}
           >
-            <ChevronRight className="w-5 h-5" /> السابق
+            <ChevronRight className="w-4 h-4" /> السابق
           </motion.button>
           {isLastSlide ? (
             <motion.button onClick={onComplete}
-              className="flex items-center gap-3 px-8 py-4 rounded-xl font-bold text-lg"
+              className="flex items-center gap-2 px-6 py-3 rounded-lg font-bold text-sm"
               style={{ background: "linear-gradient(135deg, hsl(var(--primary)), hsl(var(--accent)))" }}
               whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
             >
-              <Play className="w-6 h-6" /> ابدأ المهمة!
+              <Play className="w-4 h-4" /> ابدأ المهمة!
             </motion.button>
           ) : (
             <motion.button onClick={() => setCurrentSlide(p => p + 1)}
-              className="flex items-center gap-2 px-6 py-3 rounded-xl font-bold bg-primary text-primary-foreground"
+              className="flex items-center gap-1 px-4 py-2 rounded-lg text-sm font-bold bg-primary text-primary-foreground"
               whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
             >
-              التالي <ChevronLeft className="w-5 h-5" />
+              التالي <ChevronLeft className="w-4 h-4" />
             </motion.button>
           )}
         </div>
 
         {!isLastSlide && (
-          <motion.button onClick={onComplete} className="mt-4 text-muted-foreground hover:text-foreground transition-colors"
+          <motion.button onClick={onComplete} className="mt-3 text-xs text-muted-foreground hover:text-foreground transition-colors"
             initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 1 }}
           >
             تخطي المقدمة →
