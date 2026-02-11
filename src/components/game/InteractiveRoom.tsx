@@ -99,7 +99,7 @@ export const InteractiveRoom = ({
           {/* Icon */}
           {hotspot.icon && (
             <motion.span
-              className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-4xl z-10 drop-shadow-lg"
+              className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-6xl z-10 drop-shadow-[0_2px_8px_rgba(0,0,0,0.8)]"
               animate={{
                 y: hoveredHotspot === hotspot.id ? -5 : 0,
               }}
