@@ -16,9 +16,9 @@ interface DashboardScreenProps {
 
 // Hotspots placed on the room image
 const hotspots = [
-  { id: "item-0", x: 48, y: 18, width: 10, height: 12, label: "عداد الباب - حركة الزباين", icon: "📊" },
-  { id: "item-1", x: 11, y: 28, width: 10, height: 12, label: "ملخص الفواتير", icon: "🧾" },
-  { id: "item-2", x: 86, y: 48, width: 10, height: 12, label: "فواتير vs حركة الزباين", icon: "📈" },
+  { id: "item-0", x: 47, y: 15, width: 16, height: 14, label: "عداد الباب - حركة الزباين", icon: "📊" },
+  { id: "item-1", x: 11, y: 21, width: 14, height: 14, label: "ملخص الفواتير", icon: "🧾" },
+  { id: "item-2", x: 83, y: 43, width: 14, height: 14, label: "فواتير vs حركة الزباين", icon: "📈" },
 ];
 
 export const DashboardScreen = ({ onNavigate }: DashboardScreenProps) => {
