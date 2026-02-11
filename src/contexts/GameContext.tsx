@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useCallback, ReactNode } from "react";
+import React, { createContext, useContext, useState, useCallback, useEffect, ReactNode } from "react";
 import { HYPOTHESES, EVIDENCE_ITEMS, ENDINGS, DIAGNOSTIC_EVIDENCE_IDS } from "@/data/case1";
 
 // ============================================
@@ -120,8 +120,21 @@ const initialState: GameState = {
 
 const GameContext = createContext<GameContextType | undefined>(undefined);
 
+const loadState = (): GameState => {
+  try {
+    const saved = localStorage.getItem("detective-game-save");
+    return saved ? JSON.parse(saved) : initialState;
+  } catch {
+    return initialState;
+  }
+};
+
 export const GameProvider = ({ children }: { children: ReactNode }) => {
-  const [state, setState] = useState<GameState>(initialState);
+  const [state, setState] = useState<GameState>(loadState);
+
+  useEffect(() => {
+    localStorage.setItem("detective-game-save", JSON.stringify(state));
+  }, [state]);
 
   const setCurrentRoom = useCallback((roomId: string) => {
     setState(prev => ({
@@ -325,6 +338,8 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
   }, [state.gameStatus, state.finalHypothesis, state.selectedHypotheses, state.notebook]);
 
   const resetGame = useCallback(() => {
+    localStorage.removeItem("detective-game-save");
+    localStorage.removeItem("detective-game-screen");
     setState(initialState);
   }, []);
 

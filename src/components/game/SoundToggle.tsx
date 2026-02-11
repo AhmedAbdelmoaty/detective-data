@@ -1,12 +1,21 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Volume2, VolumeX, Music, Settings } from "lucide-react";
+import { Volume2, VolumeX, Music, Settings, RotateCcw } from "lucide-react";
 import { useSound } from "@/hooks/useSoundEffects";
 import { useMusic } from "@/hooks/useBackgroundMusic";
+import { useGame } from "@/contexts/GameContext";
 
 export const SoundToggle = () => {
   const { isSoundEnabled, setIsSoundEnabled, playSound } = useSound();
   const { isMusicEnabled, toggleMusic, volume, setVolume } = useMusic();
+  const { resetGame } = useGame();
+
+  const handleReset = () => {
+    if (window.confirm("هل أنت متأكد إنك عايز تبدأ من الأول؟ كل التقدم هيتمسح.")) {
+      resetGame();
+      window.location.reload();
+    }
+  };
   const [showPanel, setShowPanel] = useState(false);
 
   const handleSoundToggle = () => {
@@ -125,6 +134,16 @@ export const SoundToggle = () => {
                 {isMusicEnabled ? "🎵 الموسيقى تعمل" : "🔇 الموسيقى متوقفة"}
               </p>
             </div>
+
+            {/* Reset Button */}
+            <motion.button
+              className="mt-3 w-full flex items-center justify-center gap-2 py-2 px-3 rounded-lg bg-destructive/10 text-destructive hover:bg-destructive/20 transition-colors text-sm font-medium"
+              onClick={handleReset}
+              whileTap={{ scale: 0.95 }}
+            >
+              <RotateCcw className="w-4 h-4" />
+              ابدأ من جديد
+            </motion.button>
           </motion.div>
         )}
       </AnimatePresence>

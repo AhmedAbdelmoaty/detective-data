@@ -15,8 +15,14 @@ import { GameProvider } from "@/contexts/GameContext";
 type Screen = "intro" | "onboarding" | "office" | "evidence" | "analysis" | "interrogation" | "dashboard" | "result";
 
 const GameContent = () => {
-  const [currentScreen, setCurrentScreen] = useState<Screen>("intro");
+  const [currentScreen, setCurrentScreen] = useState<Screen>(
+    () => (localStorage.getItem("detective-game-screen") as Screen) || "intro"
+  );
   const { setCurrentRoom } = useMusic();
+
+  useEffect(() => {
+    localStorage.setItem("detective-game-screen", currentScreen);
+  }, [currentScreen]);
 
   const handleNavigate = (screen: string) => {
     setCurrentScreen(screen as Screen);
