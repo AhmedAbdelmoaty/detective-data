@@ -15,13 +15,13 @@ interface EvidenceScreenProps {
 
 // Hotspots positioned realistically on room furniture
 const hotspots = [
-  { id: "E1", x: 3, y: 18, width: 8, height: 10, label: "📦 تقرير المخزون", icon: "📦" },
-  { id: "E5", x: 3, y: 38, width: 8, height: 10, label: "⭐ تقييمات العملاء", icon: "⭐" },
-  { id: "E2", x: 66, y: 18, width: 10, height: 12, label: "📹 تقرير الكاميرات", icon: "📹" },
-  { id: "E3", x: 27, y: 58, width: 8, height: 10, label: "🖥️ سجل الكاشير", icon: "🖥️" },
-  { id: "E4", x: 47, y: 58, width: 8, height: 10, label: "📅 بيانات الموسم", icon: "📅" },
-  { id: "E6", x: 47, y: 8, width: 10, height: 12, label: "🏪 بروشور المنافس", icon: "🏪" },
-  { id: "E7", x: 88, y: 52, width: 8, height: 10, label: "📝 ورقة ملاحظات", icon: "📝" },
+  { id: "E1", x: 0, y: 15, width: 12, height: 14, label: "📦 تقرير المخزون", icon: "📦" },
+  { id: "E5", x: 0, y: 43, width: 12, height: 14, label: "⭐ تقييمات العملاء", icon: "⭐" },
+  { id: "E2", x: 58, y: 19, width: 16, height: 16, label: "📹 تقرير الكاميرات", icon: "📹" },
+  { id: "E3", x: 37, y: 54, width: 14, height: 12, label: "🖥️ سجل الكاشير", icon: "🖥️" },
+  { id: "E4", x: 18, y: 43, width: 14, height: 14, label: "📅 بيانات الموسم", icon: "📅" },
+  { id: "E6", x: 79, y: 12, width: 16, height: 16, label: "🏪 بروشور المنافس", icon: "🏪" },
+  { id: "E7", x: 86, y: 52, width: 12, height: 12, label: "📝 ورقة ملاحظات", icon: "📝" },
 ];
 
 export const EvidenceScreen = ({ onNavigate }: EvidenceScreenProps) => {

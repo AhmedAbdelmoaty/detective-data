@@ -23,9 +23,9 @@ const ratingOptions = [
 
 // Hotspots positioned on the analysis lab image
 const hotspots = [
-  { id: "notebook", x: 7, y: 65, width: 8, height: 10, label: "📓 دفتر الملاحظات", icon: "📓" },
-  { id: "hypotheses", x: 46, y: 22, width: 10, height: 12, label: "💡 الفرضيات", icon: "💡" },
-  { id: "matrix", x: 84, y: 58, width: 10, height: 12, label: "🔬 المصفوفة", icon: "🔬" },
+  { id: "notebook", x: 4, y: 64, width: 12, height: 12, label: "📓 دفتر الملاحظات", icon: "📓" },
+  { id: "hypotheses", x: 43, y: 21, width: 14, height: 14, label: "💡 الفرضيات", icon: "💡" },
+  { id: "matrix", x: 81, y: 48, width: 14, height: 14, label: "🔬 المصفوفة", icon: "🔬" },
 ];
 
 export const AnalysisScreen = ({ onNavigate }: AnalysisScreenProps) => {
