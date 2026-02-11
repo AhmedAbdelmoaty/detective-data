@@ -23,9 +23,9 @@ const ratingOptions = [
 
 // Hotspots positioned on the analysis lab image
 const hotspots = [
-  { id: "notebook", x: 3, y: 25, width: 20, height: 45, label: "📓 دفتر الملاحظات", icon: "📓" },
-  { id: "hypotheses", x: 30, y: 10, width: 35, height: 55, label: "💡 الفرضيات", icon: "💡" },
-  { id: "matrix", x: 72, y: 15, width: 25, height: 50, label: "🔬 المصفوفة", icon: "🔬" },
+  { id: "notebook", x: 3, y: 58, width: 15, height: 20, label: "📓 دفتر الملاحظات", icon: "📓" },
+  { id: "hypotheses", x: 28, y: 8, width: 44, height: 50, label: "💡 الفرضيات", icon: "💡" },
+  { id: "matrix", x: 76, y: 48, width: 22, height: 32, label: "🔬 المصفوفة", icon: "🔬" },
 ];
 
 export const AnalysisScreen = ({ onNavigate }: AnalysisScreenProps) => {
@@ -366,14 +366,14 @@ export const AnalysisScreen = ({ onNavigate }: AnalysisScreenProps) => {
 
       {/* Lock indicators on hotspots */}
       {!canSelectHypotheses() && (
-        <div className="absolute z-10" style={{ left: "44%", top: "8%" }}>
+        <div className="absolute z-10" style={{ left: "46%", top: "6%" }}>
           <div className="px-2 py-1 rounded bg-background/80 backdrop-blur-sm border border-border text-xs text-muted-foreground flex items-center gap-1">
             <Lock className="w-3 h-3" /> محتاج 3 أدلة
           </div>
         </div>
       )}
       {!canUseMatrix() && (
-        <div className="absolute z-10" style={{ left: "82%", top: "12%" }}>
+        <div className="absolute z-10" style={{ left: "84%", top: "46%" }}>
           <div className="px-2 py-1 rounded bg-background/80 backdrop-blur-sm border border-border text-xs text-muted-foreground flex items-center gap-1">
             <Lock className="w-3 h-3" /> محتاج 4 فرضيات
           </div>

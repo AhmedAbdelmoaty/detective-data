@@ -13,16 +13,16 @@ interface EvidenceScreenProps {
   onNavigate: (screen: string) => void;
 }
 
-// Hotspots for 7 evidence items
-const hotspots = EVIDENCE_ITEMS.map((ev, i) => ({
-  id: ev.id,
-  x: 5 + i * 13,
-  y: 20,
-  width: 12,
-  height: 25,
-  label: `${ev.icon} ${ev.name}`,
-  icon: ev.icon,
-}));
+// Hotspots positioned realistically on room furniture
+const hotspots = [
+  { id: "E1", x: 2, y: 18, width: 12, height: 18, label: "📦 تقرير المخزون", icon: "📦" },
+  { id: "E5", x: 2, y: 42, width: 12, height: 18, label: "⭐ تقييمات العملاء", icon: "⭐" },
+  { id: "E2", x: 62, y: 12, width: 20, height: 28, label: "📹 تقرير الكاميرات", icon: "📹" },
+  { id: "E3", x: 44, y: 50, width: 14, height: 16, label: "🖥️ سجل الكاشير", icon: "🖥️" },
+  { id: "E4", x: 22, y: 45, width: 14, height: 18, label: "📅 بيانات الموسم", icon: "📅" },
+  { id: "E6", x: 38, y: 5, width: 24, height: 24, label: "🏪 بروشور المنافس", icon: "🏪" },
+  { id: "E7", x: 83, y: 45, width: 12, height: 16, label: "📝 ورقة ملاحظات", icon: "📝" },
+];
 
 export const EvidenceScreen = ({ onNavigate }: EvidenceScreenProps) => {
   const { state, viewEvidence, isEvidenceViewed, addToNotebook, isInNotebook } = useGame();

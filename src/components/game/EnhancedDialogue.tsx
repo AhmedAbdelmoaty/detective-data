@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { BookmarkPlus, Check } from "lucide-react";
+import { BookmarkPlus, Check, X } from "lucide-react";
 import { AnimatedCharacter, type CharacterId } from "./AnimatedCharacter";
 
 interface DialogueLine {
@@ -16,6 +16,8 @@ interface EnhancedDialogueProps {
   dialogues: DialogueLine[];
   isActive: boolean;
   onComplete?: () => void;
+  onClose?: () => void;
+  allowClickOutside?: boolean;
   currentIndex?: number;
   onIndexChange?: (index: number) => void;
   onSaveNote?: (saveId: string, saveText: string) => void;
@@ -48,6 +50,8 @@ export const EnhancedDialogue = ({
   dialogues,
   isActive,
   onComplete,
+  onClose,
+  allowClickOutside = false,
   currentIndex: externalIndex,
   onIndexChange,
   onSaveNote,
@@ -92,6 +96,14 @@ export const EnhancedDialogue = ({
     return () => clearInterval(typingInterval);
   }, [currentIndex, isActive, currentDialogue]);
 
+  const handleClose = () => {
+    if (onClose) {
+      onClose();
+    } else {
+      onComplete?.();
+    }
+  };
+
   const handleNext = () => {
     if (isTyping) {
       setDisplayedText(currentDialogue.text);
@@ -116,6 +128,12 @@ export const EnhancedDialogue = ({
     }
   };
 
+  const handleBackdropClick = () => {
+    if (allowClickOutside) {
+      handleClose();
+    }
+  };
+
   if (!isActive || !currentDialogue) return null;
 
   const isSaved = currentDialogue.saveId ? savedNoteIds.includes(currentDialogue.saveId) : false;
@@ -126,6 +144,15 @@ export const EnhancedDialogue = ({
 
   return (
     <AnimatePresence>
+      {/* Backdrop for click-outside */}
+      <motion.div
+        className="fixed inset-0 z-40"
+        onClick={handleBackdropClick}
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+      />
+
       <motion.div
         className="fixed bottom-0 left-0 right-0 z-50"
         initial={{ y: 200, opacity: 0 }}
@@ -152,12 +179,20 @@ export const EnhancedDialogue = ({
         </motion.div>
 
         <motion.div
-          className={`mx-4 mb-4 rounded-xl border backdrop-blur-md cursor-pointer bg-gradient-to-r ${colors.bg} ${colors.border} p-6`}
+          className={`mx-4 mb-4 rounded-xl border backdrop-blur-md cursor-pointer bg-gradient-to-r ${colors.bg} ${colors.border} p-6 relative`}
           onClick={handleNext}
           whileHover={{ scale: 1.01 }}
           whileTap={{ scale: 0.99 }}
           layoutId="dialogue-box"
         >
+          {/* Close button - top right */}
+          <button
+            onClick={(e) => { e.stopPropagation(); handleClose(); }}
+            className="absolute top-3 left-3 p-1.5 rounded-lg hover:bg-white/10 text-white/60 hover:text-white/90 transition-colors z-10"
+          >
+            <X className="w-5 h-5" />
+          </button>
+
           <motion.div
             className="flex items-center gap-3 mb-3"
             key={currentDialogue.characterId}
