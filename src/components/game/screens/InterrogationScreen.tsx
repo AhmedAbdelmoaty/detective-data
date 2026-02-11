@@ -15,7 +15,7 @@ interface InterrogationScreenProps {
 }
 
 export const InterrogationScreen = ({ onNavigate }: InterrogationScreenProps) => {
-  const { state, addToNotebook, isInNotebook, markInterviewComplete, isInterviewComplete } = useGame();
+  const { state, addToNotebook, markInterviewComplete, isInterviewComplete } = useGame();
   const { playSound } = useSound();
   const [activeCharacter, setActiveCharacter] = useState<string | null>(null);
 
@@ -41,7 +41,12 @@ export const InterrogationScreen = ({ onNavigate }: InterrogationScreenProps) =>
 
   const savedNoteIds = state.notebook.map(n => n.sourceId);
   const activeChar = CHARACTERS.find(c => c.id === activeCharacter);
+  const canCloseByOutside = activeCharacter ? isInterviewComplete(activeCharacter) : false;
 
+  const closeActiveDialogue = () => {
+    setActiveCharacter(null);
+  };
+  
   const positions = [
     { left: "18%", bottom: "20%" },
     { left: "45%", bottom: "20%" },
@@ -112,11 +117,22 @@ export const InterrogationScreen = ({ onNavigate }: InterrogationScreenProps) =>
       {/* Dialogue overlay */}
       <AnimatePresence>
         {activeChar && (
-          <motion.div className="fixed inset-0 z-50 bg-black/50" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+          <motion.div
+              className="fixed inset-0 z-50 bg-black/50"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => {
+                if (canCloseByOutside) {
+                  closeActiveDialogue();
+                }
+              }}
+            >
             <EnhancedDialogue
               dialogues={activeChar.dialogues}
               isActive={true}
               onComplete={handleDialogueComplete}
+              onClose={closeActiveDialogue}
               onSaveNote={handleSaveNote}
               savedNoteIds={savedNoteIds}
             />
