@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { BookmarkPlus, Check, X } from "lucide-react";
+import { BookmarkPlus, Check } from "lucide-react";
 import { AnimatedCharacter, type CharacterId } from "./AnimatedCharacter";
 
 interface DialogueLine {
@@ -16,7 +16,6 @@ interface EnhancedDialogueProps {
   dialogues: DialogueLine[];
   isActive: boolean;
   onComplete?: () => void;
-  onClose?: () => void;
   currentIndex?: number;
   onIndexChange?: (index: number) => void;
   onSaveNote?: (saveId: string, saveText: string) => void;
@@ -49,7 +48,6 @@ export const EnhancedDialogue = ({
   dialogues,
   isActive,
   onComplete,
-  onClose,
   currentIndex: externalIndex,
   onIndexChange,
   onSaveNote,
@@ -130,7 +128,6 @@ export const EnhancedDialogue = ({
     <AnimatePresence>
       <motion.div
         className="fixed bottom-0 left-0 right-0 z-50"
-        onClick={(e) => e.stopPropagation()}
         initial={{ y: 200, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         exit={{ y: 200, opacity: 0 }}
@@ -155,25 +152,12 @@ export const EnhancedDialogue = ({
         </motion.div>
 
         <motion.div
-          className={`relative mx-4 mb-4 rounded-xl border backdrop-blur-md cursor-pointer bg-gradient-to-r ${colors.bg} ${colors.border} p-6`}
+          className={`mx-4 mb-4 rounded-xl border backdrop-blur-md cursor-pointer bg-gradient-to-r ${colors.bg} ${colors.border} p-6`}
           onClick={handleNext}
           whileHover={{ scale: 1.01 }}
           whileTap={{ scale: 0.99 }}
           layoutId="dialogue-box"
         >
-          {onClose && (
-            <button
-              className="absolute top-3 left-3 p-2 rounded-md border border-border/50 bg-background/20 hover:bg-background/40 transition-colors"
-              onClick={(e) => {
-                e.stopPropagation();
-                onClose();
-              }}
-              aria-label="إغلاق المحادثة"
-            >
-              <X className="w-4 h-4 text-foreground" />
-            </button>
-          )}
-          
           <motion.div
             className="flex items-center gap-3 mb-3"
             key={currentDialogue.characterId}
