@@ -1,12 +1,12 @@
-import { useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import { Briefcase, FileText, BookOpen, BarChart3, Users, Microscope } from "lucide-react";
+import { useEffect, useState } from "react";
+import { motion } from "framer-motion";
+import { Briefcase, FileText, BookOpen } from "lucide-react";
 import { InteractiveRoom } from "../InteractiveRoom";
 import { EnhancedDialogue } from "../EnhancedDialogue";
 import { NavigationButton } from "../NavigationButton";
 import { useGame } from "@/contexts/GameContext";
 import { useSound } from "@/hooks/useSoundEffects";
-import { CASE_INFO, CHARACTERS, INTRO_DIALOGUES, ABU_SAEED_EXTRA_DIALOGUES, ENDINGS, HYPOTHESES } from "@/data/case1";
+import { CASE_INFO, INTRO_DIALOGUES, ABU_SAEED_EXTRA_DIALOGUES, ENDINGS, HYPOTHESES } from "@/data/case1";
 import detectiveOffice from "@/assets/rooms/detective-office.png";
 
 interface OfficeScreenProps {
@@ -19,13 +19,31 @@ const hotspots = [
 ];
 
 export const OfficeScreen = ({ onNavigate }: OfficeScreenProps) => {
-  const { state, getProgress, markIntroSeen, addToNotebook, isInNotebook } = useGame();
+  const { state, getProgress, markIntroSeen, addToNotebook, markInterviewComplete } = useGame();
   const { playSound } = useSound();
   const [activePanel, setActivePanel] = useState<string | null>(null);
-  const [showDialogue, setShowDialogue] = useState(!state.hasSeenIntroDialogue);
+  const [showIntroDialogue, setShowIntroDialogue] = useState(!state.hasSeenIntroDialogue);
   const [dialogueComplete, setDialogueComplete] = useState(state.hasSeenIntroDialogue);
   const [showExtraDialogue, setShowExtraDialogue] = useState(false);
   const [showConclusionDialogue, setShowConclusionDialogue] = useState(false);
+
+  useEffect(() => {
+    if (!state.hasSeenIntroDialogue) return;
+    setDialogueComplete(true);
+    setShowIntroDialogue(false);
+  }, [state.hasSeenIntroDialogue]);
+
+  const canCloseByOutside = (dialogueId: "intro" | "extra" | "conclusion") => {
+    if (dialogueId === "intro") return state.hasSeenIntroDialogue;
+    if (dialogueId === "extra") return state.completedInterviews.includes("abuSaeed-extra");
+    if (dialogueId === "conclusion") return state.completedInterviews.includes("abuSaeed-conclusion");
+    return false;
+  };
+
+  const handleRestartIntroDialogue = () => {
+    setShowIntroDialogue(true);
+    playSound("click");
+  };
 
   const handleHotspotClick = (id: string) => {
     if (!dialogueComplete) return;
@@ -39,7 +57,7 @@ export const OfficeScreen = ({ onNavigate }: OfficeScreenProps) => {
 
   const handleDialogueComplete = () => {
     setDialogueComplete(true);
-    setShowDialogue(false);
+    setShowIntroDialogue(false);
     markIntroSeen();
   };
 
@@ -161,6 +179,18 @@ export const OfficeScreen = ({ onNavigate }: OfficeScreenProps) => {
           </motion.button>
         )}
 
+        {state.hasSeenIntroDialogue && !showIntroDialogue && (
+          <motion.button
+            className="absolute top-20 left-4 z-20 px-4 py-2 rounded-lg font-bold border border-primary/40 bg-background/80 backdrop-blur-sm text-primary"
+            onClick={handleRestartIntroDialogue}
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            whileHover={{ scale: 1.03 }}
+          >
+            🔁 إعادة المحادثة
+          </motion.button>
+        )}
+        
         {/* Room navigation */}
         <div className="absolute bottom-8 left-0 right-0 z-20 flex justify-center gap-4 px-4">
           <NavigationButton iconEmoji="📁" label="الأدلة" onClick={() => onNavigate("evidence")} />
@@ -171,12 +201,22 @@ export const OfficeScreen = ({ onNavigate }: OfficeScreenProps) => {
       </InteractiveRoom>
 
       {/* Intro dialogue */}
-      {showDialogue && !dialogueComplete && (
-        <motion.div className="fixed inset-0 z-50 bg-black/50" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+      {showIntroDialogue && (
+        <motion.div
+          className="fixed inset-0 z-50 bg-black/50"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          onClick={() => {
+            if (canCloseByOutside("intro")) {
+              setShowIntroDialogue(false);
+            }
+          }}
+        >
           <EnhancedDialogue
             dialogues={INTRO_DIALOGUES}
             isActive={true}
             onComplete={handleDialogueComplete}
+            onClose={() => setShowIntroDialogue(false)}
             onSaveNote={handleSaveNote}
             savedNoteIds={savedNoteIds}
           />
@@ -185,25 +225,53 @@ export const OfficeScreen = ({ onNavigate }: OfficeScreenProps) => {
 
       {/* Extra Abu Saeed dialogue */}
       {showExtraDialogue && (
-        <motion.div className="fixed inset-0 z-50 bg-black/50" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+        <motion.div
+          className="fixed inset-0 z-50 bg-black/50"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          onClick={() => {
+            if (canCloseByOutside("extra")) {
+              setShowExtraDialogue(false);
+            }
+          }}
+        >
           <EnhancedDialogue
             dialogues={ABU_SAEED_EXTRA_DIALOGUES}
             isActive={true}
-            onComplete={() => setShowExtraDialogue(false)}
-          />
+            onComplete={() => {
+              setShowExtraDialogue(false);
+              if (!state.completedInterviews.includes("abuSaeed-extra")) {
+                markInterviewComplete("abuSaeed-extra");
+              }
+            }}
+            onClose={() => setShowExtraDialogue(false)}
+            />
         </motion.div>
       )}
 
       {/* Conclusion dialogue */}
       {showConclusionDialogue && ending && (
-        <motion.div className="fixed inset-0 z-50 bg-black/50" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+        <motion.div
+          className="fixed inset-0 z-50 bg-black/50"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          onClick={() => {
+            if (canCloseByOutside("conclusion")) {
+              setShowConclusionDialogue(false);
+            }
+          }}
+        >
           <EnhancedDialogue
             dialogues={getEndingDialogues()}
             isActive={true}
             onComplete={() => {
+              if (!state.completedInterviews.includes("abuSaeed-conclusion")) {
+                markInterviewComplete("abuSaeed-conclusion");
+              }
               setShowConclusionDialogue(false);
               onNavigate("result");
             }}
+            onClose={() => setShowConclusionDialogue(false)}
           />
         </motion.div>
       )}
