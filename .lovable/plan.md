@@ -1,53 +1,66 @@
 
-# اضافة الصور الجديدة للشخصيات والغرف
+
+# Auto Save + Reset Button
+
+## What Changes
+
+### 1. GameContext.tsx - Add localStorage persistence
+- On initialization: load saved state from `localStorage` (key: `detective-game-save`) instead of using `initialState`
+- On every state change: save the updated state to `localStorage` using a `useEffect`
+- Add a `resetGame` update: clear `localStorage` when resetting
+- The `currentScreen` from `Index.tsx` also needs to be persisted (either inside GameState or separately)
+
+### 2. Index.tsx - Persist current screen
+- Save `currentScreen` to `localStorage` whenever it changes
+- Load it on mount to restore the correct screen
+
+### 3. SoundToggle.tsx - Add "Start Over" button
+- Add a red button at the bottom of the existing settings panel labeled "ابدأ من جديد" with a `RotateCcw` icon
+- On click: show a confirmation prompt (simple `window.confirm` in Arabic), then call `resetGame()` from GameContext and reload the page
 
 ---
 
-## تحديد الصور
+## Technical Details
 
-### الشخصيات (5 صور)
-| الصورة المرفوعة | الشخصية | المسار الجديد |
-|----------------|---------|--------------|
-| analyst.png | المحلل (detective) | src/assets/characters/analyst.png |
-| abu-saeed.png | أبو سعيد (abuSaeed) | src/assets/characters/abu-saeed.png |
-| Khaled.png | خالد (khaled) | src/assets/characters/khaled.png |
-| Noura.png | نورة (noura) | src/assets/characters/noura.png |
-| Amira.png | أميرة (umFahd) | src/assets/characters/amira.png |
+**localStorage key**: `detective-game-save`
+**Screen key**: `detective-game-screen`
 
-### الغرف (5 صور)
-| الصورة المرفوعة | الغرفة | المسار الجديد |
-|----------------|--------|--------------|
-| Abu_Saeed_s_Office.png | مكتب أبو سعيد (OfficeScreen) | src/assets/rooms/detective-office.png (استبدال) |
-| Evidence_Room.png | غرفة الأدلة (EvidenceScreen) | src/assets/rooms/evidence-room.png (استبدال) |
-| Meeting_Room.png | غرفة الاجتماعات (InterrogationScreen) | src/assets/rooms/interrogation-room.png (استبدال) |
-| Data_Dashboard_Room.png | غرفة البيانات (DashboardScreen) | src/assets/rooms/analysis-room.png (استبدال) |
-| Analysis_Room.png | غرفة التحليل (AnalysisScreen) | src/assets/rooms/analysis-lab.png (جديد) |
+**GameContext changes**:
+```
+// Load
+const loadState = (): GameState => {
+  const saved = localStorage.getItem("detective-game-save");
+  return saved ? JSON.parse(saved) : initialState;
+};
 
----
+// Save on every change via useEffect
+useEffect(() => {
+  localStorage.setItem("detective-game-save", JSON.stringify(state));
+}, [state]);
 
-## التعديلات المطلوبة
+// Reset clears storage
+const resetGame = () => {
+  localStorage.removeItem("detective-game-save");
+  localStorage.removeItem("detective-game-screen");
+  setState(initialState);
+};
+```
 
-### 1. نسخ الصور للمسارات الصحيحة
-- نسخ 5 صور شخصيات لـ `src/assets/characters/`
-- استبدال 4 صور غرف في `src/assets/rooms/`
-- اضافة صورة غرفة التحليل الجديدة
+**Index.tsx changes**:
+```
+// Load screen
+const [currentScreen, setCurrentScreen] = useState<Screen>(
+  () => (localStorage.getItem("detective-game-screen") as Screen) || "intro"
+);
 
-### 2. تعديل `AnimatedCharacter.tsx`
-- اضافة imports للصور الجديدة (analystImg, abuSaeedImg, khaledImg, nouraImg, amiraImg)
-- تحديث characterData: كل شخصية تستخدم صورتها الخاصة بدل الصور المشتركة القديمة
+// Save screen
+useEffect(() => {
+  localStorage.setItem("detective-game-screen", currentScreen);
+}, [currentScreen]);
+```
 
-### 3. تعديل `AnalysisScreen.tsx`
-- اضافة import لصورة غرفة التحليل الجديدة واستخدامها كخلفية (حاليا مفيش خلفية)
+**SoundToggle.tsx changes**:
+- Import `useGame` and `RotateCcw` icon
+- Add button below volume slider with confirmation dialog
+- On confirm: call `resetGame()`, remove screen key, reload page
 
----
-
-## التفاصيل التقنية
-
-| # | الملف | التغيير |
-|---|-------|---------|
-| 1 | src/assets/characters/ | نسخ 5 صور جديدة (analyst, abu-saeed, khaled, noura, amira) |
-| 2 | src/assets/rooms/ | استبدال 4 صور + اضافة analysis-lab.png |
-| 3 | AnimatedCharacter.tsx | تحديث imports و characterData لاستخدام الصور الجديدة |
-| 4 | AnalysisScreen.tsx | اضافة خلفية غرفة التحليل |
-
-ملاحظة: صور الغرف القديمة (ahmed.png, sara.png, karim.png, detective.png) هتفضل موجودة بس مش هنستخدمها - ممكن نشيلها لاحقا. الصور الجديدة هتكون في ملفات منفصلة بأسماء واضحة.
