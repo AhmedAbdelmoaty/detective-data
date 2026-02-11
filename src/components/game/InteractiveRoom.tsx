@@ -82,28 +82,12 @@ export const InteractiveRoom = ({
           whileHover={{ scale: 1.02 }}
           whileTap={{ scale: 0.98 }}
         >
-          {/* Hotspot glow effect */}
-          <motion.div
-            className="absolute inset-0 rounded-lg border-2 border-primary/50"
-            animate={{
-              boxShadow:
-                hoveredHotspot === hotspot.id
-                  ? `0 0 30px 10px hsl(var(--primary) / 0.5), inset 0 0 20px hsl(var(--primary) / 0.3)`
-                  : `0 0 15px 5px hsl(var(--primary) / 0.2)`,
-              borderColor:
-                hoveredHotspot === hotspot.id
-                  ? "hsl(var(--primary))"
-                  : "hsl(var(--primary) / 0.3)",
-            }}
-            transition={{ duration: 0.3 }}
-          />
-
           {/* Pulsing indicator */}
           <motion.div
-            className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-primary/80"
+            className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-5 h-5 rounded-full bg-primary/60"
             animate={{
-              scale: [1, 1.5, 1],
-              opacity: [0.8, 0.3, 0.8],
+              scale: [1, 1.8, 1],
+              opacity: [0.6, 0.15, 0.6],
             }}
             transition={{
               duration: 2,
@@ -115,7 +99,7 @@ export const InteractiveRoom = ({
           {/* Icon */}
           {hotspot.icon && (
             <motion.span
-              className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-2xl z-10"
+              className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-4xl z-10 drop-shadow-lg"
               animate={{
                 y: hoveredHotspot === hotspot.id ? -5 : 0,
               }}
@@ -169,6 +153,7 @@ export const InteractiveRoom = ({
             {/* Content */}
             <motion.div
               className="relative z-10 w-full max-w-4xl max-h-[85vh] overflow-auto mx-4"
+              onClick={(e) => e.stopPropagation()}
               initial={{ scale: 0.8, opacity: 0, y: 50 }}
               animate={{ scale: 1, opacity: 1, y: 0 }}
               exit={{ scale: 0.8, opacity: 0, y: 50 }}

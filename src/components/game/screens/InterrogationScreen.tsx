@@ -41,6 +41,7 @@ export const InterrogationScreen = ({ onNavigate }: InterrogationScreenProps) =>
 
   const savedNoteIds = state.notebook.map(n => n.sourceId);
   const activeChar = CHARACTERS.find(c => c.id === activeCharacter);
+  const isActiveCharCompleted = activeCharacter ? isInterviewComplete(activeCharacter) : false;
 
   const positions = [
     { left: "18%", bottom: "20%" },
@@ -117,6 +118,8 @@ export const InterrogationScreen = ({ onNavigate }: InterrogationScreenProps) =>
               dialogues={activeChar.dialogues}
               isActive={true}
               onComplete={handleDialogueComplete}
+              onClose={() => setActiveCharacter(null)}
+              allowClickOutside={isActiveCharCompleted}
               onSaveNote={handleSaveNote}
               savedNoteIds={savedNoteIds}
             />

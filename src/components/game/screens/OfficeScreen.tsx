@@ -13,11 +13,6 @@ interface OfficeScreenProps {
   onNavigate: (screen: string) => void;
 }
 
-const hotspots = [
-  { id: "case-board", x: 20, y: 10, width: 55, height: 45, label: "لوحة القضية", icon: "📋" },
-  { id: "abuSaeed", x: 0, y: 30, width: 18, height: 50, label: "أبو سعيد", icon: "👔" },
-];
-
 export const OfficeScreen = ({ onNavigate }: OfficeScreenProps) => {
   const { state, getProgress, markIntroSeen, addToNotebook, isInNotebook } = useGame();
   const { playSound } = useSound();
@@ -26,10 +21,21 @@ export const OfficeScreen = ({ onNavigate }: OfficeScreenProps) => {
   const [dialogueComplete, setDialogueComplete] = useState(state.hasSeenIntroDialogue);
   const [showExtraDialogue, setShowExtraDialogue] = useState(false);
   const [showConclusionDialogue, setShowConclusionDialogue] = useState(false);
+  const [showReplayDialogue, setShowReplayDialogue] = useState(false);
+
+  // Dynamic hotspots based on dialogue completion
+  const hotspots = [
+    { id: "case-board", x: 20, y: 10, width: 55, height: 45, label: "لوحة القضية", icon: "📋" },
+    { id: "abuSaeed", x: 0, y: 30, width: 18, height: 50, label: dialogueComplete ? "🔄 إعادة المحادثة مع أبو سعيد" : "أبو سعيد", icon: "👔" },
+    ...(dialogueComplete ? [{ id: "extra-questions", x: 75, y: 35, width: 20, height: 30, label: "أسئلة إضافية لأبو سعيد", icon: "❓" }] : []),
+  ];
 
   const handleHotspotClick = (id: string) => {
     if (!dialogueComplete) return;
     if (id === "abuSaeed") {
+      // After completion, replay intro dialogue
+      setShowReplayDialogue(true);
+    } else if (id === "extra-questions") {
       setShowExtraDialogue(true);
     } else {
       setActivePanel(id);
@@ -51,7 +57,6 @@ export const OfficeScreen = ({ onNavigate }: OfficeScreenProps) => {
   const progress = getProgress();
   const canSubmitReport = state.finalHypothesis !== null && state.gameStatus === "solved";
 
-  // Handle conclusion: if player has selected final hypothesis and comes back to office
   const handleStartConclusion = () => {
     setShowConclusionDialogue(true);
   };
@@ -66,7 +71,6 @@ export const OfficeScreen = ({ onNavigate }: OfficeScreenProps) => {
     return diagCount >= 2 ? ENDINGS.find(e => e.type === "excellent") : ENDINGS.find(e => e.type === "partial");
   })() : null;
 
-  // Build dynamic dialogues for "wrong" ending - inject hypothesis name
   const getEndingDialogues = () => {
     if (!ending) return [];
     if (ending.type === "wrong" && state.finalHypothesis) {
@@ -96,7 +100,6 @@ export const OfficeScreen = ({ onNavigate }: OfficeScreenProps) => {
             <p className="text-sm text-muted-foreground whitespace-pre-line">{CASE_INFO.briefing}</p>
           </div>
 
-          {/* Notebook preview */}
           <div className="p-4 rounded-lg bg-accent/10 border border-accent/30">
             <h4 className="font-bold text-foreground mb-2 flex items-center gap-2">
               <BookOpen className="w-4 h-4 text-accent" />
@@ -115,7 +118,6 @@ export const OfficeScreen = ({ onNavigate }: OfficeScreenProps) => {
             )}
           </div>
 
-          {/* Progress */}
           <div className="mt-4 p-3 rounded-lg bg-primary/10 border border-primary/30 text-center">
             <span className="text-primary font-bold">التقدم: {progress}%</span>
             <div className="w-full h-2 bg-secondary rounded-full mt-2">
@@ -148,7 +150,6 @@ export const OfficeScreen = ({ onNavigate }: OfficeScreenProps) => {
           </div>
         </motion.div>
 
-        {/* Submit report button (only when conclusion ready) */}
         {canSubmitReport && !showConclusionDialogue && (
           <motion.button
             className="absolute top-4 left-4 z-20 px-6 py-3 rounded-lg font-bold text-lg"
@@ -161,7 +162,6 @@ export const OfficeScreen = ({ onNavigate }: OfficeScreenProps) => {
           </motion.button>
         )}
 
-        {/* Room navigation */}
         <div className="absolute bottom-8 left-0 right-0 z-20 flex justify-center gap-4 px-4">
           <NavigationButton iconEmoji="📁" label="الأدلة" onClick={() => onNavigate("evidence")} />
           <NavigationButton iconEmoji="👥" label="الاجتماعات" onClick={() => onNavigate("interrogation")} />
@@ -170,26 +170,44 @@ export const OfficeScreen = ({ onNavigate }: OfficeScreenProps) => {
         </div>
       </InteractiveRoom>
 
-      {/* Intro dialogue */}
+      {/* Intro dialogue - first time, no click-outside */}
       {showDialogue && !dialogueComplete && (
         <motion.div className="fixed inset-0 z-50 bg-black/50" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
           <EnhancedDialogue
             dialogues={INTRO_DIALOGUES}
             isActive={true}
             onComplete={handleDialogueComplete}
+            allowClickOutside={false}
             onSaveNote={handleSaveNote}
             savedNoteIds={savedNoteIds}
           />
         </motion.div>
       )}
 
-      {/* Extra Abu Saeed dialogue */}
+      {/* Replay intro dialogue - can close */}
+      {showReplayDialogue && (
+        <motion.div className="fixed inset-0 z-50 bg-black/50" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+          <EnhancedDialogue
+            dialogues={INTRO_DIALOGUES}
+            isActive={true}
+            onComplete={() => setShowReplayDialogue(false)}
+            onClose={() => setShowReplayDialogue(false)}
+            allowClickOutside={true}
+            onSaveNote={handleSaveNote}
+            savedNoteIds={savedNoteIds}
+          />
+        </motion.div>
+      )}
+
+      {/* Extra Abu Saeed dialogue - can close after seen */}
       {showExtraDialogue && (
         <motion.div className="fixed inset-0 z-50 bg-black/50" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
           <EnhancedDialogue
             dialogues={ABU_SAEED_EXTRA_DIALOGUES}
             isActive={true}
             onComplete={() => setShowExtraDialogue(false)}
+            onClose={() => setShowExtraDialogue(false)}
+            allowClickOutside={true}
           />
         </motion.div>
       )}
@@ -204,6 +222,7 @@ export const OfficeScreen = ({ onNavigate }: OfficeScreenProps) => {
               setShowConclusionDialogue(false);
               onNavigate("result");
             }}
+            allowClickOutside={false}
           />
         </motion.div>
       )}
