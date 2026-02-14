@@ -1,58 +1,190 @@
 
-# Fix: Game Progression Blocked + UI Freeze After Replay
+# خطة إعادة هيكلة الـ Flow + إصلاح الأخطاء
 
-## Problem 1: No CTA Button on Analyst Hub
+## المشاكل الحالية
 
-**Root Cause:** When the player finishes hypothesis selection and navigates to `analyst-hub`, `currentPhaseIndex` remains at `0`. In `PHASES`, index 0 and 1 have empty `ctaLabel: ""`. The CTA button renders only when `canAdvance() && ctaLabel` -- since `ctaLabel` is empty string (falsy), the button never appears.
+1. **UI Freeze عند إعادة المشاهد**: الـ EnhancedDialogue بيسيب overlay عالق بعد الإغلاق
+2. **CTA بيوّدي مكان غلط**: الزر "ابدأ من البيانات" بيروح الصالة بدل البيانات (bug في handleCTA - بيقرأ الـ phase اللي بعدها مش الحالية)
+3. **الترتيب مش صح**: أدلة الضوضاء (N1, N2) ظاهرة بدري في غرفة الأدلة، وما فيش أدلة حقيقية
+4. **الـ Hub صفحة منفصلة**: اللاعب مضطر يرجع للـ Hub كل مرة
 
-**Fix:** Auto-advance `currentPhaseIndex` to `2` when transitioning from hypothesis selection to analyst hub. This can be done in two places:
+## التصميم الجديد (حسب طلبك)
 
-1. **`HypothesisSelectScreen.tsx`**: Before calling `onComplete()`, call `advancePhase()` twice (0->1, 1->2) to skip the "scenes" and "hypothesis-select" phases that are already done.
+### المبدأ الأساسي: "الـ Hub موزع في كل مكان"
 
-2. **OR `AnalystHubScreen.tsx`**: Add a `useEffect` that auto-advances if `currentPhaseIndex < 2` (since phases 0 and 1 are pre-hub steps).
+بدل ما الـ Hub صفحة مستقلة، هيتوزع على كل الشاشات كـ overlay ثابت:
+- **فوق**: شريط الفرضيات المختارة (4 بطاقات صغيرة)
+- **يمين تحت**: دفتر الملاحظات (floating button - موجود أصلا)
+- **تحت**: أزرار الغرف (بيانات / أدلة / صالة / مكتب) - بس بيعرض اللي اتفتح فقط
+- **وسط**: زر "تابع التحليل" + رسالة سياقية - يظهر في نفس الشاشة بعد ما اللاعب يخلص المطلوب
 
-**Recommended approach:** Option 1 - advance in `HypothesisSelectScreen` before navigating. This is cleaner because the phase advancement happens at the logical transition point.
+### الـ Flow الجديد (بعد اختيار الفرضيات)
 
-### Changes:
-- **`src/components/game/screens/HypothesisSelectScreen.tsx`**:
-  - Import `advancePhase` from `useGame()`
-  - In `handleStart()`, call `advancePhase()` twice before `onComplete()` to move from phase 0 to phase 2
-  - This ensures that when AnalystHub loads, `currentPhaseIndex` is 2, `ctaLabel` is "Start with Data", and D1+D2 are unlocked
+```text
+اختيار 4 فرضيات
+    |
+    v
+رسالة: "ابدأ بالبيانات، خد فكرة عامة عن اللي اتغير الأسبوع ده"
+زر: "تابع التحليل" -> يروح direct على غرفة البيانات
+    |
+    v
+غرفة البيانات (D1 + D2 مفتوحين)
+   اللاعب يفتح الأدلة
+   بعد ما يفتحهم: يظهر زر + رسالة في نفس الشاشة
+   رسالة: "ممكن تقابل فريق العمل... اسمع ملاحظاتهم"
+   زر: "تابع التحليل"
+    |
+    v
+الصالة (خالد + نورة مفتوحين)
+   بعد المقابلات: رسالة + زر
+   رسالة: "اتفتح ملف جديد في غرفة الأدلة"
+   زر: "تابع التحليل"
+    |
+    v
+... وهكذا لكل مرحلة
+```
 
----
+**مهم**: اللاعب يقدر يتنقل بين الغرف بحرية (أزرار التنقل تحت)، بس الزر "تابع" هو اللي بيحرك القصة للأمام.
 
-## Problem 2: UI Freeze After Replaying Scenes
+## التفاصيل التقنية
 
-**Root Cause:** The `EnhancedDialogue` component uses `AnimatePresence` with a `fixed inset-0 z-40` backdrop div. When the OfficeScreen unmounts the replay dialogue (setting `showReplayScenes = false`), the parent conditional render removes the component immediately without waiting for AnimatePresence exit animations. This can leave ghost DOM elements blocking interaction.
+### 1. إصلاح Bug الـ CTA (مشكلة routing)
 
-Additionally, the OfficeScreen wraps the replay in its own `motion.div` with `fixed inset-0 z-50 bg-black/50` which also needs proper cleanup.
+**الملف**: `AnalystHubScreen.tsx` (سطر 29-38)
 
-### Changes:
-- **`src/components/game/screens/OfficeScreen.tsx`**:
-  - Wrap the replay scenes conditional block in `AnimatePresence` to ensure proper exit animation cleanup
-  - Same for the extra dialogue and conclusion dialogue blocks
+**المشكلة**: `handleCTA` بيقرأ `PHASES[state.currentPhaseIndex + 1]` لكن بيستخدم الـ `ctaTarget` بتاع المرحلة الجديدة بدل الحالية. يعني لما الـ phase الحالية هي 2 (ctaTarget = "dashboard")، بيعمل advance فيروح phase 3 (ctaTarget = "floor") وبيستخدم floor!
 
-- **`src/components/game/EnhancedDialogue.tsx`**:
-  - Add a safety mechanism: reset internal state (`internalIndex`, `displayedText`) when `isActive` changes to false
-  - Ensure the backdrop exit animation completes before unmounting
+**الحل**: نقرأ `ctaTarget` من المرحلة الحالية قبل ما نعمل advance:
+```text
+handleCTA:
+  1. target = PHASES[currentPhaseIndex].ctaTarget  // احفظ الهدف الحالي
+  2. advancePhase()                                  // اتقدم
+  3. toast(PHASES[currentPhaseIndex + 1].toastMessage) // اعرض رسالة المرحلة الجديدة
+  4. navigate(target)                                 // روح للهدف الصح
+```
 
----
+### 2. إنشاء GameOverlay component جديد
 
-## Summary of File Changes
+**ملف جديد**: `src/components/game/GameOverlay.tsx`
 
-| File | Change |
+هيظهر في كل الشاشات (بيانات / أدلة / صالة / مكتب) وفيه:
+
+**فوق الشاشة**: شريط الفرضيات الأربعة المختارة (بطاقات صغيرة)
+
+**تحت الشاشة**: أزرار التنقل بين الغرف المتاحة:
+- البيانات (لو unlockedDashboard > 0)
+- الأدلة (لو unlockedEvidence > 0)
+- الصالة (لو unlockedInterviews > 0)
+- المكتب (دايما متاح)
+- غرفة التحليل (تظهر بعد المرحلة 11)
+
+**وسط**: "Continue Banner" - زر تابع التحليل + رسالة سياقية
+- يظهر فقط لما المرحلة الحالية خلصت (اللاعب شاف كل الأدلة المطلوبة)
+- الرسالة من `PHASES[currentPhaseIndex].toastMessage`
+- الزر بيعمل `advancePhase()` وبينقل للشاشة المطلوبة
+
+**عرض التبديل**: بعد المرحلة 4، يظهر banner مرة واحدة:
+- "تقدر تبدل فرضية واحدة لو حاسس إن اتجاهك اتغير"
+- زرين: "بدّل" و "كمّل بدون تبديل"
+- لو ضغط "كمّل" أو "بدّل": الـ banner يختفي ولا يظهر تاني
+
+### 3. تعديل PHASES - رسائل السياق
+
+**الملف**: `src/data/case1.ts`
+
+تعديل `toastMessage` لكل مرحلة ليكون سياقي مش hint:
+
+| المرحلة | الرسالة الحالية | الرسالة الجديدة |
+|---|---|---|
+| 2 (بعد البيانات) | "ممكن تقابل فريق العمل..." | "خالد ونورة موجودين في الصالة... ممكن يكون عندهم ملاحظات" |
+| 3 (بعد الصالة) | "اتفتح ملف جديد في غرفة الأدلة" | "اتفتح ملف جديد في غرفة الأدلة" |
+| 4 (بعد K6) | "تقدر تبدل فرضية..." | (يتعامل معاه الـ swap UI مش toast) |
+| 5 (بعد K1+K3) | "في بيانات أدق ممكن تفيدك" | "ظهر تقرير جديد في غرفة البيانات" |
+| 6 (بعد K2) | "في نقطة عن ضغط الكاشير..." | "ظهرت بيانات جديدة في غرفة البيانات" |
+| 7 (بعد D3) | "في تقرير تسوية..." | "اتفتح ملف جديد في غرفة الأدلة" |
+| 8 (بعد K5) | "في ورقة بتوضح بعد البيع..." | "اتفتح مستند جديد في غرفة الأدلة" |
+| 9 (بعد K4) | "معلومة من زبونة..." | "فيه حد في الصالة عايز يقولك حاجة" |
+| 10 (بعد الزبونة) | -- | "خلصت جمع الأدلة... روح غرفة التحليل وابدأ المصفوفة" |
+
+وأيضا إضافة `ctaMessage` لكل مرحلة (الجملة اللي تظهر فوق زر التابع):
+
+| المرحلة | ctaMessage |
 |---|---|
-| `HypothesisSelectScreen.tsx` | Call `advancePhase()` twice in `handleStart()` to set phase to 2 before navigating to hub |
-| `OfficeScreen.tsx` | Wrap dialogue overlays in `AnimatePresence` for proper cleanup |
-| `EnhancedDialogue.tsx` | Reset internal state when deactivated to prevent ghost renders |
+| 2 | "ابدأ بالبيانات، خد فكرة عامة عن اللي اتغير الأسبوع ده" |
+| 3 | "خالد ونورة موجودين في الصالة" |
+| 4 | "اتفتح ملف جديد في غرفة الأدلة" |
+| 5 | "فيه مستندات تانية اتفتحت في غرفة الأدلة" |
+| 6 | "ظهر تقرير جديد في غرفة البيانات" |
+| 7 | "ظهرت بيانات جديدة في غرفة البيانات" |
+| 8 | "اتفتح ملف جديد في غرفة الأدلة" |
+| 9 | "اتفتح مستند جديد في غرفة الأدلة" |
+| 10 | "فيه حد في الصالة عايز يقولك حاجة" |
+| 11 | "خلصت جمع الأدلة... روح غرفة التحليل" |
 
-## Technical Detail
+### 4. تعديل HypothesisSelectScreen
 
-The `advancePhase()` calls will:
-- First call: phase 0 -> 1, unlocks nothing (hypothesis-select phase)
-- Second call: phase 1 -> 2, unlocks D1, D2 (dashboard), N1, N2 (noise evidence), and sets `ctaLabel = "Start from Data"` and `ctaTarget = "dashboard"`
+**الملف**: `src/components/game/screens/HypothesisSelectScreen.tsx`
 
-After this fix, the Analyst Hub will show:
-- The CTA button "Start from Data" pointing to the dashboard
-- Navigation buttons for data/evidence/floor will appear as items unlock
-- The phase counter will show "2/11" instead of "0/11"
+بعد اختيار 4 فرضيات والضغط على "ابدأ التحليل":
+- بدل ما يروح للـ Hub، يروح direct على غرفة البيانات
+- يعمل advancePhase() مرتين (0->1->2) عشان يفتح D1+D2
+- الـ flow: hypothesis-select -> dashboard (مباشرة)
+
+### 5. تعديل كل شاشات الغرف
+
+كل شاشة (DashboardScreen, EvidenceScreen, FloorScreen, OfficeScreen) هتتعدل:
+
+**إزالة**: زر "مركز التحليل" من تحت كل شاشة
+**إضافة**: GameOverlay component بدله
+
+الـ GameOverlay هيحتوي:
+- شريط الفرضيات فوق
+- أزرار الغرف تحت
+- زر "تابع التحليل" + رسالة (يظهر لما المرحلة تخلص)
+
+**متى يظهر زر "تابع"؟**
+- لما اللاعب يكون في الشاشة الصح ويكون شاف كل الأدلة المطلوبة في المرحلة الحالية
+- مثلا في المرحلة 2 (D1+D2): لما يكون في غرفة البيانات وشاف D1 وD2
+
+### 6. إصلاح UI Freeze
+
+**الملف**: `src/components/game/EnhancedDialogue.tsx`
+
+المشكلة الأساسية: الـ `AnimatePresence` جوا الـ `EnhancedDialogue` بيعمل `fixed inset-0 z-40` backdrop. لما الـ component يتشال من الـ DOM، الـ backdrop بيفضل.
+
+**الحل**: 
+- الـ `EnhancedDialogue` ما يعملش backdrop خاص بيه
+- الـ backdrop يكون مسؤولية الـ parent (اللي هو `OfficeScreen`) وده بيحصل أصلا بالـ `AnimatePresence` wrapper
+- نشيل الـ `<motion.div className="fixed inset-0 z-40">` من جوا EnhancedDialogue
+- ونخلي الـ z-index بتاع الـ dialogue box نفسه يكون عالي بدون backdrop منفصل
+
+### 7. AnalystHubScreen يتحول لـ AnalysisRoom
+
+بدل ما يكون صفحة UI، يتحول لغرفة تحليل:
+- فيها background image (analysis-lab)
+- فيها hotspots: الدفتر، المصفوفة، الفرضيات
+- فيها الـ GameOverlay زي باقي الغرف
+- تظهر فقط لما المرحلة توصل 11 (وقت المصفوفة)
+- قبل كده، اللاعب ما بيحتاجش يروحها - كل حاجة موزعة
+
+### 8. تعديل Index.tsx
+
+- بعد hypothesis-select -> يروح dashboard مش analyst-hub
+- الـ analyst-hub يتحول لـ analysis (غرفة التحليل)
+- شيل analyst-hub من الـ screens أو خليه كـ alias للـ analysis
+
+## ملخص الملفات
+
+| الملف | التعديل |
+|---|---|
+| `src/data/case1.ts` | تعديل PHASES: إضافة ctaMessage، تعديل toastMessage |
+| `src/components/game/GameOverlay.tsx` | **جديد**: شريط فرضيات + أزرار غرف + زر تابع + swap UI |
+| `src/components/game/EnhancedDialogue.tsx` | إصلاح: شيل الـ backdrop الداخلي |
+| `src/components/game/screens/HypothesisSelectScreen.tsx` | تعديل: يروح dashboard بدل analyst-hub |
+| `src/components/game/screens/DashboardScreen.tsx` | تعديل: يستخدم GameOverlay بدل NavigationButton |
+| `src/components/game/screens/EvidenceScreen.tsx` | تعديل: يستخدم GameOverlay |
+| `src/components/game/screens/FloorScreen.tsx` | تعديل: يستخدم GameOverlay |
+| `src/components/game/screens/OfficeScreen.tsx` | تعديل: يستخدم GameOverlay |
+| `src/components/game/screens/AnalystHubScreen.tsx` | تعديل كبير: يتحول لغرفة تحليل (المصفوفة) |
+| `src/pages/Index.tsx` | تعديل: flow بعد hypothesis-select يروح dashboard |
+| `src/components/game/FloatingNotebook.tsx` | إضافة: Activity Log (سجل الإجراءات) |
