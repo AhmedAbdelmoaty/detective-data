@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { Briefcase, FileText, BookOpen } from "lucide-react";
 import { InteractiveRoom } from "../InteractiveRoom";
 import { EnhancedDialogue } from "../EnhancedDialogue";
@@ -120,26 +120,32 @@ export const OfficeScreen = ({ onNavigate }: OfficeScreenProps) => {
         </div>
       </InteractiveRoom>
 
-      {showReplayScenes && currentReplayScene && (
-        <motion.div className="fixed inset-0 z-50 bg-black/50" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-          <EnhancedDialogue dialogues={currentReplayScene.dialogues} isActive={true} onComplete={handleReplayComplete}
-            onClose={() => setShowReplayScenes(false)} allowClickOutside={true} onSaveNote={handleSaveNote} savedNoteIds={savedNoteIds} />
-        </motion.div>
-      )}
+      <AnimatePresence>
+        {showReplayScenes && currentReplayScene && (
+          <motion.div className="fixed inset-0 z-50 bg-black/50" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+            <EnhancedDialogue dialogues={currentReplayScene.dialogues} isActive={true} onComplete={handleReplayComplete}
+              onClose={() => setShowReplayScenes(false)} allowClickOutside={true} onSaveNote={handleSaveNote} savedNoteIds={savedNoteIds} />
+          </motion.div>
+        )}
+      </AnimatePresence>
 
-      {showExtraDialogue && (
-        <motion.div className="fixed inset-0 z-50 bg-black/50" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-          <EnhancedDialogue dialogues={ABU_SAEED_EXTRA_DIALOGUES} isActive={true} onComplete={() => setShowExtraDialogue(false)}
-            onClose={() => setShowExtraDialogue(false)} allowClickOutside={true} />
-        </motion.div>
-      )}
+      <AnimatePresence>
+        {showExtraDialogue && (
+          <motion.div className="fixed inset-0 z-50 bg-black/50" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+            <EnhancedDialogue dialogues={ABU_SAEED_EXTRA_DIALOGUES} isActive={true} onComplete={() => setShowExtraDialogue(false)}
+              onClose={() => setShowExtraDialogue(false)} allowClickOutside={true} />
+          </motion.div>
+        )}
+      </AnimatePresence>
 
-      {showConclusionDialogue && ending && (
-        <motion.div className="fixed inset-0 z-50 bg-black/50" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-          <EnhancedDialogue dialogues={getEndingDialogues()} isActive={true}
-            onComplete={() => { setShowConclusionDialogue(false); onNavigate("result"); }} allowClickOutside={false} />
-        </motion.div>
-      )}
+      <AnimatePresence>
+        {showConclusionDialogue && ending && (
+          <motion.div className="fixed inset-0 z-50 bg-black/50" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+            <EnhancedDialogue dialogues={getEndingDialogues()} isActive={true}
+              onComplete={() => { setShowConclusionDialogue(false); onNavigate("result"); }} allowClickOutside={false} />
+          </motion.div>
+        )}
+      </AnimatePresence>
     </>
   );
 };

@@ -9,10 +9,12 @@ interface HypothesisSelectScreenProps {
 }
 
 export const HypothesisSelectScreen = ({ onComplete }: HypothesisSelectScreenProps) => {
-  const { state, toggleHypothesis, isHypothesisSelected } = useGame();
+  const { state, toggleHypothesis, isHypothesisSelected, advancePhase } = useGame();
 
   const handleStart = () => {
     if (state.selectedHypotheses.length === 4) {
+      advancePhase(); // 0 -> 1 (skip scenes phase)
+      advancePhase(); // 1 -> 2 (data phase, unlocks D1+D2)
       onComplete();
     }
   };
