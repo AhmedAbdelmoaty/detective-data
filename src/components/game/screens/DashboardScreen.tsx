@@ -5,44 +5,57 @@ import { InteractiveRoom } from "../InteractiveRoom";
 import { NavigationButton } from "../NavigationButton";
 import { useGame } from "@/contexts/GameContext";
 import { useSound } from "@/hooks/useSoundEffects";
-import { DASHBOARD_DATA } from "@/data/case1";
+import { DASHBOARD_DATA, EVIDENCE_ITEMS } from "@/data/case1";
 import { toast } from "sonner";
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from "recharts";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line } from "recharts";
 import analysisRoomBg from "@/assets/rooms/analysis-room.png";
 
 interface DashboardScreenProps {
   onNavigate: (screen: string) => void;
 }
 
-// Hotspots placed on the room image
-const hotspots = [
-  { id: "item-0", x: 47, y: 15, width: 16, height: 14, label: "عداد الباب - حركة الزباين", icon: "📊" },
-  { id: "item-1", x: 11, y: 21, width: 14, height: 14, label: "ملخص الفواتير", icon: "🧾" },
-  { id: "item-2", x: 83, y: 43, width: 14, height: 14, label: "فواتير vs حركة الزباين", icon: "📈" },
-];
-
 export const DashboardScreen = ({ onNavigate }: DashboardScreenProps) => {
-  const { state, addToNotebook, isInNotebook, viewDashboardItem } = useGame();
+  const { state, addToNotebook, isInNotebook, viewDashboardItem, viewEvidence, isEvidenceViewed } = useGame();
   const { playSound } = useSound();
   const [activeItem, setActiveItem] = useState<string | null>(null);
 
+  // Combine dashboard items + K2 (which shows in data room)
+  const k2Evidence = EVIDENCE_ITEMS.find(e => e.id === "K2");
+  const allItems = [...DASHBOARD_DATA.map(d => ({ ...d, isK2: false }))];
+  if (k2Evidence && state.unlockedDashboard.includes("K2")) {
+    allItems.push({ id: "K2", name: k2Evidence.name, description: k2Evidence.description, saveId: k2Evidence.saveId, saveText: k2Evidence.saveText, type: "table" as any, data: k2Evidence.data, isK2: true } as any);
+  }
+
+  const unlockedItems = allItems.filter(item => state.unlockedDashboard.includes(item.id));
+
+  const hotspots = unlockedItems.map((item, i) => {
+    const positions = [
+      { x: 15, y: 15 }, { x: 47, y: 15 }, { x: 80, y: 15 }, { x: 47, y: 50 },
+    ];
+    const pos = positions[i] || { x: 50, y: 50 };
+    return { id: item.id, x: pos.x, y: pos.y, width: 16, height: 14, label: `📊 ${item.name}`, icon: "📊" };
+  });
+
   const handleHotspotClick = (hotspotId: string) => {
-    const index = parseInt(hotspotId.replace("item-", ""));
     setActiveItem(hotspotId);
-    viewDashboardItem(DASHBOARD_DATA[index]?.id || "");
+    if (hotspotId === "K2") {
+      if (!isEvidenceViewed("K2")) viewEvidence("K2");
+    } else {
+      viewDashboardItem(hotspotId);
+    }
     playSound("click");
   };
 
-  const handleSave = (item: typeof DASHBOARD_DATA[0]) => {
-    if (!isInNotebook(item.saveId)) {
-      addToNotebook({ text: item.saveText, source: "dashboard", sourceId: item.saveId });
+  const handleSave = (saveId: string, saveText: string) => {
+    if (!isInNotebook(saveId)) {
+      const source = saveId.startsWith("K") ? "evidence" : "dashboard";
+      addToNotebook({ text: saveText, source: source as any, sourceId: saveId });
       toast.success("تم الحفظ في الدفتر!");
       playSound("collect");
     }
   };
 
-  const activeIndex = activeItem ? parseInt(activeItem.replace("item-", "")) : -1;
-  const currentItem = activeIndex >= 0 ? DASHBOARD_DATA[activeIndex] : null;
+  const currentItem = unlockedItems.find(item => item.id === activeItem);
 
   const renderOverlay = () => {
     if (!currentItem) return undefined;
@@ -56,77 +69,73 @@ export const DashboardScreen = ({ onNavigate }: DashboardScreenProps) => {
             {currentItem.name}
           </h3>
           <div className="flex items-center gap-2">
-            <button
-              onClick={() => handleSave(currentItem)}
-              disabled={saved}
-              className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-bold ${
-                saved ? "bg-neon-green/20 text-neon-green" : "bg-primary text-primary-foreground hover:bg-primary/90"
-              }`}
-            >
+            <button onClick={() => handleSave(currentItem.saveId, currentItem.saveText)} disabled={saved}
+              className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-bold ${saved ? "bg-neon-green/20 text-neon-green" : "bg-primary text-primary-foreground hover:bg-primary/90"}`}>
               {saved ? <Check className="w-4 h-4" /> : <BookmarkPlus className="w-4 h-4" />}
               {saved ? "محفوظ" : "احفظ"}
             </button>
-            <button onClick={() => setActiveItem(null)} className="p-2 rounded-lg hover:bg-secondary/50 text-muted-foreground">
-              <X className="w-5 h-5" />
-            </button>
+            <button onClick={() => setActiveItem(null)} className="p-2 rounded-lg hover:bg-secondary/50 text-muted-foreground"><X className="w-5 h-5" /></button>
           </div>
         </div>
         <p className="text-sm text-muted-foreground mb-4">{currentItem.description}</p>
 
-        {currentItem.type === "bar" && (
+        {currentItem.id === "D1" && (
           <div className="h-[280px] w-full" dir="ltr">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={currentItem.data.labels.map((label: string, i: number) => ({
-                day: label,
-                thisWeek: currentItem.data.thisWeek[i],
-                lastWeek: currentItem.data.lastWeek[i],
-              }))}>
+              <BarChart data={currentItem.data.labels.map((label: string, i: number) => ({ name: label, value: currentItem.data.values[i] }))}>
                 <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                <XAxis dataKey="day" stroke="hsl(var(--muted-foreground))" fontSize={12} />
+                <XAxis dataKey="name" stroke="hsl(var(--muted-foreground))" fontSize={11} />
                 <YAxis stroke="hsl(var(--muted-foreground))" fontSize={12} />
                 <Tooltip contentStyle={{ backgroundColor: 'hsl(var(--card))', borderColor: 'hsl(var(--border))' }} />
-                <Legend />
-                <Bar dataKey="thisWeek" name="هذا الأسبوع" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
-                <Bar dataKey="lastWeek" name="الأسبوع الماضي" fill="hsl(var(--muted-foreground))" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="value" name="صافي المبيعات" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </div>
         )}
 
-        {currentItem.type === "table" && (
-          <div className="grid grid-cols-2 gap-4">
-            <div className="p-4 bg-secondary/30 rounded-lg text-center">
-              <p className="text-2xl font-bold text-foreground">{currentItem.data.totalInvoices}</p>
-              <p className="text-sm text-muted-foreground">فاتورة مسجلة</p>
-            </div>
-            <div className="p-4 bg-secondary/30 rounded-lg text-center">
-              <p className="text-2xl font-bold text-foreground">{currentItem.data.totalValue.toLocaleString()}</p>
-              <p className="text-sm text-muted-foreground">ر.س إجمالي</p>
-            </div>
-            <div className="p-4 bg-secondary/30 rounded-lg text-center">
-              <p className="text-2xl font-bold text-foreground">{currentItem.data.avgPerInvoice}</p>
-              <p className="text-sm text-muted-foreground">ر.س متوسط الفاتورة</p>
-            </div>
-            <div className="p-4 bg-secondary/30 rounded-lg text-center">
-              <p className="text-2xl font-bold text-primary">{currentItem.data.cashPercentage}%</p>
-              <p className="text-sm text-muted-foreground">نسبة الكاش</p>
-            </div>
+        {currentItem.id === "D2" && (
+          <div className="h-[280px] w-full" dir="ltr">
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={currentItem.data.labels.map((label: string, i: number) => ({ day: label, count: currentItem.data.values[i] }))}>
+                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                <XAxis dataKey="day" stroke="hsl(var(--muted-foreground))" fontSize={10} />
+                <YAxis stroke="hsl(var(--muted-foreground))" fontSize={12} domain={[75, 95]} />
+                <Tooltip contentStyle={{ backgroundColor: 'hsl(var(--card))', borderColor: 'hsl(var(--border))' }} />
+                <Line type="monotone" dataKey="count" name="عدد الفواتير" stroke="hsl(var(--primary))" strokeWidth={2} dot={{ r: 3 }} />
+              </LineChart>
+            </ResponsiveContainer>
           </div>
         )}
 
-        {currentItem.type === "grouped-bar" && (
+        {currentItem.id === "D3" && (
           <div className="h-[280px] w-full" dir="ltr">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={currentItem.data.periods}>
+              <BarChart data={currentItem.data.labels.map((label: string, i: number) => ({ time: label, count: currentItem.data.values[i] }))}>
                 <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                <XAxis dataKey="time" stroke="hsl(var(--muted-foreground))" fontSize={11} />
+                <XAxis dataKey="time" stroke="hsl(var(--muted-foreground))" fontSize={10} />
                 <YAxis stroke="hsl(var(--muted-foreground))" fontSize={12} />
                 <Tooltip contentStyle={{ backgroundColor: 'hsl(var(--card))', borderColor: 'hsl(var(--border))' }} />
-                <Legend />
-                <Bar dataKey="invoices" name="فواتير مسجلة" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
-                <Bar dataKey="footTraffic" name="حركة الزباين" fill="hsl(var(--accent))" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="count" name="فواتير" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
+          </div>
+        )}
+
+        {currentItem.id === "K2" && (
+          <div className="overflow-auto rounded-lg border border-border">
+            <table className="w-full text-sm"><thead className="bg-secondary/50"><tr>
+              <th className="text-right p-3 text-foreground">الصنف</th>
+              <th className="text-right p-3 text-foreground">7–13 فبراير</th>
+              <th className="text-right p-3 text-foreground">14–20 فبراير</th>
+            </tr></thead><tbody>
+              {currentItem.data.rows.map((row: any, i: number) => (
+                <tr key={i} className="border-b border-border/50">
+                  <td className="p-3 text-foreground">{row.item}</td>
+                  <td className="p-3 text-foreground">{row.prev}</td>
+                  <td className="p-3 text-foreground">{row.current}</td>
+                </tr>
+              ))}
+            </tbody></table>
           </div>
         )}
       </div>
@@ -134,30 +143,17 @@ export const DashboardScreen = ({ onNavigate }: DashboardScreenProps) => {
   };
 
   return (
-    <InteractiveRoom
-      backgroundImage={analysisRoomBg}
-      hotspots={hotspots}
-      onHotspotClick={handleHotspotClick}
-      activeHotspot={activeItem}
-      overlayContent={activeItem ? renderOverlay() : undefined}
-      onCloseOverlay={() => setActiveItem(null)}
-    >
-      {/* Score */}
+    <InteractiveRoom backgroundImage={analysisRoomBg} hotspots={hotspots} onHotspotClick={handleHotspotClick} activeHotspot={activeItem} overlayContent={activeItem ? renderOverlay() : undefined} onCloseOverlay={() => setActiveItem(null)}>
       <motion.div className="absolute top-4 right-4 z-20 flex items-center gap-3">
         <div className="px-4 py-2 rounded-lg bg-background/80 backdrop-blur-sm border border-border">
-          <span className="text-muted-foreground text-sm">بيانات: {state.viewedDashboard.length}/3</span>
+          <span className="text-muted-foreground text-sm">بيانات: {unlockedItems.length}</span>
         </div>
         <div className="px-4 py-2 rounded-lg bg-background/80 backdrop-blur-sm border border-border">
           <span className="text-primary font-bold">📓 {state.notebook.length}</span>
         </div>
       </motion.div>
-
-      {/* Navigation */}
       <div className="absolute bottom-8 left-0 right-0 z-20 flex justify-center gap-4 px-4">
-        <NavigationButton iconEmoji="🏢" label="المكتب" onClick={() => onNavigate("office")} />
-        <NavigationButton iconEmoji="📁" label="الأدلة" onClick={() => onNavigate("evidence")} />
-        <NavigationButton iconEmoji="👥" label="الاجتماعات" onClick={() => onNavigate("interrogation")} />
-        <NavigationButton iconEmoji="🔬" label="التحليل" onClick={() => onNavigate("analysis")} />
+        <NavigationButton iconEmoji="🔬" label="مركز التحليل" onClick={() => onNavigate("analyst-hub")} />
       </div>
     </InteractiveRoom>
   );

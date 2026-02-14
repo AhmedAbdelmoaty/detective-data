@@ -1,12 +1,12 @@
 import { useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import { Briefcase, FileText, BookOpen, BarChart3, Users, Microscope } from "lucide-react";
+import { motion } from "framer-motion";
+import { Briefcase, FileText, BookOpen } from "lucide-react";
 import { InteractiveRoom } from "../InteractiveRoom";
 import { EnhancedDialogue } from "../EnhancedDialogue";
 import { NavigationButton } from "../NavigationButton";
 import { useGame } from "@/contexts/GameContext";
 import { useSound } from "@/hooks/useSoundEffects";
-import { CASE_INFO, CHARACTERS, INTRO_DIALOGUES, ABU_SAEED_EXTRA_DIALOGUES, ENDINGS, HYPOTHESES } from "@/data/case1";
+import { CASE_INFO, INTRO_SCENES, ABU_SAEED_EXTRA_DIALOGUES, ENDINGS, HYPOTHESES } from "@/data/case1";
 import detectiveOffice from "@/assets/rooms/detective-office.png";
 
 interface OfficeScreenProps {
@@ -14,27 +14,24 @@ interface OfficeScreenProps {
 }
 
 export const OfficeScreen = ({ onNavigate }: OfficeScreenProps) => {
-  const { state, getProgress, markIntroSeen, addToNotebook, isInNotebook } = useGame();
+  const { state, addToNotebook, isInNotebook } = useGame();
   const { playSound } = useSound();
   const [activePanel, setActivePanel] = useState<string | null>(null);
-  const [showDialogue, setShowDialogue] = useState(!state.hasSeenIntroDialogue);
-  const [dialogueComplete, setDialogueComplete] = useState(state.hasSeenIntroDialogue);
+  const [showReplayScenes, setShowReplayScenes] = useState(false);
+  const [replaySceneIndex, setReplaySceneIndex] = useState(0);
   const [showExtraDialogue, setShowExtraDialogue] = useState(false);
   const [showConclusionDialogue, setShowConclusionDialogue] = useState(false);
-  const [showReplayDialogue, setShowReplayDialogue] = useState(false);
 
-  // Dynamic hotspots based on dialogue completion
   const hotspots = [
     { id: "case-board", x: 20, y: 10, width: 55, height: 45, label: "لوحة القضية", icon: "📋" },
-    { id: "abuSaeed", x: 0, y: 30, width: 18, height: 50, label: dialogueComplete ? "🔄 إعادة المحادثة مع أبو سعيد" : "أبو سعيد", icon: "👔" },
-    ...(dialogueComplete ? [{ id: "extra-questions", x: 75, y: 35, width: 20, height: 30, label: "أسئلة إضافية لأبو سعيد", icon: "❓" }] : []),
+    { id: "replay-scenes", x: 0, y: 30, width: 18, height: 50, label: "🔄 إعادة مشاهد البداية", icon: "🔄" },
+    { id: "extra-questions", x: 75, y: 35, width: 20, height: 30, label: "أسئلة إضافية لأبو سعيد", icon: "❓" },
   ];
 
   const handleHotspotClick = (id: string) => {
-    if (!dialogueComplete) return;
-    if (id === "abuSaeed") {
-      // After completion, replay intro dialogue
-      setShowReplayDialogue(true);
+    if (id === "replay-scenes") {
+      setReplaySceneIndex(0);
+      setShowReplayScenes(true);
     } else if (id === "extra-questions") {
       setShowExtraDialogue(true);
     } else {
@@ -43,31 +40,19 @@ export const OfficeScreen = ({ onNavigate }: OfficeScreenProps) => {
     playSound("click");
   };
 
-  const handleDialogueComplete = () => {
-    setDialogueComplete(true);
-    setShowDialogue(false);
-    markIntroSeen();
-  };
-
   const handleSaveNote = (saveId: string, saveText: string) => {
-    addToNotebook({ text: saveText, source: "interview", sourceId: saveId });
+    addToNotebook({ text: saveText, source: "story", sourceId: saveId });
   };
 
   const savedNoteIds = state.notebook.map(n => n.sourceId);
-  const progress = getProgress();
   const canSubmitReport = state.finalHypothesis !== null && state.gameStatus === "solved";
 
-  const handleStartConclusion = () => {
-    setShowConclusionDialogue(true);
-  };
-
   const ending = state.gameStatus === "solved" ? (() => {
-    const { selectedHypotheses, finalHypothesis, notebook } = state;
-    if (!selectedHypotheses.includes("H3")) return ENDINGS.find(e => e.type === "missing");
-    const h = finalHypothesis;
+    if (!state.selectedHypotheses.includes("H3")) return ENDINGS.find(e => e.type === "missing");
+    const h = state.finalHypothesis;
     const hypothesis = h ? { isCorrect: h === "H3" } : null;
     if (!hypothesis?.isCorrect) return ENDINGS.find(e => e.type === "wrong");
-    const diagCount = ["E1", "E2", "I5"].filter(id => notebook.some(n => n.sourceId === id)).length;
+    const diagCount = ["K4", "K2", "I3"].filter(id => state.notebook.some(n => n.sourceId === id)).length;
     return diagCount >= 2 ? ENDINGS.find(e => e.type === "excellent") : ENDINGS.find(e => e.type === "partial");
   })() : null;
 
@@ -75,54 +60,38 @@ export const OfficeScreen = ({ onNavigate }: OfficeScreenProps) => {
     if (!ending) return [];
     if (ending.type === "wrong" && state.finalHypothesis) {
       const chosenH = HYPOTHESES.find(h => h.id === state.finalHypothesis);
-      return ending.abuSaeedDialogues.map(d => ({
-        ...d,
-        text: d.text.replace("{HYPOTHESIS_NAME}", chosenH?.text || ""),
-      }));
+      return ending.abuSaeedDialogues.map(d => ({ ...d, text: d.text.replace("{HYPOTHESIS_NAME}", chosenH?.text || "") }));
     }
     return ending.abuSaeedDialogues;
+  };
+
+  const currentReplayScene = INTRO_SCENES[replaySceneIndex];
+  const handleReplayComplete = () => {
+    if (replaySceneIndex < INTRO_SCENES.length - 1) {
+      setReplaySceneIndex(prev => prev + 1);
+    } else {
+      setShowReplayScenes(false);
+    }
   };
 
   const renderPanelContent = () => {
     if (activePanel === "case-board") {
       return (
         <div className="bg-background/95 backdrop-blur-xl border border-primary/30 rounded-2xl p-6 max-w-2xl w-full max-h-[85vh] overflow-auto">
-          <h3 className="text-xl font-bold text-foreground mb-4 flex items-center gap-2">
-            <Briefcase className="w-5 h-5 text-primary" />
-            {CASE_INFO.title}
-          </h3>
+          <h3 className="text-xl font-bold text-foreground mb-4 flex items-center gap-2"><Briefcase className="w-5 h-5 text-primary" />{CASE_INFO.title}</h3>
           <p className="text-muted-foreground mb-4">{CASE_INFO.description}</p>
           <div className="p-4 rounded-lg bg-secondary/50 border border-border mb-4">
-            <h4 className="font-bold text-foreground mb-2 flex items-center gap-2">
-              <FileText className="w-4 h-4 text-primary" />
-              ملخص القضية
-            </h4>
-            <p className="text-sm text-muted-foreground whitespace-pre-line">{CASE_INFO.briefing}</p>
+            <h4 className="font-bold text-foreground mb-2 flex items-center gap-2"><FileText className="w-4 h-4 text-primary" />ملخص القضية</h4>
+            <p className="text-sm text-muted-foreground">{CASE_INFO.summary}</p>
+            <p className="text-xs text-muted-foreground mt-2">📅 {CASE_INFO.date}</p>
           </div>
-
           <div className="p-4 rounded-lg bg-accent/10 border border-accent/30">
-            <h4 className="font-bold text-foreground mb-2 flex items-center gap-2">
-              <BookOpen className="w-4 h-4 text-accent" />
-              دفتر الملاحظات ({state.notebook.length} ملاحظات)
-            </h4>
-            {state.notebook.length === 0 ? (
-              <p className="text-sm text-muted-foreground">لم تحفظ أي ملاحظات بعد. اجمع الأدلة وتكلم مع الشخصيات!</p>
-            ) : (
+            <h4 className="font-bold text-foreground mb-2 flex items-center gap-2"><BookOpen className="w-4 h-4 text-accent" />دفتر الملاحظات ({state.notebook.length})</h4>
+            {state.notebook.length === 0 ? <p className="text-sm text-muted-foreground">لم تحفظ أي ملاحظات بعد.</p> : (
               <div className="space-y-2 max-h-40 overflow-auto">
-                {state.notebook.map(n => (
-                  <div key={n.id} className="text-sm text-foreground p-2 rounded bg-card/50 border border-border">
-                    {n.text}
-                  </div>
-                ))}
+                {state.notebook.map(n => <div key={n.id} className="text-sm text-foreground p-2 rounded bg-card/50 border border-border">{n.text}</div>)}
               </div>
             )}
-          </div>
-
-          <div className="mt-4 p-3 rounded-lg bg-primary/10 border border-primary/30 text-center">
-            <span className="text-primary font-bold">التقدم: {progress}%</span>
-            <div className="w-full h-2 bg-secondary rounded-full mt-2">
-              <div className="h-full bg-primary rounded-full transition-all" style={{ width: `${progress}%` }} />
-            </div>
           </div>
         </div>
       );
@@ -132,98 +101,43 @@ export const OfficeScreen = ({ onNavigate }: OfficeScreenProps) => {
 
   return (
     <>
-      <InteractiveRoom
-        backgroundImage={detectiveOffice}
-        hotspots={hotspots}
-        onHotspotClick={handleHotspotClick}
-        activeHotspot={activePanel}
-        overlayContent={activePanel ? renderPanelContent() : undefined}
-        onCloseOverlay={() => setActivePanel(null)}
-      >
-        {/* Score */}
+      <InteractiveRoom backgroundImage={detectiveOffice} hotspots={hotspots} onHotspotClick={handleHotspotClick}
+        activeHotspot={activePanel} overlayContent={activePanel ? renderPanelContent() : undefined} onCloseOverlay={() => setActivePanel(null)}>
         <motion.div className="absolute top-4 right-4 z-20 flex items-center gap-3">
           <div className="px-4 py-2 rounded-lg bg-background/80 backdrop-blur-sm border border-border">
             <span className="text-amber-400 font-bold">{state.score} نقطة</span>
           </div>
-          <div className="px-4 py-2 rounded-lg bg-background/80 backdrop-blur-sm border border-border">
-            <span className="text-primary font-bold">📓 {state.notebook.length}</span>
-          </div>
         </motion.div>
-
         {canSubmitReport && !showConclusionDialogue && (
-          <motion.button
-            className="absolute top-4 left-4 z-20 px-6 py-3 rounded-lg font-bold text-lg"
+          <motion.button className="absolute top-4 left-4 z-20 px-6 py-3 rounded-lg font-bold text-lg"
             style={{ background: "linear-gradient(135deg, hsl(var(--primary)), hsl(var(--accent)))" }}
-            onClick={handleStartConclusion}
-            initial={{ scale: 0 }} animate={{ scale: 1 }}
-            whileHover={{ scale: 1.05 }}
-          >
+            onClick={() => setShowConclusionDialogue(true)} initial={{ scale: 0 }} animate={{ scale: 1 }} whileHover={{ scale: 1.05 }}>
             📤 قدم التقرير لأبو سعيد
           </motion.button>
         )}
-
         <div className="absolute bottom-8 left-0 right-0 z-20 flex justify-center gap-4 px-4">
-          <NavigationButton iconEmoji="📁" label="الأدلة" onClick={() => onNavigate("evidence")} />
-          <NavigationButton iconEmoji="👥" label="الاجتماعات" onClick={() => onNavigate("interrogation")} />
-          <NavigationButton iconEmoji="📊" label="البيانات" onClick={() => onNavigate("dashboard")} />
-          <NavigationButton iconEmoji="🔬" label="التحليل" onClick={() => onNavigate("analysis")} />
+          <NavigationButton iconEmoji="🔬" label="مركز التحليل" onClick={() => onNavigate("analyst-hub")} />
         </div>
       </InteractiveRoom>
 
-      {/* Intro dialogue - first time, no click-outside */}
-      {showDialogue && !dialogueComplete && (
+      {showReplayScenes && currentReplayScene && (
         <motion.div className="fixed inset-0 z-50 bg-black/50" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-          <EnhancedDialogue
-            dialogues={INTRO_DIALOGUES}
-            isActive={true}
-            onComplete={handleDialogueComplete}
-            allowClickOutside={false}
-            onSaveNote={handleSaveNote}
-            savedNoteIds={savedNoteIds}
-          />
+          <EnhancedDialogue dialogues={currentReplayScene.dialogues} isActive={true} onComplete={handleReplayComplete}
+            onClose={() => setShowReplayScenes(false)} allowClickOutside={true} onSaveNote={handleSaveNote} savedNoteIds={savedNoteIds} />
         </motion.div>
       )}
 
-      {/* Replay intro dialogue - can close */}
-      {showReplayDialogue && (
-        <motion.div className="fixed inset-0 z-50 bg-black/50" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-          <EnhancedDialogue
-            dialogues={INTRO_DIALOGUES}
-            isActive={true}
-            onComplete={() => setShowReplayDialogue(false)}
-            onClose={() => setShowReplayDialogue(false)}
-            allowClickOutside={true}
-            onSaveNote={handleSaveNote}
-            savedNoteIds={savedNoteIds}
-          />
-        </motion.div>
-      )}
-
-      {/* Extra Abu Saeed dialogue - can close after seen */}
       {showExtraDialogue && (
         <motion.div className="fixed inset-0 z-50 bg-black/50" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-          <EnhancedDialogue
-            dialogues={ABU_SAEED_EXTRA_DIALOGUES}
-            isActive={true}
-            onComplete={() => setShowExtraDialogue(false)}
-            onClose={() => setShowExtraDialogue(false)}
-            allowClickOutside={true}
-          />
+          <EnhancedDialogue dialogues={ABU_SAEED_EXTRA_DIALOGUES} isActive={true} onComplete={() => setShowExtraDialogue(false)}
+            onClose={() => setShowExtraDialogue(false)} allowClickOutside={true} />
         </motion.div>
       )}
 
-      {/* Conclusion dialogue */}
       {showConclusionDialogue && ending && (
         <motion.div className="fixed inset-0 z-50 bg-black/50" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-          <EnhancedDialogue
-            dialogues={getEndingDialogues()}
-            isActive={true}
-            onComplete={() => {
-              setShowConclusionDialogue(false);
-              onNavigate("result");
-            }}
-            allowClickOutside={false}
-          />
+          <EnhancedDialogue dialogues={getEndingDialogues()} isActive={true}
+            onComplete={() => { setShowConclusionDialogue(false); onNavigate("result"); }} allowClickOutside={false} />
         </motion.div>
       )}
     </>

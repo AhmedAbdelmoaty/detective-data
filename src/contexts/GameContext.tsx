@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useCallback, useEffect, ReactNode } from "react";
-import { HYPOTHESES, EVIDENCE_ITEMS, ENDINGS, DIAGNOSTIC_EVIDENCE_IDS } from "@/data/case1";
+import { HYPOTHESES, EVIDENCE_ITEMS, DASHBOARD_DATA, ENDINGS, DIAGNOSTIC_EVIDENCE_IDS, PHASES } from "@/data/case1";
 
 // ============================================
 // Types
@@ -8,34 +8,46 @@ import { HYPOTHESES, EVIDENCE_ITEMS, ENDINGS, DIAGNOSTIC_EVIDENCE_IDS } from "@/
 export interface NotebookEntry {
   id: string;
   text: string;
-  source: "evidence" | "interview" | "dashboard";
+  source: "evidence" | "interview" | "dashboard" | "story";
   sourceId: string;
   timestamp: number;
 }
 
 export interface GameState {
+  // Phase tracking
+  currentPhaseIndex: number;
+
   // Navigation
-  currentPhase: "intro" | "onboarding" | "investigation" | "conclusion";
+  currentPhase: "intro" | "onboarding" | "scenes" | "hypothesis-select" | "analyst-hub" | "investigation" | "conclusion";
   hasSeenIntroDialogue: boolean;
   gameStatus: "briefing" | "playing" | "solved" | "failed";
 
   // Notebook
   notebook: NotebookEntry[];
 
+  // Unlocks
+  unlockedEvidence: string[];
+  unlockedDashboard: string[];
+  unlockedInterviews: string[];
+
   // Interviews
-  completedInterviews: string[]; // character IDs that finished all dialogue
+  completedInterviews: string[];
 
   // Evidence
-  viewedEvidence: string[]; // evidence IDs that were opened
+  viewedEvidence: string[];
 
   // Dashboard
-  viewedDashboard: string[]; // dashboard item IDs
+  viewedDashboard: string[];
 
   // Hypotheses
-  selectedHypotheses: string[]; // max 4 hypothesis IDs
+  selectedHypotheses: string[];
+
+  // Swap
+  hasUsedSwap: boolean;
 
   // ACH Matrix
-  achMatrix: Record<string, Record<string, string>>; // [evidenceId][hypothesisId] = "++"|"+"|"-"|"--"
+  achMatrix: Record<string, Record<string, string>>;
+  matrixEvidence: string[]; // evidence IDs player manually added to matrix
 
   // Final answer
   finalHypothesis: string | null;
@@ -78,11 +90,20 @@ interface GameContextType {
   toggleHypothesis: (hypothesisId: string) => void;
   isHypothesisSelected: (hypothesisId: string) => boolean;
   canSelectHypotheses: () => boolean;
+  swapHypothesis: (oldId: string, newId: string) => void;
 
   // ACH Matrix
   setMatrixCell: (evidenceId: string, hypothesisId: string, value: string) => void;
   getMatrixCell: (evidenceId: string, hypothesisId: string) => string | null;
   canUseMatrix: () => boolean;
+  addToMatrix: (sourceId: string) => void;
+  removeFromMatrix: (sourceId: string) => void;
+
+  // Phases
+  advancePhase: () => void;
+  getCTALabel: () => string;
+  getCTATarget: () => string;
+  canAdvance: () => boolean;
 
   // Final answer
   setFinalHypothesis: (hypothesisId: string) => void;
@@ -99,15 +120,21 @@ interface GameContextType {
 // ============================================
 
 const initialState: GameState = {
+  currentPhaseIndex: 0,
   currentPhase: "intro",
   hasSeenIntroDialogue: false,
   gameStatus: "briefing",
   notebook: [],
+  unlockedEvidence: [],
+  unlockedDashboard: [],
+  unlockedInterviews: [],
   completedInterviews: [],
   viewedEvidence: [],
   viewedDashboard: [],
   selectedHypotheses: [],
+  hasUsedSwap: false,
   achMatrix: {},
+  matrixEvidence: [],
   finalHypothesis: null,
   score: 0,
   currentRoom: "office",
@@ -123,7 +150,12 @@ const GameContext = createContext<GameContextType | undefined>(undefined);
 const loadState = (): GameState => {
   try {
     const saved = localStorage.getItem("detective-game-save");
-    return saved ? JSON.parse(saved) : initialState;
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      // Merge with initial state to handle new fields
+      return { ...initialState, ...parsed };
+    }
+    return initialState;
   } catch {
     return initialState;
   }
@@ -161,11 +193,7 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
         id: `note-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
         timestamp: Date.now(),
       };
-      return {
-        ...prev,
-        notebook: [...prev.notebook, newEntry],
-        score: prev.score + 10,
-      };
+      return { ...prev, notebook: [...prev.notebook, newEntry], score: prev.score + 10 };
     });
   }, []);
 
@@ -177,6 +205,7 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
     setState(prev => ({
       ...prev,
       notebook: prev.notebook.filter(n => n.sourceId !== sourceId),
+      matrixEvidence: prev.matrixEvidence.filter(id => id !== sourceId),
     }));
   }, []);
 
@@ -184,11 +213,7 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
   const viewEvidence = useCallback((evidenceId: string) => {
     setState(prev => {
       if (prev.viewedEvidence.includes(evidenceId)) return prev;
-      return {
-        ...prev,
-        viewedEvidence: [...prev.viewedEvidence, evidenceId],
-        score: prev.score + 5,
-      };
+      return { ...prev, viewedEvidence: [...prev.viewedEvidence, evidenceId], score: prev.score + 5 };
     });
   }, []);
 
@@ -200,11 +225,7 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
   const viewDashboardItem = useCallback((itemId: string) => {
     setState(prev => {
       if (prev.viewedDashboard.includes(itemId)) return prev;
-      return {
-        ...prev,
-        viewedDashboard: [...prev.viewedDashboard, itemId],
-        score: prev.score + 5,
-      };
+      return { ...prev, viewedDashboard: [...prev.viewedDashboard, itemId], score: prev.score + 5 };
     });
   }, []);
 
@@ -212,11 +233,7 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
   const markInterviewComplete = useCallback((characterId: string) => {
     setState(prev => {
       if (prev.completedInterviews.includes(characterId)) return prev;
-      return {
-        ...prev,
-        completedInterviews: [...prev.completedInterviews, characterId],
-        score: prev.score + 15,
-      };
+      return { ...prev, completedInterviews: [...prev.completedInterviews, characterId], score: prev.score + 15 };
     });
   }, []);
 
@@ -241,8 +258,21 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
   }, [state.selectedHypotheses]);
 
   const canSelectHypotheses = useCallback((): boolean => {
-    return state.notebook.length >= 3;
-  }, [state.notebook.length]);
+    return true; // Always can select in new flow
+  }, []);
+
+  const swapHypothesis = useCallback((oldId: string, newId: string) => {
+    setState(prev => {
+      if (prev.hasUsedSwap) return prev;
+      if (!prev.selectedHypotheses.includes(oldId)) return prev;
+      if (prev.selectedHypotheses.includes(newId)) return prev;
+      return {
+        ...prev,
+        selectedHypotheses: prev.selectedHypotheses.map(id => id === oldId ? newId : id),
+        hasUsedSwap: true,
+      };
+    });
+  }, []);
 
   // ACH Matrix
   const setMatrixCell = useCallback((evidenceId: string, hypothesisId: string, value: string) => {
@@ -250,10 +280,7 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
       ...prev,
       achMatrix: {
         ...prev.achMatrix,
-        [evidenceId]: {
-          ...(prev.achMatrix[evidenceId] || {}),
-          [hypothesisId]: value,
-        },
+        [evidenceId]: { ...(prev.achMatrix[evidenceId] || {}), [hypothesisId]: value },
       },
     }));
   }, []);
@@ -266,20 +293,66 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
     return state.selectedHypotheses.length === 4;
   }, [state.selectedHypotheses.length]);
 
+  const addToMatrix = useCallback((sourceId: string) => {
+    setState(prev => {
+      if (prev.matrixEvidence.includes(sourceId)) return prev;
+      return { ...prev, matrixEvidence: [...prev.matrixEvidence, sourceId] };
+    });
+  }, []);
+
+  const removeFromMatrix = useCallback((sourceId: string) => {
+    setState(prev => ({
+      ...prev,
+      matrixEvidence: prev.matrixEvidence.filter(id => id !== sourceId),
+      achMatrix: { ...prev.achMatrix, [sourceId]: undefined as any },
+    }));
+  }, []);
+
+  // Phases
+  const advancePhase = useCallback(() => {
+    setState(prev => {
+      const nextIndex = prev.currentPhaseIndex + 1;
+      if (nextIndex >= PHASES.length) return prev;
+
+      const phase = PHASES[nextIndex];
+      const newEvidence = [...prev.unlockedEvidence, ...(phase.unlocks.evidence || [])];
+      const newDashboard = [...prev.unlockedDashboard, ...(phase.unlocks.dashboard || [])];
+      const newInterviews = [...prev.unlockedInterviews, ...(phase.unlocks.interviews || [])];
+
+      return {
+        ...prev,
+        currentPhaseIndex: nextIndex,
+        unlockedEvidence: [...new Set(newEvidence)],
+        unlockedDashboard: [...new Set(newDashboard)],
+        unlockedInterviews: [...new Set(newInterviews)],
+      };
+    });
+  }, []);
+
+  const getCTALabel = useCallback((): string => {
+    const phase = PHASES[state.currentPhaseIndex];
+    return phase?.ctaLabel || "";
+  }, [state.currentPhaseIndex]);
+
+  const getCTATarget = useCallback((): string => {
+    const phase = PHASES[state.currentPhaseIndex];
+    return phase?.ctaTarget || "analyst-hub";
+  }, [state.currentPhaseIndex]);
+
+  const canAdvance = useCallback((): boolean => {
+    return state.currentPhaseIndex < PHASES.length - 1;
+  }, [state.currentPhaseIndex]);
+
   // Final answer
   const setFinalHypothesis = useCallback((hypothesisId: string) => {
     setState(prev => {
       const hypothesis = HYPOTHESES.find(h => h.id === hypothesisId);
       if (!hypothesis) return prev;
 
-      // Determine ending
       let endingType: string;
       if (!prev.selectedHypotheses.includes("H3")) {
         endingType = "missing";
       } else if (hypothesis.isCorrect) {
-        const hasDiagnostic = DIAGNOSTIC_EVIDENCE_IDS.some(id =>
-          prev.notebook.some(n => n.sourceId === id)
-        );
         const diagnosticCount = DIAGNOSTIC_EVIDENCE_IDS.filter(id =>
           prev.notebook.some(n => n.sourceId === id)
         ).length;
@@ -306,13 +379,15 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
 
   // Game helpers
   const getProgress = useCallback((): number => {
-    const evidenceP = (state.viewedEvidence.length / EVIDENCE_ITEMS.length) * 25;
-    const dashboardP = (state.viewedDashboard.length / 3) * 15;
+    const totalEvidence = EVIDENCE_ITEMS.length;
+    const totalDashboard = DASHBOARD_DATA.length;
+    const evidenceP = (state.viewedEvidence.length / totalEvidence) * 20;
+    const dashboardP = (state.viewedDashboard.length / totalDashboard) * 15;
     const interviewP = (state.completedInterviews.length / 3) * 20;
-    const notebookP = Math.min(state.notebook.length / 8, 1) * 20;
+    const notebookP = Math.min(state.notebook.length / 10, 1) * 20;
     const hypothesisP = (state.selectedHypotheses.length / 4) * 10;
-    const matrixP = state.finalHypothesis ? 10 : 0;
-    return Math.round(evidenceP + dashboardP + interviewP + notebookP + hypothesisP + matrixP);
+    const phaseP = (state.currentPhaseIndex / PHASES.length) * 15;
+    return Math.round(evidenceP + dashboardP + interviewP + notebookP + hypothesisP + phaseP);
   }, [state]);
 
   const getEnding = useCallback(() => {
@@ -360,9 +435,16 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
       toggleHypothesis,
       isHypothesisSelected,
       canSelectHypotheses,
+      swapHypothesis,
       setMatrixCell,
       getMatrixCell,
       canUseMatrix,
+      addToMatrix,
+      removeFromMatrix,
+      advancePhase,
+      getCTALabel,
+      getCTATarget,
+      canAdvance,
       setFinalHypothesis,
       canSubmitFinal,
       getProgress,
