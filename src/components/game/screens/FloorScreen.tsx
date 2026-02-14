@@ -4,7 +4,7 @@ import { Lock } from "lucide-react";
 import { InteractiveRoom } from "../InteractiveRoom";
 import { EnhancedDialogue } from "../EnhancedDialogue";
 import { AnimatedCharacter } from "../AnimatedCharacter";
-import { NavigationButton } from "../NavigationButton";
+import { GameOverlay } from "../GameOverlay";
 import { useGame } from "@/contexts/GameContext";
 import { useSound } from "@/hooks/useSoundEffects";
 import { CHARACTERS } from "@/data/case1";
@@ -62,13 +62,11 @@ export const FloorScreen = ({ onNavigate }: FloorScreenProps) => {
         onHotspotClick={() => {}}
         activeHotspot={null}
       >
-        <motion.div className="absolute top-6 left-1/2 -translate-x-1/2 z-20">
+        <motion.div className="absolute top-12 left-1/2 -translate-x-1/2 z-20">
           <div className="flex items-center gap-4 px-6 py-3 rounded-full bg-background/90 backdrop-blur-xl border border-primary/30">
             <span className="font-bold text-foreground">👥 الصالة</span>
             <span className="text-muted-foreground">|</span>
             <span className="text-foreground">مقابلات: {state.completedInterviews.length}/3</span>
-            <span className="text-muted-foreground">|</span>
-            <span className="text-primary font-bold">📓 {state.notebook.length}</span>
           </div>
         </motion.div>
 
@@ -111,11 +109,8 @@ export const FloorScreen = ({ onNavigate }: FloorScreenProps) => {
             );
           })}
         </div>
-
-        <div className="absolute bottom-8 left-0 right-0 z-20 flex justify-center gap-4 px-4">
-          <NavigationButton iconEmoji="🔬" label="مركز التحليل" onClick={() => onNavigate("analyst-hub")} />
-        </div>
       </InteractiveRoom>
+      <GameOverlay currentScreen="floor" onNavigate={onNavigate} />
 
       <AnimatePresence>
         {activeChar && (

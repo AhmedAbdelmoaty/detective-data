@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Briefcase, FileText, BookOpen } from "lucide-react";
 import { InteractiveRoom } from "../InteractiveRoom";
 import { EnhancedDialogue } from "../EnhancedDialogue";
-import { NavigationButton } from "../NavigationButton";
+import { GameOverlay } from "../GameOverlay";
 import { useGame } from "@/contexts/GameContext";
 import { useSound } from "@/hooks/useSoundEffects";
 import { CASE_INFO, INTRO_SCENES, ABU_SAEED_EXTRA_DIALOGUES, ENDINGS, HYPOTHESES } from "@/data/case1";
@@ -103,22 +103,20 @@ export const OfficeScreen = ({ onNavigate }: OfficeScreenProps) => {
     <>
       <InteractiveRoom backgroundImage={detectiveOffice} hotspots={hotspots} onHotspotClick={handleHotspotClick}
         activeHotspot={activePanel} overlayContent={activePanel ? renderPanelContent() : undefined} onCloseOverlay={() => setActivePanel(null)}>
-        <motion.div className="absolute top-4 right-4 z-20 flex items-center gap-3">
+        <motion.div className="absolute top-12 right-4 z-20 flex items-center gap-3">
           <div className="px-4 py-2 rounded-lg bg-background/80 backdrop-blur-sm border border-border">
             <span className="text-amber-400 font-bold">{state.score} نقطة</span>
           </div>
         </motion.div>
         {canSubmitReport && !showConclusionDialogue && (
-          <motion.button className="absolute top-4 left-4 z-20 px-6 py-3 rounded-lg font-bold text-lg"
+          <motion.button className="absolute top-12 left-4 z-20 px-6 py-3 rounded-lg font-bold text-lg"
             style={{ background: "linear-gradient(135deg, hsl(var(--primary)), hsl(var(--accent)))" }}
             onClick={() => setShowConclusionDialogue(true)} initial={{ scale: 0 }} animate={{ scale: 1 }} whileHover={{ scale: 1.05 }}>
             📤 قدم التقرير لأبو سعيد
           </motion.button>
         )}
-        <div className="absolute bottom-8 left-0 right-0 z-20 flex justify-center gap-4 px-4">
-          <NavigationButton iconEmoji="🔬" label="مركز التحليل" onClick={() => onNavigate("analyst-hub")} />
-        </div>
       </InteractiveRoom>
+      <GameOverlay currentScreen="office" onNavigate={onNavigate} />
 
       <AnimatePresence>
         {showReplayScenes && currentReplayScene && (

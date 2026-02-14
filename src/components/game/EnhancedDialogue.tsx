@@ -154,15 +154,6 @@ export const EnhancedDialogue = ({
 
   return (
     <AnimatePresence>
-      {/* Backdrop for click-outside */}
-      <motion.div
-        className="fixed inset-0 z-40"
-        onClick={handleBackdropClick}
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
-      />
-
       <motion.div
         className="fixed bottom-0 left-0 right-0 z-50"
         initial={{ y: 200, opacity: 0 }}

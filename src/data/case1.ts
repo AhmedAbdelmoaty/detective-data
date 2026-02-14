@@ -603,58 +603,68 @@ export interface Phase {
     interviews?: string[];
   };
   toastMessage?: string;
+  ctaMessage?: string;
 }
 
 export const PHASES: Phase[] = [
   { index: 0, id: "scenes", label: "مشاهد البداية", ctaLabel: "", ctaTarget: "scenes", unlocks: {} },
   { index: 1, id: "hypothesis-select", label: "اختيار الفرضيات", ctaLabel: "", ctaTarget: "hypothesis-select", unlocks: {} },
   {
-    index: 2, id: "data-1", label: "البيانات الأولى", ctaLabel: "ابدأ من البيانات", ctaTarget: "dashboard",
+    index: 2, id: "data-1", label: "البيانات الأولى", ctaLabel: "تابع التحليل", ctaTarget: "dashboard",
     unlocks: { dashboard: ["D1", "D2"], evidence: ["N1", "N2"] },
-    toastMessage: "ممكن تقابل فريق العمل… اسمع ملاحظاتهم",
+    ctaMessage: "ابدأ بالبيانات، خد فكرة عامة عن اللي اتغير الأسبوع ده",
+    toastMessage: "خالد ونورة موجودين في الصالة… ممكن يكون عندهم ملاحظات",
   },
   {
-    index: 3, id: "floor-1", label: "الصالة", ctaLabel: "تابع ← الصالة", ctaTarget: "floor",
+    index: 3, id: "floor-1", label: "الصالة", ctaLabel: "تابع التحليل", ctaTarget: "floor",
     unlocks: { interviews: ["khaled", "noura"] },
+    ctaMessage: "خالد ونورة موجودين في الصالة",
     toastMessage: "اتفتح ملف جديد في غرفة الأدلة",
   },
   {
-    index: 4, id: "evidence-early", label: "أدلة مبكرة", ctaLabel: "تابع ← غرفة الأدلة", ctaTarget: "evidence",
+    index: 4, id: "evidence-early", label: "أدلة مبكرة", ctaLabel: "تابع التحليل", ctaTarget: "evidence",
     unlocks: { evidence: ["K6", "N3"] },
-    toastMessage: "تقدر تبدل فرضية واحدة لو حاسس إن اتجاهك اتغير",
+    ctaMessage: "اتفتح ملف جديد في غرفة الأدلة",
   },
   {
-    index: 5, id: "evidence-mid", label: "المنافس والأسعار", ctaLabel: "تابع ← مستندات المنافس والأسعار", ctaTarget: "evidence",
+    index: 5, id: "evidence-mid", label: "المنافس والأسعار", ctaLabel: "تابع التحليل", ctaTarget: "evidence",
     unlocks: { evidence: ["K1", "K3"] },
-    toastMessage: "في بيانات أدق ممكن تفيدك",
+    ctaMessage: "فيه مستندات تانية اتفتحت في غرفة الأدلة",
+    toastMessage: "ظهر تقرير جديد في غرفة البيانات",
   },
   {
-    index: 6, id: "data-mid", label: "بيانات أدق", ctaLabel: "تابع ← بيانات أدق", ctaTarget: "dashboard",
+    index: 6, id: "data-mid", label: "بيانات أدق", ctaLabel: "تابع التحليل", ctaTarget: "dashboard",
     unlocks: { dashboard: ["K2"] },
-    toastMessage: "في نقطة عن ضغط الكاشير… شوفها",
+    ctaMessage: "ظهر تقرير جديد في غرفة البيانات",
+    toastMessage: "ظهرت بيانات جديدة في غرفة البيانات",
   },
   {
-    index: 7, id: "data-evidence-d3", label: "ضغط الكاشير", ctaLabel: "تابع ← ضغط الكاشير", ctaTarget: "dashboard",
+    index: 7, id: "data-evidence-d3", label: "ضغط الكاشير", ctaLabel: "تابع التحليل", ctaTarget: "dashboard",
     unlocks: { dashboard: ["D3"] },
-    toastMessage: "في تقرير تسوية… ممكن يوضح حاجة",
+    ctaMessage: "ظهرت بيانات جديدة في غرفة البيانات",
+    toastMessage: "اتفتح ملف جديد في غرفة الأدلة",
   },
   {
-    index: 8, id: "evidence-late", label: "تسوية المدفوعات", ctaLabel: "تابع ← تسوية المدفوعات", ctaTarget: "evidence",
+    index: 8, id: "evidence-late", label: "تسوية المدفوعات", ctaLabel: "تابع التحليل", ctaTarget: "evidence",
     unlocks: { evidence: ["K5"] },
-    toastMessage: "في ورقة بتوضح بعد البيع… ممكن تكون مهمة",
+    ctaMessage: "اتفتح ملف جديد في غرفة الأدلة",
+    toastMessage: "اتفتح مستند جديد في غرفة الأدلة",
   },
   {
-    index: 9, id: "evidence-final", label: "ورقة بعد البيع", ctaLabel: "تابع ← ورقة بعد البيع", ctaTarget: "evidence",
+    index: 9, id: "evidence-final", label: "ورقة بعد البيع", ctaLabel: "تابع التحليل", ctaTarget: "evidence",
     unlocks: { evidence: ["K4"] },
-    toastMessage: "معلومة من زبونة ممكن توسع الصورة",
+    ctaMessage: "اتفتح مستند جديد في غرفة الأدلة",
+    toastMessage: "فيه حد في الصالة عايز يقولك حاجة",
   },
   {
-    index: 10, id: "floor-late", label: "رأي زبونة", ctaLabel: "تابع ← رأي زبونة", ctaTarget: "floor",
+    index: 10, id: "floor-late", label: "رأي زبونة", ctaLabel: "تابع التحليل", ctaTarget: "floor",
     unlocks: { interviews: ["amira"] },
+    ctaMessage: "فيه حد في الصالة عايز يقولك حاجة",
   },
   {
-    index: 11, id: "matrix", label: "المصفوفة", ctaLabel: "افتح المصفوفة", ctaTarget: "analysis",
+    index: 11, id: "matrix", label: "المصفوفة", ctaLabel: "روح غرفة التحليل", ctaTarget: "analysis",
     unlocks: {},
+    ctaMessage: "خلصت جمع الأدلة… روح غرفة التحليل وابدأ المصفوفة",
   },
 ];
 

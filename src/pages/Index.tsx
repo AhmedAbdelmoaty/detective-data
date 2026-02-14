@@ -50,7 +50,7 @@ const GameContent = () => {
       {currentScreen === "intro" && <IntroScreen onNavigate={() => handleNavigate("onboarding")} />}
       {currentScreen === "onboarding" && <OnboardingScreen onComplete={() => handleNavigate("scenes")} />}
       {currentScreen === "scenes" && <ScenesScreen onComplete={() => handleNavigate("hypothesis-select")} />}
-      {currentScreen === "hypothesis-select" && <HypothesisSelectScreen onComplete={() => handleNavigate("analyst-hub")} />}
+      {currentScreen === "hypothesis-select" && <HypothesisSelectScreen onComplete={() => handleNavigate("dashboard")} />}
       {currentScreen === "analyst-hub" && <AnalystHubScreen onNavigate={handleNavigate} />}
       {currentScreen === "office" && <OfficeScreen onNavigate={handleNavigate} />}
       {currentScreen === "evidence" && <EvidenceScreen onNavigate={handleNavigate} />}

@@ -2,7 +2,7 @@ import { useState } from "react";
 import { motion } from "framer-motion";
 import { BookmarkPlus, Check, BarChart3, X } from "lucide-react";
 import { InteractiveRoom } from "../InteractiveRoom";
-import { NavigationButton } from "../NavigationButton";
+import { GameOverlay } from "../GameOverlay";
 import { useGame } from "@/contexts/GameContext";
 import { useSound } from "@/hooks/useSoundEffects";
 import { DASHBOARD_DATA, EVIDENCE_ITEMS } from "@/data/case1";
@@ -143,18 +143,15 @@ export const DashboardScreen = ({ onNavigate }: DashboardScreenProps) => {
   };
 
   return (
-    <InteractiveRoom backgroundImage={analysisRoomBg} hotspots={hotspots} onHotspotClick={handleHotspotClick} activeHotspot={activeItem} overlayContent={activeItem ? renderOverlay() : undefined} onCloseOverlay={() => setActiveItem(null)}>
-      <motion.div className="absolute top-4 right-4 z-20 flex items-center gap-3">
-        <div className="px-4 py-2 rounded-lg bg-background/80 backdrop-blur-sm border border-border">
-          <span className="text-muted-foreground text-sm">بيانات: {unlockedItems.length}</span>
-        </div>
-        <div className="px-4 py-2 rounded-lg bg-background/80 backdrop-blur-sm border border-border">
-          <span className="text-primary font-bold">📓 {state.notebook.length}</span>
-        </div>
-      </motion.div>
-      <div className="absolute bottom-8 left-0 right-0 z-20 flex justify-center gap-4 px-4">
-        <NavigationButton iconEmoji="🔬" label="مركز التحليل" onClick={() => onNavigate("analyst-hub")} />
-      </div>
-    </InteractiveRoom>
+    <>
+      <InteractiveRoom backgroundImage={analysisRoomBg} hotspots={hotspots} onHotspotClick={handleHotspotClick} activeHotspot={activeItem} overlayContent={activeItem ? renderOverlay() : undefined} onCloseOverlay={() => setActiveItem(null)}>
+        <motion.div className="absolute top-12 right-4 z-20 flex items-center gap-3">
+          <div className="px-4 py-2 rounded-lg bg-background/80 backdrop-blur-sm border border-border">
+            <span className="text-muted-foreground text-sm">بيانات: {unlockedItems.length}</span>
+          </div>
+        </motion.div>
+      </InteractiveRoom>
+      <GameOverlay currentScreen="dashboard" onNavigate={onNavigate} />
+    </>
   );
 };

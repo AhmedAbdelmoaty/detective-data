@@ -13,8 +13,8 @@ export const HypothesisSelectScreen = ({ onComplete }: HypothesisSelectScreenPro
 
   const handleStart = () => {
     if (state.selectedHypotheses.length === 4) {
-      advancePhase(); // 0 -> 1 (skip scenes phase)
-      advancePhase(); // 1 -> 2 (data phase, unlocks D1+D2)
+      advancePhase(); // 0 -> 1
+      advancePhase(); // 1 -> 2 (unlocks D1+D2)
       onComplete();
     }
   };
