@@ -264,6 +264,10 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
   const swapHypothesis = useCallback((oldId: string, newId: string) => {
     setState(prev => {
       if (prev.hasUsedSwap) return prev;
+      // Allow skipping swap (marks as used without changing)
+      if (oldId === "__skip__" && newId === "__skip__") {
+        return { ...prev, hasUsedSwap: true };
+      }
       if (!prev.selectedHypotheses.includes(oldId)) return prev;
       if (prev.selectedHypotheses.includes(newId)) return prev;
       return {
