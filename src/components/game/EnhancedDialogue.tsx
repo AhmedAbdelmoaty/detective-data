@@ -69,6 +69,16 @@ export const EnhancedDialogue = ({
   const colors = characterColors[currentDialogue?.characterId || "detective"];
   const names = characterNames[currentDialogue?.characterId || "detective"];
 
+  // Reset state when deactivated
+  useEffect(() => {
+    if (!isActive) {
+      setInternalIndex(0);
+      setDisplayedText("");
+      setIsTyping(false);
+      setShowSaveButton(false);
+    }
+  }, [isActive]);
+
   // Typing effect
   useEffect(() => {
     if (!isActive || !currentDialogue) return;
