@@ -5,7 +5,7 @@ import { InteractiveRoom } from "../InteractiveRoom";
 import { GameOverlay } from "../GameOverlay";
 import { useGame } from "@/contexts/GameContext";
 import { useSound } from "@/hooks/useSoundEffects";
-import { DASHBOARD_DATA, EVIDENCE_ITEMS } from "@/data/case1";
+import { DASHBOARD_DATA, EVIDENCE_ITEMS, PHASES } from "@/data/case1";
 import { toast } from "sonner";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line } from "recharts";
 import analysisRoomBg from "@/assets/rooms/analysis-room.png";
@@ -19,6 +19,9 @@ export const DashboardScreen = ({ onNavigate }: DashboardScreenProps) => {
   const { playSound } = useSound();
   const [activeItem, setActiveItem] = useState<string | null>(null);
 
+  const currentPhase = PHASES[state.currentPhaseIndex];
+  const isCTAEntry = state.entryMethod === "cta" && currentPhase?.targetRoom === "dashboard";
+
   // Combine dashboard items + K2 (which shows in data room)
   const k2Evidence = EVIDENCE_ITEMS.find(e => e.id === "K2");
   const allItems = [...DASHBOARD_DATA.map(d => ({ ...d, isK2: false }))];
@@ -26,7 +29,10 @@ export const DashboardScreen = ({ onNavigate }: DashboardScreenProps) => {
     allItems.push({ id: "K2", name: k2Evidence.name, description: k2Evidence.description, saveId: k2Evidence.saveId, saveText: k2Evidence.saveText, type: "table" as any, data: k2Evidence.data, isK2: true } as any);
   }
 
-  const unlockedItems = allItems.filter(item => state.unlockedDashboard.includes(item.id));
+  // Filter based on entry method
+  const unlockedItems = isCTAEntry
+    ? allItems.filter(item => currentPhase.sceneItems?.includes(item.id))
+    : allItems.filter(item => state.unlockedDashboard.includes(item.id));
 
   const hotspots = unlockedItems.map((item, i) => {
     const positions = [
@@ -148,6 +154,7 @@ export const DashboardScreen = ({ onNavigate }: DashboardScreenProps) => {
         <motion.div className="absolute top-12 right-4 z-20 flex items-center gap-3">
           <div className="px-4 py-2 rounded-lg bg-background/80 backdrop-blur-sm border border-border">
             <span className="text-muted-foreground text-sm">بيانات: {unlockedItems.length}</span>
+            {isCTAEntry && <span className="text-xs text-primary mr-2">جديدة</span>}
           </div>
         </motion.div>
       </InteractiveRoom>

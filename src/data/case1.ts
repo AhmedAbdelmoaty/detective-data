@@ -610,6 +610,10 @@ export interface Phase {
     interviews?: string[];
   };
   isSwapPhase?: boolean;
+  // Scene system: items that belong to this phase's scene
+  sceneItems?: string[];
+  // The room this phase targets (for scene matching)
+  targetRoom?: string;
 }
 
 export const PHASES: Phase[] = [
@@ -624,61 +628,86 @@ export const PHASES: Phase[] = [
     unlocks: { dashboard: ["D1", "D2"] },
     ctaMessage: "اتفتحت ملفات في غرفة الأدلة",
     requiredViews: { dashboard: ["D1", "D2"] },
+    sceneItems: ["D1", "D2"],
+    targetRoom: "dashboard",
   },
-  // 3: أدلة أولى (K6+N1) + تبديل فرضية إجباري → بعدها للصالة
+  // 3: أدلة أولى (K6+N1) + تبديل فرضية إجباري → بعدها لخالد
   {
     index: 3, id: "evidence-1", label: "أدلة أولى",
     ctaLabel: "تابع التحليل", ctaTarget: "floor",
     unlocks: { evidence: ["K6", "N1"] },
-    ctaMessage: "خالد ونورة موجودين في الصالة",
+    ctaMessage: "خالد موجود في الصالة",
     requiredViews: { evidence: ["K6"] },
     isSwapPhase: true,
+    sceneItems: ["K6", "N1"],
+    targetRoom: "evidence",
   },
-  // 4: الصالة أولى (خالد+نورة) → بعدها للأدلة
+  // 4: مقابلة خالد فقط → بعدها لنورة
   {
-    index: 4, id: "floor-1", label: "مقابلات أولى",
+    index: 4, id: "floor-khaled", label: "مقابلة خالد",
+    ctaLabel: "تابع التحليل", ctaTarget: "floor",
+    unlocks: { interviews: ["khaled"] },
+    ctaMessage: "نورة كمان موجودة في الصالة",
+    requiredViews: { interviews: ["khaled"] },
+    sceneItems: ["khaled"],
+    targetRoom: "floor",
+  },
+  // 5: مقابلة نورة فقط → بعدها للأدلة
+  {
+    index: 5, id: "floor-noura", label: "مقابلة نورة",
     ctaLabel: "تابع التحليل", ctaTarget: "evidence",
-    unlocks: { interviews: ["khaled", "noura"] },
+    unlocks: { interviews: ["noura"] },
     ctaMessage: "مستندات جديدة ظهرت في غرفة الأدلة",
-    requiredViews: { interviews: ["khaled", "noura"] },
+    requiredViews: { interviews: ["noura"] },
+    sceneItems: ["noura"],
+    targetRoom: "floor",
   },
-  // 5: أدلة ثانية (K1+K3+N2) → بعدها للبيانات
+  // 6: أدلة ثانية (K1+K3+N2) → بعدها للبيانات
   {
-    index: 5, id: "evidence-2", label: "أدلة ثانية",
+    index: 6, id: "evidence-2", label: "أدلة ثانية",
     ctaLabel: "تابع التحليل", ctaTarget: "dashboard",
     unlocks: { evidence: ["K1", "K3", "N2"] },
     ctaMessage: "بيانات جديدة ظهرت في غرفة البيانات",
     requiredViews: { evidence: ["K1", "K3"] },
+    sceneItems: ["K1", "K3", "N2"],
+    targetRoom: "evidence",
   },
-  // 6: بيانات ثانية (K2+D3) → بعدها للأدلة
+  // 7: بيانات ثانية (K2+D3) → بعدها للأدلة
   {
-    index: 6, id: "data-2", label: "بيانات ثانية",
+    index: 7, id: "data-2", label: "بيانات ثانية",
     ctaLabel: "تابع التحليل", ctaTarget: "evidence",
     unlocks: { dashboard: ["K2", "D3"] },
     ctaMessage: "ملفات جديدة ظهرت في غرفة الأدلة",
     requiredViews: { dashboard: ["D3"], evidence: ["K2"] },
+    sceneItems: ["K2", "D3"],
+    targetRoom: "dashboard",
   },
-  // 7: أدلة ثالثة (K5+K4+N3) → بعدها للصالة
+  // 8: أدلة ثالثة (K5+K4+N3) → بعدها لأميرة
   {
-    index: 7, id: "evidence-3", label: "أدلة ثالثة",
+    index: 8, id: "evidence-3", label: "أدلة ثالثة",
     ctaLabel: "تابع التحليل", ctaTarget: "floor",
     unlocks: { evidence: ["K5", "K4", "N3"] },
     ctaMessage: "فيه حد في الصالة عايز يقولك حاجة",
     requiredViews: { evidence: ["K5", "K4"] },
+    sceneItems: ["K5", "K4", "N3"],
+    targetRoom: "evidence",
   },
-  // 8: الصالة ثانية (أميرة) → بعدها لغرفة التحليل
+  // 9: مقابلة أميرة → بعدها لغرفة التحليل
   {
-    index: 8, id: "floor-2", label: "مقابلة الزبونة",
+    index: 9, id: "floor-amira", label: "مقابلة الزبونة",
     ctaLabel: "روح غرفة التحليل", ctaTarget: "analysis",
     unlocks: { interviews: ["amira"] },
     ctaMessage: "خلصت جمع الأدلة… روح غرفة التحليل وابدأ المصفوفة",
     requiredViews: { interviews: ["amira"] },
+    sceneItems: ["amira"],
+    targetRoom: "floor",
   },
-  // 9: المصفوفة والتحليل النهائي
+  // 10: المصفوفة والتحليل النهائي
   {
-    index: 9, id: "matrix", label: "المصفوفة",
+    index: 10, id: "matrix", label: "المصفوفة",
     ctaLabel: "", ctaTarget: "analysis",
     unlocks: {},
+    targetRoom: "analysis",
   },
 ];
 
