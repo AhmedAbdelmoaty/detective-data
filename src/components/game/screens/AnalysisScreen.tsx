@@ -380,13 +380,7 @@ export const AnalysisScreen = ({ onNavigate }: AnalysisScreenProps) => {
         </div>
       )}
 
-      {/* Navigation */}
-      <div className="absolute bottom-8 left-0 right-0 z-20 flex justify-center gap-4 px-4">
-        <NavigationButton iconEmoji="🏢" label="المكتب" onClick={() => onNavigate("office")} />
-        <NavigationButton iconEmoji="📁" label="الأدلة" onClick={() => onNavigate("evidence")} />
-        <NavigationButton iconEmoji="👥" label="الاجتماعات" onClick={() => onNavigate("interrogation")} />
-        <NavigationButton iconEmoji="📊" label="البيانات" onClick={() => onNavigate("dashboard")} />
-      </div>
+      {/* Navigation handled by GameOverlay */}
     </InteractiveRoom>
   );
 };
