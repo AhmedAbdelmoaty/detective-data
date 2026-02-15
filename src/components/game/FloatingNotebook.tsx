@@ -11,20 +11,23 @@ export const FloatingNotebook = () => {
 
   return (
     <>
-      {/* Floating button */}
+      {/* Floating notebook button */}
       <motion.button
         onClick={() => setIsOpen(true)}
-        className="fixed bottom-6 right-6 z-40 w-14 h-14 rounded-full bg-primary text-primary-foreground flex items-center justify-center shadow-lg"
-        whileHover={{ scale: 1.1 }}
-        whileTap={{ scale: 0.9 }}
-        style={{ boxShadow: "0 0 20px hsl(var(--primary) / 0.4)" }}
+        className="fixed bottom-20 left-4 z-40 flex flex-col items-center gap-1 px-3 py-2.5 rounded-xl bg-background/90 backdrop-blur-sm border border-primary/40 shadow-lg"
+        whileHover={{ scale: 1.05, y: -2 }}
+        whileTap={{ scale: 0.95 }}
+        style={{ boxShadow: "0 4px 20px hsl(var(--primary) / 0.3)" }}
       >
-        <BookOpen className="w-6 h-6" />
-        {state.notebook.length > 0 && (
-          <span className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-accent text-accent-foreground text-xs font-bold flex items-center justify-center">
-            {state.notebook.length}
-          </span>
-        )}
+        <div className="relative">
+          <span className="text-xl">📓</span>
+          {state.notebook.length > 0 && (
+            <span className="absolute -top-2 -right-3 w-4 h-4 rounded-full bg-accent text-accent-foreground text-[9px] font-bold flex items-center justify-center">
+              {state.notebook.length}
+            </span>
+          )}
+        </div>
+        <span className="text-[9px] font-medium text-primary leading-none">الدفتر</span>
       </motion.button>
 
       {/* Panel */}

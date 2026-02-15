@@ -111,89 +111,88 @@ export const GameOverlay = ({ currentScreen, onNavigate }: GameOverlayProps) => 
 
       {/* Bottom: Room navigation + Continue banner */}
       <div className="fixed bottom-0 left-0 right-0 z-30 pointer-events-none">
-        {/* Continue Banner */}
-        <AnimatePresence>
-          {shouldShowContinue && (
-            <motion.div
-              className="pointer-events-auto mx-4 mb-2"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: 20 }}
-            >
-              <div className="bg-background/95 backdrop-blur-xl border border-primary/40 rounded-xl p-4">
-                {currentPhase.ctaMessage && (
-                  <p className="text-sm text-foreground text-center mb-3" dir="rtl">
-                    {currentPhase.ctaMessage}
-                  </p>
-                )}
-                <motion.button
-                  onClick={handleContinue}
-                  className="w-full py-3 rounded-xl font-bold text-base flex items-center justify-center gap-2 text-primary-foreground"
-                  style={{ background: "linear-gradient(135deg, hsl(var(--primary)), hsl(var(--accent)))" }}
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                >
-                  <ArrowLeft className="w-5 h-5" />
-                  {currentPhase.ctaLabel}
-                </motion.button>
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-
-        {/* Swap Banner (one-time after phase 4) */}
-        <AnimatePresence>
-          {showSwapBanner && (
-            <motion.div
-              className="pointer-events-auto mx-4 mb-2"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: 20 }}
-            >
-              <div className="bg-background/95 backdrop-blur-xl border border-accent/40 rounded-xl p-4">
-                <p className="text-sm text-foreground text-center mb-3" dir="rtl">
-                  تقدر تبدل فرضية واحدة لو حاسس إن اتجاهك اتغير
-                </p>
-                <div className="flex gap-2">
-                  <button
-                    onClick={() => setShowSwapModal(true)}
-                    className="flex-1 py-2 rounded-lg bg-accent/20 border border-accent/40 text-foreground text-sm font-bold flex items-center justify-center gap-2"
+        {/* Bottom bar: CTA/Swap on right, rooms center */}
+        <div className="pointer-events-auto flex items-end justify-center gap-3 px-4 pb-4">
+          {/* CTA / Swap box - right side */}
+          <AnimatePresence>
+            {shouldShowContinue && (
+              <motion.div
+                className="max-w-[200px] shrink-0 order-2"
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: 20 }}
+              >
+                <div className="bg-background/95 backdrop-blur-xl border border-primary/40 rounded-xl p-2.5">
+                  {currentPhase.ctaMessage && (
+                    <p className="text-[11px] text-muted-foreground text-center mb-2 leading-tight" dir="rtl">
+                      {currentPhase.ctaMessage}
+                    </p>
+                  )}
+                  <motion.button
+                    onClick={handleContinue}
+                    className="w-full py-2 rounded-lg font-bold text-xs flex items-center justify-center gap-1.5 text-primary-foreground"
+                    style={{ background: "linear-gradient(135deg, hsl(var(--primary)), hsl(var(--accent)))" }}
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
                   >
-                    <RefreshCw className="w-4 h-4" />
-                    بدّل فرضية
-                  </button>
-                  <button
-                    onClick={() => {
-                      // Mark swap as used without actually swapping
-                      swapHypothesis("__skip__", "__skip__");
-                    }}
-                    className="flex-1 py-2 rounded-lg bg-secondary text-foreground text-sm"
-                  >
-                    كمّل بدون تبديل
-                  </button>
+                    <ArrowLeft className="w-3.5 h-3.5" />
+                    {currentPhase.ctaLabel}
+                  </motion.button>
                 </div>
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
+              </motion.div>
+            )}
+          </AnimatePresence>
 
-        {/* Room navigation */}
-        <div className="pointer-events-auto flex justify-center gap-2 px-4 pb-4">
-          {rooms.filter(r => r.show).map(room => (
-            <button
-              key={room.id}
-              onClick={() => { playSound("navigate"); onNavigate(room.id); }}
-              className={cn(
-                "flex flex-col items-center gap-1 px-3 py-2 rounded-xl border transition-all",
-                currentScreen === room.id
-                  ? "bg-primary/15 border-primary/50"
-                  : "bg-background/80 backdrop-blur-sm border-border/50 hover:border-primary/30"
-              )}
-            >
-              <span className="text-lg">{room.icon}</span>
-              <span className={cn("text-[10px] font-medium", currentScreen === room.id ? "text-primary" : "text-muted-foreground")}>{room.label}</span>
-            </button>
-          ))}
+          <AnimatePresence>
+            {showSwapBanner && (
+              <motion.div
+                className="max-w-[220px] shrink-0 order-2"
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: 20 }}
+              >
+                <div className="bg-background/95 backdrop-blur-xl border border-accent/40 rounded-xl p-2.5">
+                  <p className="text-[11px] text-muted-foreground text-center mb-2 leading-tight" dir="rtl">
+                    تقدر تبدل فرضية لو اتجاهك اتغير
+                  </p>
+                  <div className="flex gap-1.5">
+                    <button
+                      onClick={() => setShowSwapModal(true)}
+                      className="flex-1 py-1.5 rounded-lg bg-accent/20 border border-accent/40 text-foreground text-[11px] font-bold flex items-center justify-center gap-1"
+                    >
+                      <RefreshCw className="w-3 h-3" />
+                      بدّل
+                    </button>
+                    <button
+                      onClick={() => swapHypothesis("__skip__", "__skip__")}
+                      className="flex-1 py-1.5 rounded-lg bg-secondary text-foreground text-[11px]"
+                    >
+                      كمّل
+                    </button>
+                  </div>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          {/* Room navigation - center */}
+          <div className="flex gap-2 order-1">
+            {rooms.filter(r => r.show).map(room => (
+              <button
+                key={room.id}
+                onClick={() => { playSound("navigate"); onNavigate(room.id); }}
+                className={cn(
+                  "flex flex-col items-center gap-1 px-3 py-2 rounded-xl border transition-all",
+                  currentScreen === room.id
+                    ? "bg-primary/15 border-primary/50"
+                    : "bg-background/80 backdrop-blur-sm border-border/50 hover:border-primary/30"
+                )}
+              >
+                <span className="text-lg">{room.icon}</span>
+                <span className={cn("text-[10px] font-medium", currentScreen === room.id ? "text-primary" : "text-muted-foreground")}>{room.label}</span>
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 
