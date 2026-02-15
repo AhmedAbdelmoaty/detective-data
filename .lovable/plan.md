@@ -1,202 +1,159 @@
 
-# خطة إعادة هيكلة المراحل والـ Flow بالكامل
+# نظام المشاهد المخصصة + الصور التراكمية للغرف
 
-## المشاكل الحالية (فهمتها كلها)
+## الفكرة باختصار
 
-1. **رسالة "ابدأ بالبيانات" تظهر جوا غرفة البيانات** - المفروض تظهر قبلها كشاشة انتقالية
-2. **ترتيب المراحل غلط تماما** - الترتيب الحالي مش مطابق لللي انت عايزه
-3. **Swap و CTA بيظهروا مع بعض** - المفروض الـ Swap يكون إجباري (لازم تجاوب) قبل ما CTA يظهر
-4. **توزيع الأدلة على المراحل غلط** - N1+N2 بتظهر بدري مع D1+D2 والمفروض لا
-5. **`canAdvance()` مش بيتحقق من حاجة** - بيرجع `true` دايما طالما مش آخر مرحلة
+كل غرفة ليها نوعين من الخلفيات:
+
+1. **مشهد المرحلة (Phase Scene)**: صورة مخصصة تظهر فقط عند الدخول من زر "تابع التحليل" - فيها الادلة/الشخصيات الجديدة فقط
+2. **الصورة التراكمية (Cumulative Room)**: صورة ثابتة للغرفة تظهر عند الدخول من زر الغرفة نفسه - فيها كل اللي اتشاف لحد دلوقتي
 
 ---
 
-## الـ Flow الجديد الكامل (10 مراحل: 0-9)
+## اعادة هيكلة المراحل (11 مرحلة بدل 10)
+
+تقسيم مرحلة خالد ونورة لمرحلتين منفصلتين:
 
 ```text
-المرحلة 0: scenes (مشاهد أبو سعيد)
-المرحلة 1: hypothesis-select (اختيار 4 فرضيات)
-   |
-   v  [ضغط "ابدأ التحليل" → advancePhase مرتين → شاشة briefing]
-   |
-المرحلة 2: briefing → شاشة انتقالية فيها رسالة + CTA → dashboard
-   |  [في الداشبورد: D1+D2 مفتوحين، بعد مشاهدتهم يظهر CTA]
-   |
-المرحلة 3: evidence-1 (K6 + N1 يتفتحوا)
-   |  [في الأدلة: بعد مشاهدة K6 → يظهر سؤال التبديل إجباري]
-   |  [بعد الإجابة على التبديل → يظهر CTA للصالة]
-   |
-المرحلة 4: floor-1 (خالد + نورة يتفتحوا)
-   |  [في الصالة: بعد مقابلتهم → يظهر CTA للأدلة]
-   |
-المرحلة 5: evidence-2 (K1 + K3 + N2 يتفتحوا)
-   |  [في الأدلة: بعد مشاهدة K1+K3 → يظهر CTA للبيانات]
-   |
-المرحلة 6: data-2 (K2 + D3 يتفتحوا في الداشبورد)
-   |  [في البيانات: بعد مشاهدتهم → يظهر CTA للأدلة]
-   |
-المرحلة 7: evidence-3 (K5 + K4 + N3 يتفتحوا)
-   |  [في الأدلة: بعد مشاهدة K5+K4 → يظهر CTA للصالة]
-   |
-المرحلة 8: floor-2 (أميرة/الزبونة تتفتح)
-   |  [بعد مقابلتها → يظهر CTA لغرفة التحليل]
-   |
-المرحلة 9: matrix (غرفة التحليل - المصفوفة + الاختيار النهائي)
+المرحلة 0: scenes
+المرحلة 1: hypothesis-select
+المرحلة 2: data-1      → [CTA] → dashboard     → مشهد: D1 + D2
+المرحلة 3: evidence-1   → [CTA] → evidence      → مشهد: K6 + N1 (+ swap)
+المرحلة 4: floor-khaled → [CTA] → floor         → مشهد: خالد فقط
+المرحلة 5: floor-noura  → [CTA] → floor         → مشهد: نورة فقط
+المرحلة 6: evidence-2   → [CTA] → evidence      → مشهد: K1 + K3 + N2
+المرحلة 7: data-2       → [CTA] → dashboard     → مشهد: K2 + D3
+المرحلة 8: evidence-3   → [CTA] → evidence      → مشهد: K5 + K4 + N3
+المرحلة 9: floor-amira  → [CTA] → floor         → مشهد: اميرة فقط
+المرحلة 10: matrix       → غرفة التحليل
 ```
 
 ---
 
-## التفاصيل التقنية - ملف بملف
+## المشاهد المطلوبة (صور placeholder مؤقتا)
 
-### 1. `src/data/case1.ts` - إعادة كتابة PHASES بالكامل
+### مشاهد CTA (9 صور):
+| المرحلة | المشهد | وصف الصورة |
+|---|---|---|
+| 2 → dashboard | scene-data-1 | شاشة كمبيوتر عليها charts/dashboard |
+| 3 → evidence | scene-evidence-1 | مكتب عليه ملفين (K6 + N1) |
+| 4 → floor (خالد) | scene-khaled | خالد واقف في صالة المحل |
+| 5 → floor (نورة) | scene-noura | نورة عند الكاشير |
+| 6 → evidence | scene-evidence-2 | مكتب عليه 3 ملفات (K1 + K3 + N2) |
+| 7 → dashboard | scene-data-2 | شاشة كمبيوتر بجداول وشارتات |
+| 8 → evidence | scene-evidence-3 | مكتب عليه 3 ملفات (K5 + K4 + N3) |
+| 9 → floor (اميرة) | scene-amira | اميرة/الزبونة في الصالة |
+| 10 → analysis | scene-final | المحلل يستعد للتحليل |
 
-**الـ PHASES الجديد (10 مراحل بدل 12):**
+### صور تراكمية للغرف (3 صور ثابتة):
+| الغرفة | وصف الصورة |
+|---|---|
+| evidence-room-cumulative | غرفة ادلة واسعة فيها اماكن للملفات |
+| dashboard-room-cumulative | غرفة بيانات فيها شاشات |
+| floor-room-cumulative | صالة المحل كاملة |
 
-| Index | ID | unlocks | ctaMessage | ctaLabel | ctaTarget | requiredViews | swapPhase |
-|---|---|---|---|---|---|---|---|
-| 0 | scenes | -- | -- | -- | -- | -- | -- |
-| 1 | hypothesis-select | -- | -- | -- | -- | -- | -- |
-| 2 | data-1 | D1, D2 | "اتفتحت ملفات في غرفة الأدلة" | "تابع التحليل" | evidence | D1, D2 (dashboard) | false |
-| 3 | evidence-1 | K6, N1 | "خالد ونورة موجودين في الصالة" | "تابع التحليل" | floor | K6 (evidence) | **true** |
-| 4 | floor-1 | khaled, noura | "مستندات جديدة ظهرت في غرفة الأدلة" | "تابع التحليل" | evidence | khaled, noura (interviews) | false |
-| 5 | evidence-2 | K1, K3, N2 | "بيانات جديدة ظهرت في غرفة البيانات" | "تابع التحليل" | dashboard | K1, K3 (evidence) | false |
-| 6 | data-2 | K2, D3 | "ملفات جديدة ظهرت في غرفة الأدلة" | "تابع التحليل" | evidence | K2, D3 (dashboard) | false |
-| 7 | evidence-3 | K5, K4, N3 | "فيه حد في الصالة عايز يقولك حاجة" | "تابع التحليل" | floor | K5, K4 (evidence) | false |
-| 8 | floor-2 | amira | "خلصت جمع الأدلة... روح غرفة التحليل وابدأ المصفوفة" | "روح غرفة التحليل" | analysis | amira (interview) | false |
-| 9 | matrix | -- | -- | -- | -- | -- | false |
-
-**تعديلات على الـ Phase interface:**
-```text
-+ requiredViews: { dashboard?: string[], evidence?: string[], interviews?: string[] }
-+ isSwapPhase: boolean  // true فقط في المرحلة 3
-```
-
-**الرسائل المناسبة لشاشة الـ briefing:**
-- الرسالة: "ابدأ بالبيانات، خد فكرة عامة عن اللي اتغير الأسبوع ده. دور في الأدلة والبيانات وقابل فريق العمل... وحاول توصل للسبب الحقيقي."
-- الزر: "تابع التحليل"
+**مؤقتا**: هنستخدم الصور الموجودة حاليا كـ placeholders مع overlay مختلف لحين تصميم الصور.
 
 ---
 
-### 2. `src/components/game/screens/BriefingScreen.tsx` - ملف جديد
+## التفاصيل التقنية
 
-شاشة انتقالية بين اختيار الفرضيات وغرفة البيانات:
-- خلفية: نفس صورة store-front مع overlay
-- فيها: عنوان "هيا نبدأ" + فقرة شرح قصيرة ("ابدأ بالبيانات، خد فكرة عامة عن اللي اتغير الأسبوع ده...")
-- زر CTA: "تابع التحليل" → يوّدي لغرفة البيانات
-- الشاشة دي تظهر مرة واحدة بس
+### 1. `src/data/case1.ts` - تعديل PHASES
 
----
-
-### 3. `src/contexts/GameContext.tsx` - تعديل `canAdvance()`
-
-**المشكلة الحالية:** `canAdvance()` بيرجع `true` دايما:
+اضافة حقول جديدة لكل مرحلة:
 ```text
-canAdvance = () => state.currentPhaseIndex < PHASES.length - 1
-```
-
-**الحل الجديد:** `canAdvance()` هيتحقق من `requiredViews` للمرحلة الحالية:
-```text
-canAdvance = () => {
-  phase = PHASES[currentPhaseIndex]
-  if no requiredViews → return true
-  
-  // Check dashboard requirements
-  if phase.requiredViews.dashboard:
-    all must be in state.viewedDashboard
-  
-  // Check evidence requirements  
-  if phase.requiredViews.evidence:
-    all must be in state.viewedEvidence
-  
-  // Check interview requirements
-  if phase.requiredViews.interviews:
-    all must be in state.completedInterviews
-  
-  // If swap phase, must have answered swap
-  if phase.isSwapPhase && !state.hasUsedSwap:
-    return false
-  
-  return all checks passed
+Phase {
+  ...
+  sceneImage: string          // صورة المشهد الخاص بالمرحلة
+  sceneItems: string[]        // الـ IDs اللي تظهر في المشهد ده بس
+  targetRoom: string          // الغرفة اللي المشهد بتاعها
 }
 ```
 
----
+تقسيم floor-1 لمرحلتين:
+- المرحلة 4: `floor-khaled` → unlocks: khaled فقط، requiredViews: khaled فقط
+- المرحلة 5: `floor-noura` → unlocks: noura فقط، requiredViews: noura فقط
 
-### 4. `src/components/game/GameOverlay.tsx` - تعديل منطق الـ Swap vs CTA
+### 2. `src/contexts/GameContext.tsx` - تتبع طريقة الدخول
 
-**المشكلة الحالية:** الـ Swap banner والـ CTA banner بيظهروا مع بعض.
-
-**الحل:**
-- الـ Swap يظهر فقط في المرحلة اللي فيها `isSwapPhase = true` (المرحلة 3)
-- الـ Swap يظهر بعد ما اللاعب يشوف الأدلة المطلوبة (K6)
-- طالما الـ Swap مش متجاوب عليه، الـ CTA ما يظهرش
-- بعد الإجابة (بدل أو كمل)، الـ CTA يظهر
-
-**المنطق الجديد:**
+اضافة حقل جديد في GameState:
 ```text
-showSwapBanner = 
-  currentPhase.isSwapPhase && 
-  !state.hasUsedSwap && 
-  requiredEvidenceViewed (K6 is viewed) &&
-  !showSwapModal
-
-shouldShowContinue = 
-  canAdvance() && 
-  currentPhase.ctaLabel && 
-  !(currentPhase.isSwapPhase && !state.hasUsedSwap)  // لازم يجاوب على Swap أولا
++ entryMethod: "cta" | "direct"   // ازاي دخل الغرفة
++ lastCTAPhase: number            // اخر مرحلة دخل منها بـ CTA
 ```
 
----
+تعديل منطق الدخول:
+- لما يضغط CTA: `entryMethod = "cta"` + `lastCTAPhase = currentPhaseIndex`
+- لما يضغط زر الغرفة: `entryMethod = "direct"`
 
-### 5. `src/components/game/screens/HypothesisSelectScreen.tsx` - تعديل
+### 3. `src/components/game/GameOverlay.tsx` - تعديل التنقل
 
-بدل ما يروح direct على dashboard، يروح على briefing:
+- زر CTA يضبط `entryMethod = "cta"` قبل الانتقال
+- ازرار الغرف تضبط `entryMethod = "direct"` قبل الانتقال
+
+### 4. شاشات الغرف - نظام الخلفيات المزدوج
+
+**الفكرة العامة لكل غرفة:**
 ```text
-handleStart:
-  advancePhase() // 0 -> 1
-  advancePhase() // 1 -> 2 (unlocks D1+D2)
-  onComplete()   // navigate to "briefing" بدل "dashboard"
+if (entryMethod === "cta" && currentPhase.targetRoom === thisRoom):
+  backgroundImage = currentPhase.sceneImage   // صورة المشهد الخاص
+  visibleItems = currentPhase.sceneItems      // الادلة الجديدة بس
+else:
+  backgroundImage = cumulativeRoomImage       // الصورة التراكمية
+  visibleItems = allViewedItemsInThisRoom     // كل اللي اتشاف
 ```
 
----
+### 5. `EvidenceScreen.tsx` - اخفاء الادلة المستقبلية
 
-### 6. `src/pages/Index.tsx` - تعديل
+- بدل ما نعرض قفل للادلة اللي لسه مظهرتش → منعرضهاش خالص
+- فقط الادلة المفتوحة (unlocked) هي اللي تظهر كـ hotspots
+- في وضع CTA: فقط ادلة المرحلة الحالية
+- في وضع direct: كل الادلة اللي اتفتحت لحد دلوقتي
 
-- إضافة `BriefingScreen` كشاشة جديدة
-- تعديل hypothesis-select → briefing → dashboard
-- إضافة "briefing" لقائمة الشاشات
+### 6. `DashboardScreen.tsx` - نفس المنطق
 
----
+- في وضع CTA: البيانات الجديدة بس
+- في وضع direct: كل البيانات اللي اتفتحت
 
-## ملخص الملفات والتعديلات
+### 7. `FloorScreen.tsx` - الشخصيات المرئية فقط
 
-| الملف | التعديل | الحجم |
-|---|---|---|
-| `src/data/case1.ts` | إعادة كتابة PHASES (10 مراحل) + إضافة requiredViews + isSwapPhase | متوسط |
-| `src/components/game/screens/BriefingScreen.tsx` | **جديد** - شاشة انتقالية | صغير |
-| `src/contexts/GameContext.tsx` | تعديل `canAdvance()` ليتحقق من requiredViews + swap | متوسط |
-| `src/components/game/GameOverlay.tsx` | تعديل منطق Swap vs CTA (ما يظهروش مع بعض) | صغير |
-| `src/components/game/screens/HypothesisSelectScreen.tsx` | تغيير الوجهة من dashboard لـ briefing | صغير |
-| `src/pages/Index.tsx` | إضافة BriefingScreen + تعديل flow | صغير |
+- ازالة القفل من الشخصيات اللي لسه مظهرتش (مش موجودين اصلا)
+- في وضع CTA: الشخصية الجديدة بس
+- في وضع direct: كل الشخصيات اللي اتقابلوا/اتفتحوا
 
 ---
 
-## سيناريو كامل (خطوة بخطوة) بعد التعديل
+## سيناريو كامل بعد التعديل
 
-1. **المشاهد** → 4 مشاهد أبو سعيد
-2. **الفرضيات** → اختار 4 → ضغط "ابدأ التحليل"
-3. **شاشة الانطلاق (briefing)** → رسالة "ابدأ بالبيانات..." → ضغط "تابع التحليل"
-4. **غرفة البيانات** → D1+D2 مفتوحين → افتحهم → يظهر CTA "تابع التحليل" + "اتفتحت ملفات في غرفة الأدلة"
-5. **غرفة الأدلة (أول مرة)** → K6 + N1 مفتوحين (باقي الأدلة مقفولة) → افتح K6 → يظهر سؤال التبديل → جاوب (بدل/كمل) → يظهر CTA "خالد ونورة في الصالة"
-6. **الصالة (أول مرة)** → خالد + نورة → قابلهم → يظهر CTA "مستندات جديدة في غرفة الأدلة"
-7. **غرفة الأدلة (تاني مرة)** → K1 + K3 + N2 اتفتحوا (المجموع 5 ملفات) → افتح K1+K3 → يظهر CTA "بيانات جديدة في غرفة البيانات"
-8. **غرفة البيانات (تاني مرة)** → K2 + D3 اتفتحوا (المجموع 4 items) → افتحهم → يظهر CTA "ملفات جديدة في غرفة الأدلة"
-9. **غرفة الأدلة (تالت مرة)** → K5 + K4 + N3 اتفتحوا (المجموع 8 ملفات) → افتح K5+K4 → يظهر CTA "فيه حد في الصالة"
-10. **الصالة (تاني مرة)** → أميرة/الزبونة → قابلها → يظهر CTA "خلصت جمع الأدلة... روح غرفة التحليل"
-11. **غرفة التحليل** → المصفوفة + الفرضيات + الدفتر → اختار الفرضية → قدم التقرير → النتيجة
+1. اختيار الفرضيات → ضغط "ابدا التحليل"
+2. شاشة briefing → "ابدا بالبيانات..." → ضغط "تابع التحليل"
+3. **dashboard (CTA)**: مشهد خاص بـ D1+D2 → شاشة فيها الشارتين بس → افتحهم → CTA "اتفتحت ملفات في الادلة"
+4. **evidence (CTA)**: مشهد خاص بـ K6+N1 → الملفين بس → افتح K6 → سؤال التبديل → جاوب → CTA "خالد موجود في الصالة"
+5. **floor (CTA - خالد)**: مشهد خالد واقف في الصالة → ايكون خالد بس → قابله → CTA "نورة كمان موجودة"
+6. **floor (CTA - نورة)**: مشهد نورة عند الكاشير → ايكون نورة بس → قابلها → CTA "مستندات جديدة في الادلة"
+7. **evidence (CTA)**: مشهد خاص بـ K1+K3+N2 → 3 ملفات جداد بس → افتح K1+K3 → CTA "بيانات جديدة في البيانات"
+8. **dashboard (CTA)**: مشهد خاص بـ K2+D3 → الاتنين الجداد بس → افتحهم → CTA "ملفات جديدة في الادلة"
+9. **evidence (CTA)**: مشهد خاص بـ K5+K4+N3 → 3 ملفات جداد بس → افتح K5+K4 → CTA "فيه حد في الصالة"
+10. **floor (CTA - اميرة)**: مشهد اميرة في الصالة → ايكون اميرة بس → قابلها → CTA "روح غرفة التحليل"
+11. **analysis**: غرفة التحليل → المصفوفة → الحل النهائي
 
-**ملاحظات:**
-- أدلة الضوضاء (N1, N2, N3) موجودة بس مش مطلوب تفتحها عشان تكمل
-- أزرار الغرف تحت بتعرض بس الغرف اللي اتفتح فيها حاجات
-- الدفتر والفرضيات ثابتين في كل الشاشات
-- اللاعب يقدر يرجع لأي غرفة فتحها قبل كده بحرية
+**في اي وقت** لو دخلت غرفة من زر الغرفة:
+- evidence: الصورة التراكمية + كل الادلة اللي اتفتحت
+- dashboard: الصورة التراكمية + كل البيانات اللي اتفتحت
+- floor: الصورة التراكمية + كل الشخصيات اللي اتقابلوا
+
+---
+
+## ملخص الملفات
+
+| الملف | التعديل |
+|---|---|
+| `src/data/case1.ts` | تعديل PHASES (11 مرحلة) + اضافة sceneImage/sceneItems |
+| `src/contexts/GameContext.tsx` | اضافة entryMethod + setEntryMethod |
+| `src/components/game/GameOverlay.tsx` | ضبط entryMethod عند التنقل |
+| `src/components/game/screens/EvidenceScreen.tsx` | نظام خلفيات مزدوج + اخفاء ادلة مستقبلية |
+| `src/components/game/screens/DashboardScreen.tsx` | نظام خلفيات مزدوج |
+| `src/components/game/screens/FloorScreen.tsx` | نظام خلفيات مزدوج + اخفاء شخصيات مستقبلية |
+| `src/pages/Index.tsx` | تعديل ترقيم المراحل |
+
+**ملحوظة**: الصور هتكون placeholder مؤقتا (نفس صور الغرف الحالية) لحين تصميم الصور المخصصة.
