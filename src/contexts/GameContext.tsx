@@ -344,8 +344,25 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
   }, [state.currentPhaseIndex]);
 
   const canAdvance = useCallback((): boolean => {
-    return state.currentPhaseIndex < PHASES.length - 1;
-  }, [state.currentPhaseIndex]);
+    if (state.currentPhaseIndex >= PHASES.length - 1) return false;
+    const phase = PHASES[state.currentPhaseIndex];
+    if (!phase.requiredViews) return true;
+
+    const dashboardMet = phase.requiredViews.dashboard
+      ? phase.requiredViews.dashboard.every(id => state.viewedDashboard.includes(id))
+      : true;
+    const evidenceMet = phase.requiredViews.evidence
+      ? phase.requiredViews.evidence.every(id => state.viewedEvidence.includes(id))
+      : true;
+    const interviewsMet = phase.requiredViews.interviews
+      ? phase.requiredViews.interviews.every(id => state.completedInterviews.includes(id))
+      : true;
+
+    // If swap phase, must answer swap before advancing
+    if (phase.isSwapPhase && !state.hasUsedSwap) return false;
+
+    return dashboardMet && evidenceMet && interviewsMet;
+  }, [state.currentPhaseIndex, state.viewedDashboard, state.viewedEvidence, state.completedInterviews, state.hasUsedSwap]);
 
   // Final answer
   const setFinalHypothesis = useCallback((hypothesisId: string) => {

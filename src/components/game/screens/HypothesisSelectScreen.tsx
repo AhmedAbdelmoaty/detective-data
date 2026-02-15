@@ -15,7 +15,7 @@ export const HypothesisSelectScreen = ({ onComplete }: HypothesisSelectScreenPro
     if (state.selectedHypotheses.length === 4) {
       advancePhase(); // 0 -> 1
       advancePhase(); // 1 -> 2 (unlocks D1+D2)
-      onComplete();
+      onComplete(); // navigate to "briefing"
     }
   };
 

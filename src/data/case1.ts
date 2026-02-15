@@ -604,67 +604,81 @@ export interface Phase {
   };
   toastMessage?: string;
   ctaMessage?: string;
+  requiredViews?: {
+    dashboard?: string[];
+    evidence?: string[];
+    interviews?: string[];
+  };
+  isSwapPhase?: boolean;
 }
 
 export const PHASES: Phase[] = [
+  // 0: مشاهد أبو سعيد
   { index: 0, id: "scenes", label: "مشاهد البداية", ctaLabel: "", ctaTarget: "scenes", unlocks: {} },
+  // 1: اختيار الفرضيات
   { index: 1, id: "hypothesis-select", label: "اختيار الفرضيات", ctaLabel: "", ctaTarget: "hypothesis-select", unlocks: {} },
+  // 2: البيانات الأولى (D1+D2) → بعدها للأدلة
   {
-    index: 2, id: "data-1", label: "البيانات الأولى", ctaLabel: "تابع التحليل", ctaTarget: "dashboard",
-    unlocks: { dashboard: ["D1", "D2"], evidence: ["N1", "N2"] },
-    ctaMessage: "ابدأ بالبيانات، خد فكرة عامة عن اللي اتغير الأسبوع ده",
-    toastMessage: "خالد ونورة موجودين في الصالة… ممكن يكون عندهم ملاحظات",
+    index: 2, id: "data-1", label: "البيانات الأولى",
+    ctaLabel: "تابع التحليل", ctaTarget: "evidence",
+    unlocks: { dashboard: ["D1", "D2"] },
+    ctaMessage: "اتفتحت ملفات في غرفة الأدلة",
+    requiredViews: { dashboard: ["D1", "D2"] },
   },
+  // 3: أدلة أولى (K6+N1) + تبديل فرضية إجباري → بعدها للصالة
   {
-    index: 3, id: "floor-1", label: "الصالة", ctaLabel: "تابع التحليل", ctaTarget: "floor",
-    unlocks: { interviews: ["khaled", "noura"] },
+    index: 3, id: "evidence-1", label: "أدلة أولى",
+    ctaLabel: "تابع التحليل", ctaTarget: "floor",
+    unlocks: { evidence: ["K6", "N1"] },
     ctaMessage: "خالد ونورة موجودين في الصالة",
-    toastMessage: "اتفتح ملف جديد في غرفة الأدلة",
+    requiredViews: { evidence: ["K6"] },
+    isSwapPhase: true,
   },
+  // 4: الصالة أولى (خالد+نورة) → بعدها للأدلة
   {
-    index: 4, id: "evidence-early", label: "أدلة مبكرة", ctaLabel: "تابع التحليل", ctaTarget: "evidence",
-    unlocks: { evidence: ["K6", "N3"] },
-    ctaMessage: "اتفتح ملف جديد في غرفة الأدلة",
+    index: 4, id: "floor-1", label: "مقابلات أولى",
+    ctaLabel: "تابع التحليل", ctaTarget: "evidence",
+    unlocks: { interviews: ["khaled", "noura"] },
+    ctaMessage: "مستندات جديدة ظهرت في غرفة الأدلة",
+    requiredViews: { interviews: ["khaled", "noura"] },
   },
+  // 5: أدلة ثانية (K1+K3+N2) → بعدها للبيانات
   {
-    index: 5, id: "evidence-mid", label: "المنافس والأسعار", ctaLabel: "تابع التحليل", ctaTarget: "evidence",
-    unlocks: { evidence: ["K1", "K3"] },
-    ctaMessage: "فيه مستندات تانية اتفتحت في غرفة الأدلة",
-    toastMessage: "ظهر تقرير جديد في غرفة البيانات",
+    index: 5, id: "evidence-2", label: "أدلة ثانية",
+    ctaLabel: "تابع التحليل", ctaTarget: "dashboard",
+    unlocks: { evidence: ["K1", "K3", "N2"] },
+    ctaMessage: "بيانات جديدة ظهرت في غرفة البيانات",
+    requiredViews: { evidence: ["K1", "K3"] },
   },
+  // 6: بيانات ثانية (K2+D3) → بعدها للأدلة
   {
-    index: 6, id: "data-mid", label: "بيانات أدق", ctaLabel: "تابع التحليل", ctaTarget: "dashboard",
-    unlocks: { dashboard: ["K2"] },
-    ctaMessage: "ظهر تقرير جديد في غرفة البيانات",
-    toastMessage: "ظهرت بيانات جديدة في غرفة البيانات",
+    index: 6, id: "data-2", label: "بيانات ثانية",
+    ctaLabel: "تابع التحليل", ctaTarget: "evidence",
+    unlocks: { dashboard: ["K2", "D3"] },
+    ctaMessage: "ملفات جديدة ظهرت في غرفة الأدلة",
+    requiredViews: { dashboard: ["K2", "D3"] },
   },
+  // 7: أدلة ثالثة (K5+K4+N3) → بعدها للصالة
   {
-    index: 7, id: "data-evidence-d3", label: "ضغط الكاشير", ctaLabel: "تابع التحليل", ctaTarget: "dashboard",
-    unlocks: { dashboard: ["D3"] },
-    ctaMessage: "ظهرت بيانات جديدة في غرفة البيانات",
-    toastMessage: "اتفتح ملف جديد في غرفة الأدلة",
-  },
-  {
-    index: 8, id: "evidence-late", label: "تسوية المدفوعات", ctaLabel: "تابع التحليل", ctaTarget: "evidence",
-    unlocks: { evidence: ["K5"] },
-    ctaMessage: "اتفتح ملف جديد في غرفة الأدلة",
-    toastMessage: "اتفتح مستند جديد في غرفة الأدلة",
-  },
-  {
-    index: 9, id: "evidence-final", label: "ورقة بعد البيع", ctaLabel: "تابع التحليل", ctaTarget: "evidence",
-    unlocks: { evidence: ["K4"] },
-    ctaMessage: "اتفتح مستند جديد في غرفة الأدلة",
-    toastMessage: "فيه حد في الصالة عايز يقولك حاجة",
-  },
-  {
-    index: 10, id: "floor-late", label: "رأي زبونة", ctaLabel: "تابع التحليل", ctaTarget: "floor",
-    unlocks: { interviews: ["amira"] },
+    index: 7, id: "evidence-3", label: "أدلة ثالثة",
+    ctaLabel: "تابع التحليل", ctaTarget: "floor",
+    unlocks: { evidence: ["K5", "K4", "N3"] },
     ctaMessage: "فيه حد في الصالة عايز يقولك حاجة",
+    requiredViews: { evidence: ["K5", "K4"] },
   },
+  // 8: الصالة ثانية (أميرة) → بعدها لغرفة التحليل
   {
-    index: 11, id: "matrix", label: "المصفوفة", ctaLabel: "روح غرفة التحليل", ctaTarget: "analysis",
-    unlocks: {},
+    index: 8, id: "floor-2", label: "مقابلة الزبونة",
+    ctaLabel: "روح غرفة التحليل", ctaTarget: "analysis",
+    unlocks: { interviews: ["amira"] },
     ctaMessage: "خلصت جمع الأدلة… روح غرفة التحليل وابدأ المصفوفة",
+    requiredViews: { interviews: ["amira"] },
+  },
+  // 9: المصفوفة والتحليل النهائي
+  {
+    index: 9, id: "matrix", label: "المصفوفة",
+    ctaLabel: "", ctaTarget: "analysis",
+    unlocks: {},
   },
 ];
 
