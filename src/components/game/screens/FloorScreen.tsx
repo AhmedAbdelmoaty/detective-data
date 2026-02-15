@@ -8,11 +8,29 @@ import { useGame } from "@/contexts/GameContext";
 import { useSound } from "@/hooks/useSoundEffects";
 import { CHARACTERS, PHASES } from "@/data/case1";
 import { toast } from "sonner";
-import interrogationRoom from "@/assets/rooms/interrogation-room.png";
+import floorBg from "@/assets/rooms/floor.png";
+import khaledInterviewBg from "@/assets/scenes/khaled-interview.png";
+import nouraInterviewBg from "@/assets/scenes/noura-interview.png";
+import amiraInterviewBg from "@/assets/scenes/amira-interview.png";
 
 interface FloorScreenProps {
   onNavigate: (screen: string) => void;
 }
+
+// Character positions on the cumulative floor image
+// Khaled: left side near shelves, Amira: center, Noura: right at cashier
+const characterPositions: Record<string, { left: string; bottom: string }> = {
+  khaled: { left: "15%", bottom: "20%" },
+  amira: { left: "45%", bottom: "20%" },
+  noura: { left: "75%", bottom: "20%" },
+};
+
+// Scene backgrounds per phase
+const phaseSceneBgs: Record<string, string> = {
+  "floor-khaled": khaledInterviewBg,
+  "floor-noura": nouraInterviewBg,
+  "floor-amira": amiraInterviewBg,
+};
 
 export const FloorScreen = ({ onNavigate }: FloorScreenProps) => {
   const { state, addToNotebook, isInNotebook, markInterviewComplete, isInterviewComplete } = useGame();
@@ -24,10 +42,14 @@ export const FloorScreen = ({ onNavigate }: FloorScreenProps) => {
   const currentPhase = PHASES[state.currentPhaseIndex];
   const isCTAEntry = state.entryMethod === "cta" && currentPhase?.targetRoom === "floor";
 
-  // Filter visible characters based on entry method
   const visibleCharacters = isCTAEntry
     ? interviewees.filter(c => currentPhase.sceneItems?.includes(c.id))
     : interviewees.filter(c => state.unlockedInterviews.includes(c.id));
+
+  // Pick background
+  const backgroundImage = isCTAEntry
+    ? (phaseSceneBgs[currentPhase.id] || floorBg)
+    : floorBg;
 
   const handleCharacterClick = (charId: string) => {
     setActiveCharacter(charId);
@@ -51,16 +73,10 @@ export const FloorScreen = ({ onNavigate }: FloorScreenProps) => {
   const activeChar = CHARACTERS.find(c => c.id === activeCharacter);
   const isActiveCharCompleted = activeCharacter ? isInterviewComplete(activeCharacter) : false;
 
-  const positions = [
-    { left: "18%", bottom: "20%" },
-    { left: "45%", bottom: "20%" },
-    { left: "72%", bottom: "20%" },
-  ];
-
   return (
     <>
       <InteractiveRoom
-        backgroundImage={interrogationRoom}
+        backgroundImage={backgroundImage}
         hotspots={[]}
         onHotspotClick={() => {}}
         activeHotspot={null}
@@ -77,11 +93,12 @@ export const FloorScreen = ({ onNavigate }: FloorScreenProps) => {
         <div className="absolute inset-0 pointer-events-none z-10">
           {visibleCharacters.map((char, i) => {
             const completed = isInterviewComplete(char.id);
+            const pos = characterPositions[char.id] || { left: `${20 + i * 30}%`, bottom: "20%" };
             return (
               <motion.div
                 key={char.id}
                 className="absolute pointer-events-auto"
-                style={positions[i]}
+                style={pos}
                 initial={{ opacity: 0, y: 50 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: i * 0.2 }}

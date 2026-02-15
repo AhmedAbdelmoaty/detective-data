@@ -8,11 +8,41 @@ import { useSound } from "@/hooks/useSoundEffects";
 import { DASHBOARD_DATA, EVIDENCE_ITEMS, PHASES } from "@/data/case1";
 import { toast } from "sonner";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line } from "recharts";
-import analysisRoomBg from "@/assets/rooms/analysis-room.png";
+import dataRoomBg from "@/assets/rooms/data-room.png";
+import dataScene1 from "@/assets/scenes/data-scene-1.png";
+import dataScene2 from "@/assets/scenes/data-scene-2.png";
 
 interface DashboardScreenProps {
   onNavigate: (screen: string) => void;
 }
+
+// Hotspot positions for CTA scene backgrounds
+const sceneHotspotPositions: Record<string, Record<string, { x: number; y: number; w: number; h: number }>> = {
+  // Data Scene 1: left monitor (bar chart D1), right monitor (line chart D2)
+  "data-1": {
+    D1: { x: 10, y: 12, w: 28, h: 45 },   // left monitor with bar chart
+    D2: { x: 52, y: 10, w: 32, h: 48 },   // right monitor with line chart
+  },
+  // Data Scene 2: notebook (left, K2), monitor (right, D3)
+  "data-2": {
+    K2: { x: 8, y: 35, w: 28, h: 40 },    // open notebook on left
+    D3: { x: 42, y: 10, w: 35, h: 50 },   // monitor with bar chart
+  },
+};
+
+// Cumulative room hotspot positions (data-room.png)
+const cumulativeHotspotPositions: Record<string, { x: number; y: number; w: number; h: number }> = {
+  D2: { x: 3, y: 30, w: 14, h: 20 },    // left monitor (line chart "Invoices")
+  D1: { x: 18, y: 28, w: 16, h: 22 },   // second left monitor (bar chart "Invoices by Hour")
+  D3: { x: 58, y: 35, w: 18, h: 25 },   // large right monitor (bar chart "Footprint by Horse")
+  K2: { x: 40, y: 55, w: 16, h: 18 },   // open book on desk
+};
+
+// Map phase IDs to scene images
+const phaseSceneImages: Record<string, string> = {
+  "data-1": dataScene1,
+  "data-2": dataScene2,
+};
 
 export const DashboardScreen = ({ onNavigate }: DashboardScreenProps) => {
   const { state, addToNotebook, isInNotebook, viewDashboardItem, viewEvidence, isEvidenceViewed } = useGame();
@@ -22,24 +52,33 @@ export const DashboardScreen = ({ onNavigate }: DashboardScreenProps) => {
   const currentPhase = PHASES[state.currentPhaseIndex];
   const isCTAEntry = state.entryMethod === "cta" && currentPhase?.targetRoom === "dashboard";
 
-  // Combine dashboard items + K2 (which shows in data room)
+  // Combine dashboard items + K2
   const k2Evidence = EVIDENCE_ITEMS.find(e => e.id === "K2");
   const allItems = [...DASHBOARD_DATA.map(d => ({ ...d, isK2: false }))];
   if (k2Evidence && state.unlockedDashboard.includes("K2")) {
     allItems.push({ id: "K2", name: k2Evidence.name, description: k2Evidence.description, saveId: k2Evidence.saveId, saveText: k2Evidence.saveText, type: "table" as any, data: k2Evidence.data, isK2: true } as any);
   }
 
-  // Filter based on entry method
   const unlockedItems = isCTAEntry
     ? allItems.filter(item => currentPhase.sceneItems?.includes(item.id))
     : allItems.filter(item => state.unlockedDashboard.includes(item.id));
 
-  const hotspots = unlockedItems.map((item, i) => {
-    const positions = [
-      { x: 15, y: 15 }, { x: 47, y: 15 }, { x: 80, y: 15 }, { x: 47, y: 50 },
-    ];
-    const pos = positions[i] || { x: 50, y: 50 };
-    return { id: item.id, x: pos.x, y: pos.y, width: 16, height: 14, label: `📊 ${item.name}`, icon: "📊" };
+  // Pick background
+  const backgroundImage = isCTAEntry
+    ? (phaseSceneImages[currentPhase.id] || dataRoomBg)
+    : dataRoomBg;
+
+  // Pick hotspot positions
+  const hotspots = unlockedItems.map((item) => {
+    let pos: { x: number; y: number; w: number; h: number };
+    if (isCTAEntry && sceneHotspotPositions[currentPhase.id]?.[item.id]) {
+      pos = sceneHotspotPositions[currentPhase.id][item.id];
+    } else if (cumulativeHotspotPositions[item.id]) {
+      pos = cumulativeHotspotPositions[item.id];
+    } else {
+      pos = { x: 50, y: 50, w: 14, h: 14 };
+    }
+    return { id: item.id, x: pos.x, y: pos.y, width: pos.w, height: pos.h, label: `📊 ${item.name}`, icon: "📊" };
   });
 
   const handleHotspotClick = (hotspotId: string) => {
@@ -150,7 +189,7 @@ export const DashboardScreen = ({ onNavigate }: DashboardScreenProps) => {
 
   return (
     <>
-      <InteractiveRoom backgroundImage={analysisRoomBg} hotspots={hotspots} onHotspotClick={handleHotspotClick} activeHotspot={activeItem} overlayContent={activeItem ? renderOverlay() : undefined} onCloseOverlay={() => setActiveItem(null)}>
+      <InteractiveRoom backgroundImage={backgroundImage} hotspots={hotspots} onHotspotClick={handleHotspotClick} activeHotspot={activeItem} overlayContent={activeItem ? renderOverlay() : undefined} onCloseOverlay={() => setActiveItem(null)}>
         <motion.div className="absolute top-12 right-4 z-20 flex items-center gap-3">
           <div className="px-4 py-2 rounded-lg bg-background/80 backdrop-blur-sm border border-border">
             <span className="text-muted-foreground text-sm">بيانات: {unlockedItems.length}</span>
