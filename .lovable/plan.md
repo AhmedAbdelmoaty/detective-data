@@ -1,190 +1,202 @@
 
-# خطة إعادة هيكلة الـ Flow + إصلاح الأخطاء
+# خطة إعادة هيكلة المراحل والـ Flow بالكامل
 
-## المشاكل الحالية
+## المشاكل الحالية (فهمتها كلها)
 
-1. **UI Freeze عند إعادة المشاهد**: الـ EnhancedDialogue بيسيب overlay عالق بعد الإغلاق
-2. **CTA بيوّدي مكان غلط**: الزر "ابدأ من البيانات" بيروح الصالة بدل البيانات (bug في handleCTA - بيقرأ الـ phase اللي بعدها مش الحالية)
-3. **الترتيب مش صح**: أدلة الضوضاء (N1, N2) ظاهرة بدري في غرفة الأدلة، وما فيش أدلة حقيقية
-4. **الـ Hub صفحة منفصلة**: اللاعب مضطر يرجع للـ Hub كل مرة
+1. **رسالة "ابدأ بالبيانات" تظهر جوا غرفة البيانات** - المفروض تظهر قبلها كشاشة انتقالية
+2. **ترتيب المراحل غلط تماما** - الترتيب الحالي مش مطابق لللي انت عايزه
+3. **Swap و CTA بيظهروا مع بعض** - المفروض الـ Swap يكون إجباري (لازم تجاوب) قبل ما CTA يظهر
+4. **توزيع الأدلة على المراحل غلط** - N1+N2 بتظهر بدري مع D1+D2 والمفروض لا
+5. **`canAdvance()` مش بيتحقق من حاجة** - بيرجع `true` دايما طالما مش آخر مرحلة
 
-## التصميم الجديد (حسب طلبك)
+---
 
-### المبدأ الأساسي: "الـ Hub موزع في كل مكان"
-
-بدل ما الـ Hub صفحة مستقلة، هيتوزع على كل الشاشات كـ overlay ثابت:
-- **فوق**: شريط الفرضيات المختارة (4 بطاقات صغيرة)
-- **يمين تحت**: دفتر الملاحظات (floating button - موجود أصلا)
-- **تحت**: أزرار الغرف (بيانات / أدلة / صالة / مكتب) - بس بيعرض اللي اتفتح فقط
-- **وسط**: زر "تابع التحليل" + رسالة سياقية - يظهر في نفس الشاشة بعد ما اللاعب يخلص المطلوب
-
-### الـ Flow الجديد (بعد اختيار الفرضيات)
+## الـ Flow الجديد الكامل (10 مراحل: 0-9)
 
 ```text
-اختيار 4 فرضيات
-    |
-    v
-رسالة: "ابدأ بالبيانات، خد فكرة عامة عن اللي اتغير الأسبوع ده"
-زر: "تابع التحليل" -> يروح direct على غرفة البيانات
-    |
-    v
-غرفة البيانات (D1 + D2 مفتوحين)
-   اللاعب يفتح الأدلة
-   بعد ما يفتحهم: يظهر زر + رسالة في نفس الشاشة
-   رسالة: "ممكن تقابل فريق العمل... اسمع ملاحظاتهم"
-   زر: "تابع التحليل"
-    |
-    v
-الصالة (خالد + نورة مفتوحين)
-   بعد المقابلات: رسالة + زر
-   رسالة: "اتفتح ملف جديد في غرفة الأدلة"
-   زر: "تابع التحليل"
-    |
-    v
-... وهكذا لكل مرحلة
+المرحلة 0: scenes (مشاهد أبو سعيد)
+المرحلة 1: hypothesis-select (اختيار 4 فرضيات)
+   |
+   v  [ضغط "ابدأ التحليل" → advancePhase مرتين → شاشة briefing]
+   |
+المرحلة 2: briefing → شاشة انتقالية فيها رسالة + CTA → dashboard
+   |  [في الداشبورد: D1+D2 مفتوحين، بعد مشاهدتهم يظهر CTA]
+   |
+المرحلة 3: evidence-1 (K6 + N1 يتفتحوا)
+   |  [في الأدلة: بعد مشاهدة K6 → يظهر سؤال التبديل إجباري]
+   |  [بعد الإجابة على التبديل → يظهر CTA للصالة]
+   |
+المرحلة 4: floor-1 (خالد + نورة يتفتحوا)
+   |  [في الصالة: بعد مقابلتهم → يظهر CTA للأدلة]
+   |
+المرحلة 5: evidence-2 (K1 + K3 + N2 يتفتحوا)
+   |  [في الأدلة: بعد مشاهدة K1+K3 → يظهر CTA للبيانات]
+   |
+المرحلة 6: data-2 (K2 + D3 يتفتحوا في الداشبورد)
+   |  [في البيانات: بعد مشاهدتهم → يظهر CTA للأدلة]
+   |
+المرحلة 7: evidence-3 (K5 + K4 + N3 يتفتحوا)
+   |  [في الأدلة: بعد مشاهدة K5+K4 → يظهر CTA للصالة]
+   |
+المرحلة 8: floor-2 (أميرة/الزبونة تتفتح)
+   |  [بعد مقابلتها → يظهر CTA لغرفة التحليل]
+   |
+المرحلة 9: matrix (غرفة التحليل - المصفوفة + الاختيار النهائي)
 ```
 
-**مهم**: اللاعب يقدر يتنقل بين الغرف بحرية (أزرار التنقل تحت)، بس الزر "تابع" هو اللي بيحرك القصة للأمام.
+---
 
-## التفاصيل التقنية
+## التفاصيل التقنية - ملف بملف
 
-### 1. إصلاح Bug الـ CTA (مشكلة routing)
+### 1. `src/data/case1.ts` - إعادة كتابة PHASES بالكامل
 
-**الملف**: `AnalystHubScreen.tsx` (سطر 29-38)
+**الـ PHASES الجديد (10 مراحل بدل 12):**
 
-**المشكلة**: `handleCTA` بيقرأ `PHASES[state.currentPhaseIndex + 1]` لكن بيستخدم الـ `ctaTarget` بتاع المرحلة الجديدة بدل الحالية. يعني لما الـ phase الحالية هي 2 (ctaTarget = "dashboard")، بيعمل advance فيروح phase 3 (ctaTarget = "floor") وبيستخدم floor!
+| Index | ID | unlocks | ctaMessage | ctaLabel | ctaTarget | requiredViews | swapPhase |
+|---|---|---|---|---|---|---|---|
+| 0 | scenes | -- | -- | -- | -- | -- | -- |
+| 1 | hypothesis-select | -- | -- | -- | -- | -- | -- |
+| 2 | data-1 | D1, D2 | "اتفتحت ملفات في غرفة الأدلة" | "تابع التحليل" | evidence | D1, D2 (dashboard) | false |
+| 3 | evidence-1 | K6, N1 | "خالد ونورة موجودين في الصالة" | "تابع التحليل" | floor | K6 (evidence) | **true** |
+| 4 | floor-1 | khaled, noura | "مستندات جديدة ظهرت في غرفة الأدلة" | "تابع التحليل" | evidence | khaled, noura (interviews) | false |
+| 5 | evidence-2 | K1, K3, N2 | "بيانات جديدة ظهرت في غرفة البيانات" | "تابع التحليل" | dashboard | K1, K3 (evidence) | false |
+| 6 | data-2 | K2, D3 | "ملفات جديدة ظهرت في غرفة الأدلة" | "تابع التحليل" | evidence | K2, D3 (dashboard) | false |
+| 7 | evidence-3 | K5, K4, N3 | "فيه حد في الصالة عايز يقولك حاجة" | "تابع التحليل" | floor | K5, K4 (evidence) | false |
+| 8 | floor-2 | amira | "خلصت جمع الأدلة... روح غرفة التحليل وابدأ المصفوفة" | "روح غرفة التحليل" | analysis | amira (interview) | false |
+| 9 | matrix | -- | -- | -- | -- | -- | false |
 
-**الحل**: نقرأ `ctaTarget` من المرحلة الحالية قبل ما نعمل advance:
+**تعديلات على الـ Phase interface:**
 ```text
-handleCTA:
-  1. target = PHASES[currentPhaseIndex].ctaTarget  // احفظ الهدف الحالي
-  2. advancePhase()                                  // اتقدم
-  3. toast(PHASES[currentPhaseIndex + 1].toastMessage) // اعرض رسالة المرحلة الجديدة
-  4. navigate(target)                                 // روح للهدف الصح
++ requiredViews: { dashboard?: string[], evidence?: string[], interviews?: string[] }
++ isSwapPhase: boolean  // true فقط في المرحلة 3
 ```
 
-### 2. إنشاء GameOverlay component جديد
+**الرسائل المناسبة لشاشة الـ briefing:**
+- الرسالة: "ابدأ بالبيانات، خد فكرة عامة عن اللي اتغير الأسبوع ده. دور في الأدلة والبيانات وقابل فريق العمل... وحاول توصل للسبب الحقيقي."
+- الزر: "تابع التحليل"
 
-**ملف جديد**: `src/components/game/GameOverlay.tsx`
+---
 
-هيظهر في كل الشاشات (بيانات / أدلة / صالة / مكتب) وفيه:
+### 2. `src/components/game/screens/BriefingScreen.tsx` - ملف جديد
 
-**فوق الشاشة**: شريط الفرضيات الأربعة المختارة (بطاقات صغيرة)
+شاشة انتقالية بين اختيار الفرضيات وغرفة البيانات:
+- خلفية: نفس صورة store-front مع overlay
+- فيها: عنوان "هيا نبدأ" + فقرة شرح قصيرة ("ابدأ بالبيانات، خد فكرة عامة عن اللي اتغير الأسبوع ده...")
+- زر CTA: "تابع التحليل" → يوّدي لغرفة البيانات
+- الشاشة دي تظهر مرة واحدة بس
 
-**تحت الشاشة**: أزرار التنقل بين الغرف المتاحة:
-- البيانات (لو unlockedDashboard > 0)
-- الأدلة (لو unlockedEvidence > 0)
-- الصالة (لو unlockedInterviews > 0)
-- المكتب (دايما متاح)
-- غرفة التحليل (تظهر بعد المرحلة 11)
+---
 
-**وسط**: "Continue Banner" - زر تابع التحليل + رسالة سياقية
-- يظهر فقط لما المرحلة الحالية خلصت (اللاعب شاف كل الأدلة المطلوبة)
-- الرسالة من `PHASES[currentPhaseIndex].toastMessage`
-- الزر بيعمل `advancePhase()` وبينقل للشاشة المطلوبة
+### 3. `src/contexts/GameContext.tsx` - تعديل `canAdvance()`
 
-**عرض التبديل**: بعد المرحلة 4، يظهر banner مرة واحدة:
-- "تقدر تبدل فرضية واحدة لو حاسس إن اتجاهك اتغير"
-- زرين: "بدّل" و "كمّل بدون تبديل"
-- لو ضغط "كمّل" أو "بدّل": الـ banner يختفي ولا يظهر تاني
+**المشكلة الحالية:** `canAdvance()` بيرجع `true` دايما:
+```text
+canAdvance = () => state.currentPhaseIndex < PHASES.length - 1
+```
 
-### 3. تعديل PHASES - رسائل السياق
+**الحل الجديد:** `canAdvance()` هيتحقق من `requiredViews` للمرحلة الحالية:
+```text
+canAdvance = () => {
+  phase = PHASES[currentPhaseIndex]
+  if no requiredViews → return true
+  
+  // Check dashboard requirements
+  if phase.requiredViews.dashboard:
+    all must be in state.viewedDashboard
+  
+  // Check evidence requirements  
+  if phase.requiredViews.evidence:
+    all must be in state.viewedEvidence
+  
+  // Check interview requirements
+  if phase.requiredViews.interviews:
+    all must be in state.completedInterviews
+  
+  // If swap phase, must have answered swap
+  if phase.isSwapPhase && !state.hasUsedSwap:
+    return false
+  
+  return all checks passed
+}
+```
 
-**الملف**: `src/data/case1.ts`
+---
 
-تعديل `toastMessage` لكل مرحلة ليكون سياقي مش hint:
+### 4. `src/components/game/GameOverlay.tsx` - تعديل منطق الـ Swap vs CTA
 
-| المرحلة | الرسالة الحالية | الرسالة الجديدة |
+**المشكلة الحالية:** الـ Swap banner والـ CTA banner بيظهروا مع بعض.
+
+**الحل:**
+- الـ Swap يظهر فقط في المرحلة اللي فيها `isSwapPhase = true` (المرحلة 3)
+- الـ Swap يظهر بعد ما اللاعب يشوف الأدلة المطلوبة (K6)
+- طالما الـ Swap مش متجاوب عليه، الـ CTA ما يظهرش
+- بعد الإجابة (بدل أو كمل)، الـ CTA يظهر
+
+**المنطق الجديد:**
+```text
+showSwapBanner = 
+  currentPhase.isSwapPhase && 
+  !state.hasUsedSwap && 
+  requiredEvidenceViewed (K6 is viewed) &&
+  !showSwapModal
+
+shouldShowContinue = 
+  canAdvance() && 
+  currentPhase.ctaLabel && 
+  !(currentPhase.isSwapPhase && !state.hasUsedSwap)  // لازم يجاوب على Swap أولا
+```
+
+---
+
+### 5. `src/components/game/screens/HypothesisSelectScreen.tsx` - تعديل
+
+بدل ما يروح direct على dashboard، يروح على briefing:
+```text
+handleStart:
+  advancePhase() // 0 -> 1
+  advancePhase() // 1 -> 2 (unlocks D1+D2)
+  onComplete()   // navigate to "briefing" بدل "dashboard"
+```
+
+---
+
+### 6. `src/pages/Index.tsx` - تعديل
+
+- إضافة `BriefingScreen` كشاشة جديدة
+- تعديل hypothesis-select → briefing → dashboard
+- إضافة "briefing" لقائمة الشاشات
+
+---
+
+## ملخص الملفات والتعديلات
+
+| الملف | التعديل | الحجم |
 |---|---|---|
-| 2 (بعد البيانات) | "ممكن تقابل فريق العمل..." | "خالد ونورة موجودين في الصالة... ممكن يكون عندهم ملاحظات" |
-| 3 (بعد الصالة) | "اتفتح ملف جديد في غرفة الأدلة" | "اتفتح ملف جديد في غرفة الأدلة" |
-| 4 (بعد K6) | "تقدر تبدل فرضية..." | (يتعامل معاه الـ swap UI مش toast) |
-| 5 (بعد K1+K3) | "في بيانات أدق ممكن تفيدك" | "ظهر تقرير جديد في غرفة البيانات" |
-| 6 (بعد K2) | "في نقطة عن ضغط الكاشير..." | "ظهرت بيانات جديدة في غرفة البيانات" |
-| 7 (بعد D3) | "في تقرير تسوية..." | "اتفتح ملف جديد في غرفة الأدلة" |
-| 8 (بعد K5) | "في ورقة بتوضح بعد البيع..." | "اتفتح مستند جديد في غرفة الأدلة" |
-| 9 (بعد K4) | "معلومة من زبونة..." | "فيه حد في الصالة عايز يقولك حاجة" |
-| 10 (بعد الزبونة) | -- | "خلصت جمع الأدلة... روح غرفة التحليل وابدأ المصفوفة" |
+| `src/data/case1.ts` | إعادة كتابة PHASES (10 مراحل) + إضافة requiredViews + isSwapPhase | متوسط |
+| `src/components/game/screens/BriefingScreen.tsx` | **جديد** - شاشة انتقالية | صغير |
+| `src/contexts/GameContext.tsx` | تعديل `canAdvance()` ليتحقق من requiredViews + swap | متوسط |
+| `src/components/game/GameOverlay.tsx` | تعديل منطق Swap vs CTA (ما يظهروش مع بعض) | صغير |
+| `src/components/game/screens/HypothesisSelectScreen.tsx` | تغيير الوجهة من dashboard لـ briefing | صغير |
+| `src/pages/Index.tsx` | إضافة BriefingScreen + تعديل flow | صغير |
 
-وأيضا إضافة `ctaMessage` لكل مرحلة (الجملة اللي تظهر فوق زر التابع):
+---
 
-| المرحلة | ctaMessage |
-|---|---|
-| 2 | "ابدأ بالبيانات، خد فكرة عامة عن اللي اتغير الأسبوع ده" |
-| 3 | "خالد ونورة موجودين في الصالة" |
-| 4 | "اتفتح ملف جديد في غرفة الأدلة" |
-| 5 | "فيه مستندات تانية اتفتحت في غرفة الأدلة" |
-| 6 | "ظهر تقرير جديد في غرفة البيانات" |
-| 7 | "ظهرت بيانات جديدة في غرفة البيانات" |
-| 8 | "اتفتح ملف جديد في غرفة الأدلة" |
-| 9 | "اتفتح مستند جديد في غرفة الأدلة" |
-| 10 | "فيه حد في الصالة عايز يقولك حاجة" |
-| 11 | "خلصت جمع الأدلة... روح غرفة التحليل" |
+## سيناريو كامل (خطوة بخطوة) بعد التعديل
 
-### 4. تعديل HypothesisSelectScreen
+1. **المشاهد** → 4 مشاهد أبو سعيد
+2. **الفرضيات** → اختار 4 → ضغط "ابدأ التحليل"
+3. **شاشة الانطلاق (briefing)** → رسالة "ابدأ بالبيانات..." → ضغط "تابع التحليل"
+4. **غرفة البيانات** → D1+D2 مفتوحين → افتحهم → يظهر CTA "تابع التحليل" + "اتفتحت ملفات في غرفة الأدلة"
+5. **غرفة الأدلة (أول مرة)** → K6 + N1 مفتوحين (باقي الأدلة مقفولة) → افتح K6 → يظهر سؤال التبديل → جاوب (بدل/كمل) → يظهر CTA "خالد ونورة في الصالة"
+6. **الصالة (أول مرة)** → خالد + نورة → قابلهم → يظهر CTA "مستندات جديدة في غرفة الأدلة"
+7. **غرفة الأدلة (تاني مرة)** → K1 + K3 + N2 اتفتحوا (المجموع 5 ملفات) → افتح K1+K3 → يظهر CTA "بيانات جديدة في غرفة البيانات"
+8. **غرفة البيانات (تاني مرة)** → K2 + D3 اتفتحوا (المجموع 4 items) → افتحهم → يظهر CTA "ملفات جديدة في غرفة الأدلة"
+9. **غرفة الأدلة (تالت مرة)** → K5 + K4 + N3 اتفتحوا (المجموع 8 ملفات) → افتح K5+K4 → يظهر CTA "فيه حد في الصالة"
+10. **الصالة (تاني مرة)** → أميرة/الزبونة → قابلها → يظهر CTA "خلصت جمع الأدلة... روح غرفة التحليل"
+11. **غرفة التحليل** → المصفوفة + الفرضيات + الدفتر → اختار الفرضية → قدم التقرير → النتيجة
 
-**الملف**: `src/components/game/screens/HypothesisSelectScreen.tsx`
-
-بعد اختيار 4 فرضيات والضغط على "ابدأ التحليل":
-- بدل ما يروح للـ Hub، يروح direct على غرفة البيانات
-- يعمل advancePhase() مرتين (0->1->2) عشان يفتح D1+D2
-- الـ flow: hypothesis-select -> dashboard (مباشرة)
-
-### 5. تعديل كل شاشات الغرف
-
-كل شاشة (DashboardScreen, EvidenceScreen, FloorScreen, OfficeScreen) هتتعدل:
-
-**إزالة**: زر "مركز التحليل" من تحت كل شاشة
-**إضافة**: GameOverlay component بدله
-
-الـ GameOverlay هيحتوي:
-- شريط الفرضيات فوق
-- أزرار الغرف تحت
-- زر "تابع التحليل" + رسالة (يظهر لما المرحلة تخلص)
-
-**متى يظهر زر "تابع"؟**
-- لما اللاعب يكون في الشاشة الصح ويكون شاف كل الأدلة المطلوبة في المرحلة الحالية
-- مثلا في المرحلة 2 (D1+D2): لما يكون في غرفة البيانات وشاف D1 وD2
-
-### 6. إصلاح UI Freeze
-
-**الملف**: `src/components/game/EnhancedDialogue.tsx`
-
-المشكلة الأساسية: الـ `AnimatePresence` جوا الـ `EnhancedDialogue` بيعمل `fixed inset-0 z-40` backdrop. لما الـ component يتشال من الـ DOM، الـ backdrop بيفضل.
-
-**الحل**: 
-- الـ `EnhancedDialogue` ما يعملش backdrop خاص بيه
-- الـ backdrop يكون مسؤولية الـ parent (اللي هو `OfficeScreen`) وده بيحصل أصلا بالـ `AnimatePresence` wrapper
-- نشيل الـ `<motion.div className="fixed inset-0 z-40">` من جوا EnhancedDialogue
-- ونخلي الـ z-index بتاع الـ dialogue box نفسه يكون عالي بدون backdrop منفصل
-
-### 7. AnalystHubScreen يتحول لـ AnalysisRoom
-
-بدل ما يكون صفحة UI، يتحول لغرفة تحليل:
-- فيها background image (analysis-lab)
-- فيها hotspots: الدفتر، المصفوفة، الفرضيات
-- فيها الـ GameOverlay زي باقي الغرف
-- تظهر فقط لما المرحلة توصل 11 (وقت المصفوفة)
-- قبل كده، اللاعب ما بيحتاجش يروحها - كل حاجة موزعة
-
-### 8. تعديل Index.tsx
-
-- بعد hypothesis-select -> يروح dashboard مش analyst-hub
-- الـ analyst-hub يتحول لـ analysis (غرفة التحليل)
-- شيل analyst-hub من الـ screens أو خليه كـ alias للـ analysis
-
-## ملخص الملفات
-
-| الملف | التعديل |
-|---|---|
-| `src/data/case1.ts` | تعديل PHASES: إضافة ctaMessage، تعديل toastMessage |
-| `src/components/game/GameOverlay.tsx` | **جديد**: شريط فرضيات + أزرار غرف + زر تابع + swap UI |
-| `src/components/game/EnhancedDialogue.tsx` | إصلاح: شيل الـ backdrop الداخلي |
-| `src/components/game/screens/HypothesisSelectScreen.tsx` | تعديل: يروح dashboard بدل analyst-hub |
-| `src/components/game/screens/DashboardScreen.tsx` | تعديل: يستخدم GameOverlay بدل NavigationButton |
-| `src/components/game/screens/EvidenceScreen.tsx` | تعديل: يستخدم GameOverlay |
-| `src/components/game/screens/FloorScreen.tsx` | تعديل: يستخدم GameOverlay |
-| `src/components/game/screens/OfficeScreen.tsx` | تعديل: يستخدم GameOverlay |
-| `src/components/game/screens/AnalystHubScreen.tsx` | تعديل كبير: يتحول لغرفة تحليل (المصفوفة) |
-| `src/pages/Index.tsx` | تعديل: flow بعد hypothesis-select يروح dashboard |
-| `src/components/game/FloatingNotebook.tsx` | إضافة: Activity Log (سجل الإجراءات) |
+**ملاحظات:**
+- أدلة الضوضاء (N1, N2, N3) موجودة بس مش مطلوب تفتحها عشان تكمل
+- أزرار الغرف تحت بتعرض بس الغرف اللي اتفتح فيها حاجات
+- الدفتر والفرضيات ثابتين في كل الشاشات
+- اللاعب يقدر يرجع لأي غرفة فتحها قبل كده بحرية
