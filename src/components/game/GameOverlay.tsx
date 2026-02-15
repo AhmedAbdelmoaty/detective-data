@@ -24,10 +24,13 @@ export const GameOverlay = ({ currentScreen, onNavigate }: GameOverlayProps) => 
   const selectedH = HYPOTHESES.filter(h => state.selectedHypotheses.includes(h.id));
   const unselectedH = HYPOTHESES.filter(h => !state.selectedHypotheses.includes(h.id));
 
-  // Show swap banner after phase 4, one-time only
-  const showSwapBanner = state.currentPhaseIndex >= 4 && !state.hasUsedSwap && !showSwapModal;
+  // Show swap banner only in swap phase, after required evidence viewed, and not yet answered
+  const requiredEvidenceForSwap = currentPhase?.isSwapPhase && currentPhase.requiredViews?.evidence
+    ? currentPhase.requiredViews.evidence.every(id => state.viewedEvidence.includes(id))
+    : false;
+  const showSwapBanner = currentPhase?.isSwapPhase && !state.hasUsedSwap && requiredEvidenceForSwap && !showSwapModal;
 
-  // Determine if continue banner should show
+  // CTA only shows if canAdvance AND not blocked by unanswered swap
   const shouldShowContinue = canAdvance() && currentPhase?.ctaLabel;
 
   const handleContinue = () => {
@@ -62,7 +65,7 @@ export const GameOverlay = ({ currentScreen, onNavigate }: GameOverlayProps) => 
     { id: "evidence", label: "الأدلة", icon: "📁", show: state.unlockedEvidence.length > 0 },
     { id: "floor", label: "الصالة", icon: "👥", show: state.unlockedInterviews.length > 0 },
     { id: "office", label: "المكتب", icon: "🏢", show: true },
-    { id: "analysis", label: "غرفة التحليل", icon: "🔬", show: state.currentPhaseIndex >= 11 },
+    { id: "analysis", label: "غرفة التحليل", icon: "🔬", show: state.currentPhaseIndex >= 9 },
   ];
 
   return (

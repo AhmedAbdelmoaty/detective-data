@@ -3,6 +3,7 @@ import { IntroScreen } from "@/components/game/screens/IntroScreen";
 import { OnboardingScreen } from "@/components/game/screens/OnboardingScreen";
 import { ScenesScreen } from "@/components/game/screens/ScenesScreen";
 import { HypothesisSelectScreen } from "@/components/game/screens/HypothesisSelectScreen";
+import { BriefingScreen } from "@/components/game/screens/BriefingScreen";
 import { AnalystHubScreen } from "@/components/game/screens/AnalystHubScreen";
 import { OfficeScreen } from "@/components/game/screens/OfficeScreen";
 import { EvidenceScreen } from "@/components/game/screens/EvidenceScreen";
@@ -16,7 +17,7 @@ import { SoundToggle } from "@/components/game/SoundToggle";
 import { FloatingNotebook } from "@/components/game/FloatingNotebook";
 import { GameProvider } from "@/contexts/GameContext";
 
-type Screen = "intro" | "onboarding" | "scenes" | "hypothesis-select" | "analyst-hub" | "office" | "evidence" | "dashboard" | "floor" | "analysis" | "result";
+type Screen = "intro" | "onboarding" | "scenes" | "hypothesis-select" | "briefing" | "analyst-hub" | "office" | "evidence" | "dashboard" | "floor" | "analysis" | "result";
 
 const showNotebookScreens: Screen[] = ["analyst-hub", "office", "evidence", "dashboard", "floor", "analysis"];
 
@@ -50,7 +51,8 @@ const GameContent = () => {
       {currentScreen === "intro" && <IntroScreen onNavigate={() => handleNavigate("onboarding")} />}
       {currentScreen === "onboarding" && <OnboardingScreen onComplete={() => handleNavigate("scenes")} />}
       {currentScreen === "scenes" && <ScenesScreen onComplete={() => handleNavigate("hypothesis-select")} />}
-      {currentScreen === "hypothesis-select" && <HypothesisSelectScreen onComplete={() => handleNavigate("dashboard")} />}
+      {currentScreen === "hypothesis-select" && <HypothesisSelectScreen onComplete={() => handleNavigate("briefing")} />}
+      {currentScreen === "briefing" && <BriefingScreen onNavigate={handleNavigate} />}
       {currentScreen === "analyst-hub" && <AnalystHubScreen onNavigate={handleNavigate} />}
       {currentScreen === "office" && <OfficeScreen onNavigate={handleNavigate} />}
       {currentScreen === "evidence" && <EvidenceScreen onNavigate={handleNavigate} />}
