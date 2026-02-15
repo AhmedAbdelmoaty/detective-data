@@ -656,7 +656,7 @@ export const PHASES: Phase[] = [
     ctaLabel: "تابع التحليل", ctaTarget: "evidence",
     unlocks: { dashboard: ["K2", "D3"] },
     ctaMessage: "ملفات جديدة ظهرت في غرفة الأدلة",
-    requiredViews: { dashboard: ["K2", "D3"] },
+    requiredViews: { dashboard: ["D3"], evidence: ["K2"] },
   },
   // 7: أدلة ثالثة (K5+K4+N3) → بعدها للصالة
   {
