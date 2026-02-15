@@ -8,7 +8,7 @@ import { HYPOTHESES } from "@/data/case1";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import analysisLabImg from "@/assets/rooms/analysis-lab.png";
+import analysisLabImg from "@/assets/rooms/analysis-room-2.png";
 
 interface AnalysisScreenProps {
   onNavigate: (screen: string) => void;
@@ -22,10 +22,12 @@ const ratingOptions = [
 ];
 
 // Hotspots positioned on the analysis lab image
+// Hotspot positions mapped to analysis-room-2 image:
+// Cork board (left wall), Matrix whiteboard (center), Desk notebook (bottom center), Monitor (right)
 const hotspots = [
-  { id: "notebook", x: 4, y: 64, width: 12, height: 12, label: "📓 دفتر الملاحظات", icon: "📓" },
-  { id: "hypotheses", x: 43, y: 21, width: 14, height: 14, label: "💡 الفرضيات", icon: "💡" },
-  { id: "matrix", x: 81, y: 48, width: 14, height: 14, label: "🔬 المصفوفة", icon: "🔬" },
+  { id: "notebook", x: 32, y: 65, width: 16, height: 16, label: "📓 دفتر الملاحظات", icon: "📓" },
+  { id: "hypotheses", x: 2, y: 25, width: 16, height: 30, label: "💡 الفرضيات", icon: "💡" },
+  { id: "matrix", x: 25, y: 10, width: 50, height: 40, label: "🔬 المصفوفة", icon: "🔬" },
 ];
 
 export const AnalysisScreen = ({ onNavigate }: AnalysisScreenProps) => {

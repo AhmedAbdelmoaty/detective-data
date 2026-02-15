@@ -3,14 +3,16 @@ import { motion, AnimatePresence } from "framer-motion";
 import { EnhancedDialogue } from "../EnhancedDialogue";
 import { useGame } from "@/contexts/GameContext";
 import { INTRO_SCENES } from "@/data/case1";
-import storeFrontImg from "@/assets/scenes/store-front.png";
-import detectiveOfficeImg from "@/assets/rooms/detective-office.png";
+import abuSaeed1 from "@/assets/scenes/abu-saeed-1.png";
+import abuSaeed2 from "@/assets/scenes/abu-saeed-2.png";
+import abuSaeed3 from "@/assets/scenes/abu-saeed-3.png";
+import abuSaeed4 from "@/assets/scenes/abu-saeed-4.png";
 
 interface ScenesScreenProps {
   onComplete: () => void;
 }
 
-const sceneBgs = [storeFrontImg, detectiveOfficeImg, storeFrontImg, detectiveOfficeImg];
+const sceneBgs = [abuSaeed1, abuSaeed2, abuSaeed3, abuSaeed4];
 
 export const ScenesScreen = ({ onComplete }: ScenesScreenProps) => {
   const [currentScene, setCurrentScene] = useState(0);
@@ -41,7 +43,7 @@ export const ScenesScreen = ({ onComplete }: ScenesScreenProps) => {
           exit={{ opacity: 0 }}
           transition={{ duration: 0.5 }}
         >
-          <img src={sceneBgs[currentScene] || storeFrontImg} alt="Scene" className="w-full h-full object-cover" />
+          <img src={sceneBgs[currentScene] || abuSaeed1} alt="Scene" className="w-full h-full object-cover" />
           <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-black/20" />
         </motion.div>
       </AnimatePresence>

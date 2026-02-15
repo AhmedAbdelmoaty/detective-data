@@ -7,11 +7,54 @@ import { useGame } from "@/contexts/GameContext";
 import { useSound } from "@/hooks/useSoundEffects";
 import { EVIDENCE_ITEMS, PHASES } from "@/data/case1";
 import { toast } from "sonner";
-import evidenceRoomBg from "@/assets/rooms/evidence-room.png";
+import evidenceRoomBg from "@/assets/rooms/evidence-room-2.png";
+import evidenceScene1 from "@/assets/scenes/evidence-scene-1.png";
+import evidenceScene2 from "@/assets/scenes/evidence-scene-2.png";
+import evidenceScene3 from "@/assets/scenes/evidence-scene-3.png";
 
 interface EvidenceScreenProps {
   onNavigate: (screen: string) => void;
 }
+
+// Hotspot positions for CTA scene backgrounds (mapped to visual objects in each image)
+const sceneHotspotPositions: Record<string, Record<string, { x: number; y: number; w: number; h: number }>> = {
+  // Evidence Scene 1: clipboard (left), phone/social (right)
+  "evidence-1": {
+    K6: { x: 12, y: 30, w: 22, h: 35 },   // clipboard/files on left
+    N1: { x: 65, y: 25, w: 18, h: 40 },   // phone/tablet on right
+  },
+  // Evidence Scene 2: ledger (left), brochure (center), notebook (right)
+  "evidence-2": {
+    K1: { x: 8, y: 30, w: 22, h: 40 },    // open ledger on left
+    K3: { x: 38, y: 20, w: 18, h: 50 },   // Winter Sale brochure center
+    N2: { x: 68, y: 30, w: 20, h: 40 },   // closed notebook on right
+  },
+  // Evidence Scene 3: POS report (left), spreadsheet (center), receipt (right)
+  "evidence-3": {
+    K5: { x: 5, y: 20, w: 25, h: 55 },    // POS settlement report left
+    K4: { x: 35, y: 15, w: 28, h: 55 },   // spreadsheet center
+    N3: { x: 72, y: 25, w: 18, h: 45 },   // receipt on right
+  },
+};
+
+// Hotspot positions for cumulative room (all evidence items in evidence-room-2.png)
+const cumulativeHotspotPositions: Record<string, { x: number; y: number; w: number; h: number }> = {
+  K6: { x: 2, y: 48, w: 14, h: 18 },    // INVENTORY FILE folder far left
+  N1: { x: 14, y: 38, w: 10, h: 18 },   // laptop with social media
+  K4: { x: 38, y: 28, w: 14, h: 20 },   // monitor screen center
+  K3: { x: 56, y: 30, w: 10, h: 22 },   // Winter Sale poster right of monitor
+  K1: { x: 60, y: 58, w: 12, h: 14 },   // papers/ledger on right desk
+  K5: { x: 28, y: 62, w: 12, h: 14 },   // papers on desk
+  N2: { x: 46, y: 60, w: 10, h: 14 },   // open book on desk
+  N3: { x: 78, y: 35, w: 10, h: 18 },   // tablet far right
+};
+
+// Map phase IDs to scene images
+const phaseSceneImages: Record<string, string> = {
+  "evidence-1": evidenceScene1,
+  "evidence-2": evidenceScene2,
+  "evidence-3": evidenceScene3,
+};
 
 export const EvidenceScreen = ({ onNavigate }: EvidenceScreenProps) => {
   const { state, viewEvidence, isEvidenceViewed, addToNotebook, isInNotebook } = useGame();
@@ -21,7 +64,6 @@ export const EvidenceScreen = ({ onNavigate }: EvidenceScreenProps) => {
 
   const roomEvidence = EVIDENCE_ITEMS.filter(e => e.room === "evidence");
 
-  // Determine which items to show based on entry method
   const currentPhase = PHASES[state.currentPhaseIndex];
   const isCTAEntry = state.entryMethod === "cta" && currentPhase?.targetRoom === "evidence";
 
@@ -29,17 +71,22 @@ export const EvidenceScreen = ({ onNavigate }: EvidenceScreenProps) => {
     ? roomEvidence.filter(e => currentPhase.sceneItems?.includes(e.id))
     : roomEvidence.filter(e => state.unlockedEvidence.includes(e.id));
 
-  // Use same background for now (placeholder), different overlay text
-  const backgroundImage = evidenceRoomBg;
-  
-  const hotspots = visibleEvidence.map((e, i) => {
-    const positions = [
-      { x: 15, y: 25 }, { x: 45, y: 25 }, { x: 75, y: 25 },
-      { x: 15, y: 55 }, { x: 45, y: 55 }, { x: 75, y: 55 },
-      { x: 30, y: 40 }, { x: 60, y: 40 }, { x: 50, y: 50 },
-    ];
-    const pos = positions[i] || { x: 50, y: 50 };
-    return { id: e.id, x: pos.x, y: pos.y, width: 14, height: 14, label: `${e.icon} ${e.name}`, icon: e.icon };
+  // Pick background based on entry method
+  const backgroundImage = isCTAEntry
+    ? (phaseSceneImages[currentPhase.id] || evidenceRoomBg)
+    : evidenceRoomBg;
+
+  // Pick hotspot positions based on entry method
+  const hotspots = visibleEvidence.map((e) => {
+    let pos: { x: number; y: number; w: number; h: number };
+    if (isCTAEntry && sceneHotspotPositions[currentPhase.id]?.[e.id]) {
+      pos = sceneHotspotPositions[currentPhase.id][e.id];
+    } else if (cumulativeHotspotPositions[e.id]) {
+      pos = cumulativeHotspotPositions[e.id];
+    } else {
+      pos = { x: 50, y: 50, w: 14, h: 14 };
+    }
+    return { id: e.id, x: pos.x, y: pos.y, width: pos.w, height: pos.h, label: `${e.icon} ${e.name}`, icon: e.icon };
   });
 
   const handleHotspotClick = (hotspotId: string) => {
