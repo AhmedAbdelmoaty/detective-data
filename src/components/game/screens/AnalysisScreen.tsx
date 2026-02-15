@@ -1,8 +1,8 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { BookOpen, Lightbulb, Grid3X3, CheckCircle, Lock, Trash2, X } from "lucide-react";
-import { NavigationButton } from "../NavigationButton";
 import { InteractiveRoom } from "../InteractiveRoom";
+import { GameOverlay } from "../GameOverlay";
 import { useGame } from "@/contexts/GameContext";
 import { HYPOTHESES } from "@/data/case1";
 import { cn } from "@/lib/utils";
@@ -346,6 +346,7 @@ export const AnalysisScreen = ({ onNavigate }: AnalysisScreenProps) => {
   };
 
   return (
+    <>
     <InteractiveRoom
       backgroundImage={analysisLabImg}
       hotspots={hotspots}
@@ -380,7 +381,8 @@ export const AnalysisScreen = ({ onNavigate }: AnalysisScreenProps) => {
         </div>
       )}
 
-      {/* Navigation handled by GameOverlay */}
     </InteractiveRoom>
+    <GameOverlay currentScreen="analysis" onNavigate={onNavigate} />
+    </>
   );
 };
