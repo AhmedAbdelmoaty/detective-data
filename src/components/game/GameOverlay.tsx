@@ -13,7 +13,7 @@ interface GameOverlayProps {
 }
 
 export const GameOverlay = ({ currentScreen, onNavigate }: GameOverlayProps) => {
-  const { state, advancePhase, canAdvance, swapHypothesis } = useGame();
+  const { state, advancePhase, canAdvance, swapHypothesis, setEntryMethod } = useGame();
   const { playSound } = useSound();
   const [showHypotheses, setShowHypotheses] = useState(false);
   const [showSwapModal, setShowSwapModal] = useState(false);
@@ -65,7 +65,7 @@ export const GameOverlay = ({ currentScreen, onNavigate }: GameOverlayProps) => 
     { id: "evidence", label: "الأدلة", icon: "📁", show: state.unlockedEvidence.length > 0 },
     { id: "floor", label: "الصالة", icon: "👥", show: state.unlockedInterviews.length > 0 },
     { id: "office", label: "المكتب", icon: "🏢", show: true },
-    { id: "analysis", label: "غرفة التحليل", icon: "🔬", show: state.currentPhaseIndex >= 9 },
+    { id: "analysis", label: "غرفة التحليل", icon: "🔬", show: state.currentPhaseIndex >= 10 },
   ];
 
   return (
@@ -180,7 +180,7 @@ export const GameOverlay = ({ currentScreen, onNavigate }: GameOverlayProps) => 
             {rooms.filter(r => r.show).map(room => (
               <button
                 key={room.id}
-                onClick={() => { playSound("navigate"); onNavigate(room.id); }}
+                onClick={() => { playSound("navigate"); setEntryMethod("direct"); onNavigate(room.id); }}
                 className={cn(
                   "flex flex-col items-center gap-1 px-3 py-2 rounded-xl border transition-all",
                   currentScreen === room.id

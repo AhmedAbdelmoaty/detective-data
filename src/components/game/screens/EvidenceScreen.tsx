@@ -5,7 +5,7 @@ import { InteractiveRoom } from "../InteractiveRoom";
 import { GameOverlay } from "../GameOverlay";
 import { useGame } from "@/contexts/GameContext";
 import { useSound } from "@/hooks/useSoundEffects";
-import { EVIDENCE_ITEMS } from "@/data/case1";
+import { EVIDENCE_ITEMS, PHASES } from "@/data/case1";
 import { toast } from "sonner";
 import evidenceRoomBg from "@/assets/rooms/evidence-room.png";
 
@@ -20,23 +20,29 @@ export const EvidenceScreen = ({ onNavigate }: EvidenceScreenProps) => {
   const [selectedEvidence, setSelectedEvidence] = useState<typeof EVIDENCE_ITEMS[0] | null>(null);
 
   const roomEvidence = EVIDENCE_ITEMS.filter(e => e.room === "evidence");
+
+  // Determine which items to show based on entry method
+  const currentPhase = PHASES[state.currentPhaseIndex];
+  const isCTAEntry = state.entryMethod === "cta" && currentPhase?.targetRoom === "evidence";
+
+  const visibleEvidence = isCTAEntry
+    ? roomEvidence.filter(e => currentPhase.sceneItems?.includes(e.id))
+    : roomEvidence.filter(e => state.unlockedEvidence.includes(e.id));
+
+  // Use same background for now (placeholder), different overlay text
+  const backgroundImage = evidenceRoomBg;
   
-  const hotspots = roomEvidence.map((e, i) => {
+  const hotspots = visibleEvidence.map((e, i) => {
     const positions = [
-      { x: 5, y: 15 }, { x: 20, y: 15 }, { x: 40, y: 15 },
-      { x: 60, y: 15 }, { x: 78, y: 15 }, { x: 5, y: 45 },
-      { x: 25, y: 50 }, { x: 55, y: 50 }, { x: 80, y: 50 },
+      { x: 15, y: 25 }, { x: 45, y: 25 }, { x: 75, y: 25 },
+      { x: 15, y: 55 }, { x: 45, y: 55 }, { x: 75, y: 55 },
+      { x: 30, y: 40 }, { x: 60, y: 40 }, { x: 50, y: 50 },
     ];
     const pos = positions[i] || { x: 50, y: 50 };
-    const isUnlocked = state.unlockedEvidence.includes(e.id);
-    return { id: e.id, x: pos.x, y: pos.y, width: 14, height: 14, label: isUnlocked ? `${e.icon} ${e.name}` : "🔒 مقفول", icon: isUnlocked ? e.icon : "🔒" };
+    return { id: e.id, x: pos.x, y: pos.y, width: 14, height: 14, label: `${e.icon} ${e.name}`, icon: e.icon };
   });
 
   const handleHotspotClick = (hotspotId: string) => {
-    if (!state.unlockedEvidence.includes(hotspotId)) {
-      toast.info("الدليل ده مش متاح لسه");
-      return;
-    }
     const evidence = EVIDENCE_ITEMS.find(e => e.id === hotspotId);
     if (evidence) {
       setSelectedEvidence(evidence);
@@ -175,10 +181,11 @@ export const EvidenceScreen = ({ onNavigate }: EvidenceScreenProps) => {
 
   return (
     <>
-      <InteractiveRoom backgroundImage={evidenceRoomBg} hotspots={hotspots} onHotspotClick={handleHotspotClick} activeHotspot={null} overlayContent={undefined}>
+      <InteractiveRoom backgroundImage={backgroundImage} hotspots={hotspots} onHotspotClick={handleHotspotClick} activeHotspot={null} overlayContent={undefined}>
         <motion.div className="absolute top-12 left-1/2 -translate-x-1/2 z-20">
           <div className="flex items-center gap-4 px-6 py-3 rounded-full bg-background/90 backdrop-blur-xl border border-primary/30">
             <span className="font-bold text-foreground">📁 غرفة الأدلة</span>
+            {isCTAEntry && <span className="text-xs text-primary">أدلة جديدة</span>}
           </div>
         </motion.div>
       </InteractiveRoom>

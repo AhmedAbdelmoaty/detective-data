@@ -58,6 +58,10 @@ export interface GameState {
   // Room tracking
   currentRoom: string;
   visitedRooms: string[];
+
+  // Scene system: how the user entered the current room
+  entryMethod: "cta" | "direct";
+  lastCTAPhaseIndex: number;
 }
 
 interface GameContextType {
@@ -66,6 +70,7 @@ interface GameContextType {
   // Room navigation
   setCurrentRoom: (roomId: string) => void;
   setPhase: (phase: GameState["currentPhase"]) => void;
+  setEntryMethod: (method: "cta" | "direct") => void;
 
   // Intro
   markIntroSeen: () => void;
@@ -139,6 +144,8 @@ const initialState: GameState = {
   score: 0,
   currentRoom: "office",
   visitedRooms: [],
+  entryMethod: "direct",
+  lastCTAPhaseIndex: -1,
 };
 
 // ============================================
@@ -178,6 +185,10 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
 
   const setPhase = useCallback((phase: GameState["currentPhase"]) => {
     setState(prev => ({ ...prev, currentPhase: phase }));
+  }, []);
+
+  const setEntryMethod = useCallback((method: "cta" | "direct") => {
+    setState(prev => ({ ...prev, entryMethod: method }));
   }, []);
 
   const markIntroSeen = useCallback(() => {
@@ -326,6 +337,8 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
       return {
         ...prev,
         currentPhaseIndex: nextIndex,
+        entryMethod: "cta" as const,
+        lastCTAPhaseIndex: nextIndex,
         unlockedEvidence: [...new Set(newEvidence)],
         unlockedDashboard: [...new Set(newDashboard)],
         unlockedInterviews: [...new Set(newInterviews)],
@@ -444,6 +457,7 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
       state,
       setCurrentRoom,
       setPhase,
+      setEntryMethod,
       markIntroSeen,
       addToNotebook,
       isInNotebook,

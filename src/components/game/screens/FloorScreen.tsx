@@ -1,13 +1,12 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Lock } from "lucide-react";
 import { InteractiveRoom } from "../InteractiveRoom";
 import { EnhancedDialogue } from "../EnhancedDialogue";
 import { AnimatedCharacter } from "../AnimatedCharacter";
 import { GameOverlay } from "../GameOverlay";
 import { useGame } from "@/contexts/GameContext";
 import { useSound } from "@/hooks/useSoundEffects";
-import { CHARACTERS } from "@/data/case1";
+import { CHARACTERS, PHASES } from "@/data/case1";
 import { toast } from "sonner";
 import interrogationRoom from "@/assets/rooms/interrogation-room.png";
 
@@ -22,11 +21,15 @@ export const FloorScreen = ({ onNavigate }: FloorScreenProps) => {
 
   const interviewees = CHARACTERS.filter(c => c.id !== "abuSaeed");
 
+  const currentPhase = PHASES[state.currentPhaseIndex];
+  const isCTAEntry = state.entryMethod === "cta" && currentPhase?.targetRoom === "floor";
+
+  // Filter visible characters based on entry method
+  const visibleCharacters = isCTAEntry
+    ? interviewees.filter(c => currentPhase.sceneItems?.includes(c.id))
+    : interviewees.filter(c => state.unlockedInterviews.includes(c.id));
+
   const handleCharacterClick = (charId: string) => {
-    if (!state.unlockedInterviews.includes(charId)) {
-      toast.info("المقابلة دي مش متاحة لسه");
-      return;
-    }
     setActiveCharacter(charId);
     playSound("click");
   };
@@ -66,13 +69,13 @@ export const FloorScreen = ({ onNavigate }: FloorScreenProps) => {
           <div className="flex items-center gap-4 px-6 py-3 rounded-full bg-background/90 backdrop-blur-xl border border-primary/30">
             <span className="font-bold text-foreground">👥 الصالة</span>
             <span className="text-muted-foreground">|</span>
-            <span className="text-foreground">مقابلات: {state.completedInterviews.length}/3</span>
+            <span className="text-foreground">مقابلات: {state.completedInterviews.length}/{interviewees.length}</span>
+            {isCTAEntry && <span className="text-xs text-primary">شخصية جديدة</span>}
           </div>
         </motion.div>
 
         <div className="absolute inset-0 pointer-events-none z-10">
-          {interviewees.map((char, i) => {
-            const isUnlocked = state.unlockedInterviews.includes(char.id);
+          {visibleCharacters.map((char, i) => {
             const completed = isInterviewComplete(char.id);
             return (
               <motion.div
@@ -84,24 +87,17 @@ export const FloorScreen = ({ onNavigate }: FloorScreenProps) => {
                 transition={{ delay: i * 0.2 }}
               >
                 <div className="relative">
-                  {isUnlocked ? (
-                    <AnimatedCharacter
-                      characterId={char.avatarCharacterId}
-                      size="lg"
-                      isActive={!completed}
-                      mood={completed ? "happy" : "neutral"}
-                      onClick={() => handleCharacterClick(char.id)}
-                      showName={false}
-                    />
-                  ) : (
-                    <div className="w-32 h-32 rounded-full bg-secondary/50 border-4 border-border flex items-center justify-center cursor-not-allowed opacity-50">
-                      <Lock className="w-8 h-8 text-muted-foreground" />
-                    </div>
-                  )}
+                  <AnimatedCharacter
+                    characterId={char.avatarCharacterId}
+                    size="lg"
+                    isActive={!completed}
+                    mood={completed ? "happy" : "neutral"}
+                    onClick={() => handleCharacterClick(char.id)}
+                    showName={false}
+                  />
                   <div className="absolute -bottom-14 left-1/2 -translate-x-1/2 px-4 py-2 rounded-lg bg-background/90 text-center whitespace-nowrap border border-border">
                     <p className="font-bold text-foreground text-sm">{char.name}</p>
                     <p className="text-xs text-muted-foreground">{char.role}</p>
-                    {!isUnlocked && <p className="text-xs text-muted-foreground mt-1">🔒 مقفول</p>}
                     {completed && <p className="text-xs text-neon-green mt-1">✓ تمت المقابلة</p>}
                   </div>
                 </div>
