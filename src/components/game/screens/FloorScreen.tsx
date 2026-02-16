@@ -30,7 +30,7 @@ type Position = { left: string; bottom: string };
 // Cumulative floor image positions
 // Khaled: left side near shelves, Amira: center, Noura: right at cashier
 const floorCharacterPositions: Record<string, Position> = {
-  khaled: { left: "15%", bottom: "20%" },
+  khaled: { left: "10%", bottom: "30%" },
   amira: { left: "45%", bottom: "20%" },
   noura: { left: "75%", bottom: "20%" },
 };
@@ -69,18 +69,18 @@ export const FloorScreen = ({ onNavigate }: FloorScreenProps) => {
   const { playSound } = useSound();
   const [activeCharacter, setActiveCharacter] = useState<string | null>(null);
 
-  const interviewees = CHARACTERS.filter(c => c.id !== "abuSaeed");
+  const interviewees = CHARACTERS.filter((c) => c.id !== "abuSaeed");
 
   const currentPhase = PHASES[state.currentPhaseIndex];
   const isCTAEntry = state.entryMethod === "cta" && currentPhase?.targetRoom === "floor";
 
   const visibleCharacters = isCTAEntry
-    ? interviewees.filter(c => currentPhase.sceneItems?.includes(c.id))
-    : interviewees.filter(c => state.unlockedInterviews.includes(c.id));
+    ? interviewees.filter((c) => currentPhase.sceneItems?.includes(c.id))
+    : interviewees.filter((c) => state.unlockedInterviews.includes(c.id));
 
   // Pick background
   const sceneId = isCTAEntry ? currentPhase.id : "floor";
-  const backgroundImage = isCTAEntry ? (phaseSceneBgs[currentPhase.id] || floorBg) : floorBg;
+  const backgroundImage = isCTAEntry ? phaseSceneBgs[currentPhase.id] || floorBg : floorBg;
 
   // Pick the correct character hotspot positions for the current scene
   const activeCharacterPositions = sceneCharacterPositions[sceneId] || floorCharacterPositions;
@@ -103,23 +103,20 @@ export const FloorScreen = ({ onNavigate }: FloorScreenProps) => {
     toast.success("تم الحفظ في الدفتر!");
   };
 
-  const savedNoteIds = state.notebook.map(n => n.sourceId);
-  const activeChar = CHARACTERS.find(c => c.id === activeCharacter);
+  const savedNoteIds = state.notebook.map((n) => n.sourceId);
+  const activeChar = CHARACTERS.find((c) => c.id === activeCharacter);
   const isActiveCharCompleted = activeCharacter ? isInterviewComplete(activeCharacter) : false;
 
   return (
     <>
-      <InteractiveRoom
-        backgroundImage={backgroundImage}
-        hotspots={[]}
-        onHotspotClick={() => {}}
-        activeHotspot={null}
-      >
+      <InteractiveRoom backgroundImage={backgroundImage} hotspots={[]} onHotspotClick={() => {}} activeHotspot={null}>
         <motion.div className="absolute top-12 left-1/2 -translate-x-1/2 z-20">
           <div className="flex items-center gap-4 px-6 py-3 rounded-full bg-background/90 backdrop-blur-xl border border-primary/30">
             <span className="font-bold text-foreground">👥 الصالة</span>
             <span className="text-muted-foreground">|</span>
-            <span className="text-foreground">مقابلات: {state.completedInterviews.length}/{interviewees.length}</span>
+            <span className="text-foreground">
+              مقابلات: {state.completedInterviews.length}/{interviewees.length}
+            </span>
             {isCTAEntry && <span className="text-xs text-primary">شخصية جديدة</span>}
           </div>
         </motion.div>
@@ -166,7 +163,12 @@ export const FloorScreen = ({ onNavigate }: FloorScreenProps) => {
 
       <AnimatePresence>
         {activeChar && (
-          <motion.div className="fixed inset-0 z-50 bg-black/50" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+          <motion.div
+            className="fixed inset-0 z-50 bg-black/50"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+          >
             <EnhancedDialogue
               dialogues={activeChar.dialogues}
               isActive={true}
