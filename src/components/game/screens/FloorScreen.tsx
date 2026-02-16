@@ -30,9 +30,9 @@ type Position = { left: string; bottom: string };
 // Cumulative floor image positions
 // Khaled: left side near shelves, Amira: center, Noura: right at cashier
 const floorCharacterPositions: Record<string, Position> = {
-  khaled: { left: "10%", bottom: "30%" },
-  amira: { left: "45%", bottom: "18%" },
-  noura: { left: "75%", bottom: "20%" },
+  khaled: { left: "10%", bottom: "24%" },
+  amira: { left: "45%", bottom: "20%" },
+  noura: { left: "81%", bottom: "25%" },
 };
 
 // Interview scene positions (tuned to each scene background image)
