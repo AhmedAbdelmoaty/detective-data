@@ -30,15 +30,15 @@ type Position = { left: string; bottom: string };
 // Cumulative floor image positions
 // Khaled: left side near shelves, Amira: center, Noura: right at cashier
 const floorCharacterPositions: Record<string, Position> = {
-  khaled: { left: "10%", bottom: "21%" },
-  amira: { left: "45%", bottom: "23%" },
-  noura: { left: "81%", bottom: "25%" },
+  khaled: { left: "10%", bottom: "30%" },
+  amira: { left: "45%", bottom: "18%" },
+  noura: { left: "75%", bottom: "20%" },
 };
 
 // Interview scene positions (tuned to each scene background image)
 // NOTE: Adjust these visually if you update the background art.
 const khaledInterviewPositions: Record<string, Position> = {
-  khaled: { left: "25%", bottom: "24%" },
+  khaled: { left: "22%", bottom: "18%" },
 };
 
 const nouraInterviewPositions: Record<string, Position> = {
@@ -46,7 +46,7 @@ const nouraInterviewPositions: Record<string, Position> = {
 };
 
 const amiraInterviewPositions: Record<string, Position> = {
-  amira: { left: "33%", bottom: "30%" },
+  amira: { left: "30%", bottom: "22%" },
 };
 
 // Scene -> positions map
