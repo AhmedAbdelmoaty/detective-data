@@ -46,7 +46,7 @@ const nouraInterviewPositions: Record<string, Position> = {
 };
 
 const amiraInterviewPositions: Record<string, Position> = {
-  amira: { left: "33%", bottom: "33%" },
+  amira: { left: "24%", bottom: "18%" },
 };
 
 // Scene -> positions map
