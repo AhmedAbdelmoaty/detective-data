@@ -38,7 +38,7 @@ const floorCharacterPositions: Record<string, Position> = {
 // Interview scene positions (tuned to each scene background image)
 // NOTE: Adjust these visually if you update the background art.
 const khaledInterviewPositions: Record<string, Position> = {
-  khaled: { left: "22%", bottom: "18%" },
+  khaled: { left: "24%", bottom: "30%" },
 };
 
 const nouraInterviewPositions: Record<string, Position> = {
@@ -46,7 +46,7 @@ const nouraInterviewPositions: Record<string, Position> = {
 };
 
 const amiraInterviewPositions: Record<string, Position> = {
-  amira: { left: "30%", bottom: "22%" },
+  amira: { left: "33%", bottom: "26%" },
 };
 
 // Scene -> positions map
