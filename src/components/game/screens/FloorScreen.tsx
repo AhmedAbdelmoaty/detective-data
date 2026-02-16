@@ -17,12 +17,44 @@ interface FloorScreenProps {
   onNavigate: (screen: string) => void;
 }
 
-// Character positions on the cumulative floor image
+type Position = { left: string; bottom: string };
+
+// =============================
+// Character hotspot positions
+// =============================
+// IMPORTANT:
+// - "floor" positions are for the cumulative floor image (wide room map)
+// - "floor-khaled / floor-noura / floor-amira" positions are for EACH interview scene image
+//   so the character hotspot appears on top of the person in that specific background.
+
+// Cumulative floor image positions
 // Khaled: left side near shelves, Amira: center, Noura: right at cashier
-const characterPositions: Record<string, { left: string; bottom: string }> = {
+const floorCharacterPositions: Record<string, Position> = {
   khaled: { left: "15%", bottom: "20%" },
   amira: { left: "45%", bottom: "20%" },
   noura: { left: "75%", bottom: "20%" },
+};
+
+// Interview scene positions (tuned to each scene background image)
+// NOTE: Adjust these visually if you update the background art.
+const khaledInterviewPositions: Record<string, Position> = {
+  khaled: { left: "22%", bottom: "18%" },
+};
+
+const nouraInterviewPositions: Record<string, Position> = {
+  noura: { left: "22%", bottom: "26%" },
+};
+
+const amiraInterviewPositions: Record<string, Position> = {
+  amira: { left: "30%", bottom: "22%" },
+};
+
+// Scene -> positions map
+const sceneCharacterPositions: Record<string, Record<string, Position>> = {
+  floor: floorCharacterPositions,
+  "floor-khaled": khaledInterviewPositions,
+  "floor-noura": nouraInterviewPositions,
+  "floor-amira": amiraInterviewPositions,
 };
 
 // Scene backgrounds per phase
@@ -47,9 +79,11 @@ export const FloorScreen = ({ onNavigate }: FloorScreenProps) => {
     : interviewees.filter(c => state.unlockedInterviews.includes(c.id));
 
   // Pick background
-  const backgroundImage = isCTAEntry
-    ? (phaseSceneBgs[currentPhase.id] || floorBg)
-    : floorBg;
+  const sceneId = isCTAEntry ? currentPhase.id : "floor";
+  const backgroundImage = isCTAEntry ? (phaseSceneBgs[currentPhase.id] || floorBg) : floorBg;
+
+  // Pick the correct character hotspot positions for the current scene
+  const activeCharacterPositions = sceneCharacterPositions[sceneId] || floorCharacterPositions;
 
   const handleCharacterClick = (charId: string) => {
     setActiveCharacter(charId);
@@ -93,7 +127,12 @@ export const FloorScreen = ({ onNavigate }: FloorScreenProps) => {
         <div className="absolute inset-0 pointer-events-none z-10">
           {visibleCharacters.map((char, i) => {
             const completed = isInterviewComplete(char.id);
-            const pos = characterPositions[char.id] || { left: `${20 + i * 30}%`, bottom: "20%" };
+
+            // In interview scenes, only render the character that has a position in this scene.
+            // This prevents other characters from floating in incorrect places.
+            const pos = activeCharacterPositions[char.id];
+            if (!pos) return null;
+
             return (
               <motion.div
                 key={char.id}
