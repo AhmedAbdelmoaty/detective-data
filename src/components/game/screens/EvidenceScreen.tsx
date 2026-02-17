@@ -43,10 +43,10 @@ const cumulativeHotspotPositions: Record<string, { x: number; y: number; w: numb
   N1: { x: 16, y: 34, w: 10, h: 18 },   // laptop with social media
   K4: { x: 44, y: 27, w: 15, h: 18 },   // monitor screen center
   K3: { x: 61, y: 30, w: 10, h: 20 },   // Winter Sale poster right of monitor
-  K1: { x: 68, y: 51, w: 12, h: 14 },   // papers/ledger on right desk
+  K1: { x: 69, y: 51, w: 12, h: 14 },   // papers/ledger on right desk
   K5: { x: 15, y: 63, w: 12, h: 14 },   // papers on desk
-  N2: { x: 29, y: 35, w: 10, h: 14 },   // open book on desk
-  N3: { x: 74, y: 73, w: 10, h: 18 },   // tablet far right
+  N2: { x: 35, y: 42, w: 10, h: 14 },   // open book on desk
+  N3: { x: 74, y: 71, w: 10, h: 18 },   // tablet far right
 };
 
 // Map phase IDs to scene images
