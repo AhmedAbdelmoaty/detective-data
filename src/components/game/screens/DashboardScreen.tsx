@@ -32,10 +32,10 @@ const sceneHotspotPositions: Record<string, Record<string, { x: number; y: numbe
 
 // Cumulative room hotspot positions (data-room.png)
 const cumulativeHotspotPositions: Record<string, { x: number; y: number; w: number; h: number }> = {
-  D2: { x: 3, y: 30, w: 14, h: 20 },    // left monitor (line chart "Invoices")
-  D1: { x: 18, y: 28, w: 16, h: 22 },   // second left monitor (bar chart "Invoices by Hour")
-  D3: { x: 58, y: 35, w: 18, h: 25 },   // large right monitor (bar chart "Footprint by Horse")
-  K2: { x: 40, y: 55, w: 16, h: 18 },   // open book on desk
+  D2: { x: 5, y: 40, w: 14, h: 20 },    // left monitor (line chart "Invoices")
+  D1: { x: 20, y: 36, w: 16, h: 22 },   // second left monitor (bar chart "Invoices by Hour")
+  D3: { x: 68, y: 44, w: 18, h: 25 },   // large right monitor (bar chart "Footprint by Horse")
+  K2: { x: 50, y: 63, w: 16, h: 18 },   // open book on desk
 };
 
 // Map phase IDs to scene images
