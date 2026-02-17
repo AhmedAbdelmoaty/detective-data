@@ -10,7 +10,7 @@ export const CASE_INFO = {
   title: "قضية Fashion House",
   titleEn: "Fashion House Mystery",
   difficulty: "beginner",
-  description: "صاحب محل ملابس لاحظ إن صافي المبيعات أقل من المتوقع رغم إن الحركة موجودة.",
+  description: "أسبوع غريب…المحل شكله شغال… بس الأرقام بتقول حكاية تانية.",
   date: "السبت 21 فبراير 2026",
   problemWeek: "14–20 فبراير 2026",
   previousWeek: "7–13 فبراير 2026",
