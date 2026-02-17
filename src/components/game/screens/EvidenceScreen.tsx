@@ -39,7 +39,7 @@ const sceneHotspotPositions: Record<string, Record<string, { x: number; y: numbe
 
 // Hotspot positions for cumulative room (all evidence items in evidence-room-2.png)
 const cumulativeHotspotPositions: Record<string, { x: number; y: number; w: number; h: number }> = {
-  K6: { x: 30, y: 48, w: 60, h: 18 },    // INVENTORY FILE folder far left
+  K6: { x: 2, y: 38, w: 14, h: 18 },    // INVENTORY FILE folder far left
   N1: { x: 14, y: 38, w: 10, h: 18 },   // laptop with social media
   K4: { x: 38, y: 28, w: 14, h: 20 },   // monitor screen center
   K3: { x: 56, y: 30, w: 10, h: 22 },   // Winter Sale poster right of monitor
