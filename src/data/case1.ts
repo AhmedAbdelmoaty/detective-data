@@ -114,45 +114,26 @@ export interface IntroScene {
 export const INTRO_SCENES: IntroScene[] = [
   {
     id: "scene-1",
-    backgroundImage: "scene-1", // placeholder
+    backgroundImage: "scene-1",
     dialogues: [
-      {
-        characterId: "abuSaeed",
-        text: "أهلًا… نورت يا أستاذ. اتفضل اقعد.",
-        mood: "neutral",
-        isSaveable: true,
-        saveId: "S1",
-        saveText: "أهلًا… نورت يا أستاذ. اتفضل اقعد.",
-      },
+      { characterId: "abuSaeed", text: "أهلًا… نورت يا أستاذ. اتفضل اقعد.", mood: "neutral" },
       {
         characterId: "abuSaeed",
         text: "تشرب شاي؟… قلت أهو نقعد دقيقتين بهدوء. أنا بقالي يومين دماغي مش سايباني… وقلت لازم أقابلك وأحكيلك اللي حاصل.",
         mood: "neutral",
       },
       { characterId: "detective", text: "تمام… قولّي.", mood: "neutral" },
-      {
-        characterId: "abuSaeed",
-        text: "بص… المحل مش فاضي… وفي حركة… بس الأرقام… الأرقام مش مريحة.",
-        mood: "nervous",
-      },
+      { characterId: "abuSaeed", text: "بص… المحل مش فاضي… وفي حركة… بس الأرقام… الأرقام مش مريحة.", mood: "neutral" },
       {
         characterId: "abuSaeed",
         text: "أنا بقالي في الشغلانة دي أكتر من 12 سنة. عينك بتتعود… بتعرف اليوم عامل إزاي من أول ساعتين. بس اللي حصل آخر أسبوع خلاني حاسس إني مش فاهم الدنيا.",
-        mood: "suspicious",
-        isSaveable: true,
-        saveId: "S2",
-        saveText:
-          "أنا بقالي في الشغلانة دي أكتر من 12 سنة. عينك بتتعود… بتعرف اليوم عامل إزاي من أول ساعتين. بس اللي حصل آخر أسبوع خلاني حاسس إني مش فاهم الدنيا.",
+        mood: "neutral",
       },
       { characterId: "detective", text: "إيه اللي خلاك تقلق؟", mood: "neutral" },
       {
         characterId: "abuSaeed",
         text: "خليني أحكي من الأول… من السبت اللي فات (14 فبراير) بدأت أحس إن المحل ‘مليان ناس’… مش طول اليوم… بس في ساعات معينة، خصوصًا بعد العصر وبالليل شوية.",
         mood: "neutral",
-        isSaveable: true,
-        saveId: "S3",
-        saveText:
-          "خليني أحكي من الأول… من السبت اللي فات (14 فبراير) بدأت أحس إن المحل ‘مليان ناس’… مش طول اليوم… بس في ساعات معينة، خصوصًا بعد العصر وبالليل شوية.",
       },
       {
         characterId: "abuSaeed",
@@ -163,43 +144,35 @@ export const INTRO_SCENES: IntroScene[] = [
   },
   {
     id: "scene-2",
-    backgroundImage: "scene-2", // placeholder
+    backgroundImage: "scene-2",
     dialogues: [
       {
         characterId: "abuSaeed",
         text: "بس لما قعدت آخر الأسبوع أبص على اللي اتسجل… لقيت إن الرقم أقل من اللي في دماغي. مش فرق بسيط… فرق يخليك تقول: في حاجة غلط.",
-        mood: "nervous",
-        isSaveable: true,
-        saveId: "S4",
-        saveText:
-          "بس لما قعدت آخر الأسبوع أبص على اللي اتسجل… لقيت إن الرقم أقل من اللي في دماغي. مش فرق بسيط… فرق يخليك تقول: في حاجة غلط.",
+        mood: "neutral",
       },
       { characterId: "detective", text: "دماغك بتقارن بإيه؟ بإحساسك؟ ولا بأرقام قديمة؟", mood: "neutral" },
       {
         characterId: "abuSaeed",
         text: "بالإتنين. أنا عندي عادة: كل آخر أسبوع بكتب رقم تقريبي في الدفتر ده كده من اللي شفته بعيني… وبعدين أقارنه بالتقرير. طول عمره فيه فرق، بس فرق منطقي. المرة دي الفرق أكبر من المعتاد.",
-        mood: "suspicious",
+        mood: "neutral",
       },
       { characterId: "detective", text: "طيب يمكن الحركة اللي شايفها مش شراء؟ ناس بتتفرج بس؟", mood: "neutral" },
       {
         characterId: "abuSaeed",
         text: "ده احتمال… بس برضه فيه حاجة مش راكبة. يعني… في أيام بعينها أنا شفت بعيني أكتر من حد دافع وطلع بكيس.",
-        mood: "nervous",
+        mood: "neutral",
       },
       {
         characterId: "abuSaeed",
         text: "أنا قعدت ألفّها في دماغي كذا مرة… وكل ما أقول تفسير، ألاقيه ناقص. حاسس إن فيه تفصيلة صغيرة بتفلت مني… عشان كده جبتك… عايزك ترتب اللي حاصل ده معايا… وتفسرلي الفرق ده طالع منين.",
         mood: "neutral",
-        isSaveable: true,
-        saveId: "S5",
-        saveText:
-          "أنا قعدت ألفّها في دماغي كذا مرة… وكل ما أقول تفسير، ألاقيه ناقص. حاسس إن فيه تفصيلة صغيرة بتفلت مني… عشان كده جبتك… عايزك ترتب اللي حاصل ده معايا… وتفسرلي الفرق ده طالع منين.",
       },
     ],
   },
   {
     id: "scene-3",
-    backgroundImage: "scene-3", // placeholder
+    backgroundImage: "scene-3",
     dialogues: [
       {
         characterId: "abuSaeed",
@@ -211,10 +184,6 @@ export const INTRO_SCENES: IntroScene[] = [
         characterId: "abuSaeed",
         text: "الأسعار… ما اتحركتش حركة كبيرة. والبضاعة… عندنا بضاعة جديدة استلمناها من حوالي 10 أيام واتفرشت في المحل… مش شايف شكاوى كبيرة ولا تعليقات كتير. (أنا بتابع الكلام ده… لو في حد من العملاء معاه مشكلة أو متضايق من حاجة بعرف).",
         mood: "neutral",
-        isSaveable: true,
-        saveId: "S6",
-        saveText:
-          "الأسعار… ما اتحركتش حركة كبيرة. والبضاعة… عندنا بضاعة جديدة استلمناها من حوالي 10 أيام واتفرشت في المحل… مش شايف شكاوى كبيرة ولا تعليقات كتير. (أنا بتابع الكلام ده… لو في حد من العملاء معاه مشكلة أو متضايق من حاجة بعرف).",
       },
       {
         characterId: "abuSaeed",
@@ -225,31 +194,24 @@ export const INTRO_SCENES: IntroScene[] = [
       {
         characterId: "abuSaeed",
         text: "في محل جنبنا… مش جديد قوي، بس من فترة عامل عروض. وبيغير بنرات قدام المحل كل أسبوع تقريبًا… الناس بتلاحظ ده. هل ده مأثر؟ ممكن… بس أنا مش عايز أقول آه وخلاص.",
-        mood: "suspicious",
-        isSaveable: true,
-        saveId: "S7",
-        saveText:
-          "في محل جنبنا… مش جديد قوي، بس من فترة عامل عروض. وبيغير بنرات قدام المحل كل أسبوع تقريبًا… الناس بتلاحظ ده. هل ده مأثر؟ ممكن… بس أنا مش عايز أقول آه وخلاص.",
+        mood: "neutral",
       },
       { characterId: "detective", text: "طيب الموظفين… نفسهم؟ ولا في تغيير حصل؟", mood: "neutral" },
       {
         characterId: "abuSaeed",
         text: "لا نفسهم… خالد مدير الصالة… ونورة على الكاشير… الناس دي معايا من فترة… وعشان كده الموضوع مضايقني… لأن مفيش تغيير كبير حصل يخلي ده يحصل فجأة.",
-        mood: "nervous",
+        mood: "neutral",
       },
     ],
   },
   {
     id: "scene-4",
-    backgroundImage: "scene-4", // placeholder
+    backgroundImage: "scene-4",
     dialogues: [
       {
         characterId: "abuSaeed",
         text: "اللي محيّرني إن الصورة مش ثابتة… كأن كل يوم بيحكي حكاية غير اللي قبله. يعني مثلًا…",
-        mood: "nervous",
-        isSaveable: true,
-        saveId: "S8",
-        saveText: "اللي محيّرني إن الصورة مش ثابتة… كأن كل يوم بيحكي حكاية غير اللي قبله. يعني مثلًا…",
+        mood: "neutral",
       },
       {
         characterId: "abuSaeed",
@@ -261,10 +223,6 @@ export const INTRO_SCENES: IntroScene[] = [
         characterId: "abuSaeed",
         text: "يعني… مش بس إحساس. خالد ساعات بيقولي ‘النهارده في حركة بس الشراء قليل’… ونورة بتشتكي من الضغط آخر اليوم… وأنا بنفسي بعد ما نقفل، ببص على ملخص اليوم اللي بيتطبع من الجهاز… بس مش بفهم منه كل التفاصيل.",
         mood: "neutral",
-        isSaveable: true,
-        saveId: "S9",
-        saveText:
-          "يعني… مش بس إحساس. خالد ساعات بيقولي ‘النهارده في حركة بس الشراء قليل’… ونورة بتشتكي من الضغط آخر اليوم… وأنا بنفسي بعد ما نقفل، ببص على ملخص اليوم اللي بيتطبع من الجهاز… بس مش بفهم منه كل التفاصيل.",
       },
       {
         characterId: "abuSaeed",
