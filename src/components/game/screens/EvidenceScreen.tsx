@@ -39,14 +39,14 @@ const sceneHotspotPositions: Record<string, Record<string, { x: number; y: numbe
 
 // Hotspot positions for cumulative room (all evidence items in evidence-room-2.png)
 const cumulativeHotspotPositions: Record<string, { x: number; y: number; w: number; h: number }> = {
-  K6: { x: 3, y: 40, w: 14, h: 18 },    // INVENTORY FILE folder far left
-  N1: { x: 16, y: 40, w: 10, h: 18 },   // laptop with social media
-  K4: { x: 68, y: 28, w: 14, h: 20 },   // monitor screen center
-  K3: { x: 56, y: 30, w: 10, h: 22 },   // Winter Sale poster right of monitor
-  K1: { x: 60, y: 58, w: 12, h: 14 },   // papers/ledger on right desk
-  K5: { x: 28, y: 62, w: 12, h: 14 },   // papers on desk
-  N2: { x: 46, y: 60, w: 10, h: 14 },   // open book on desk
-  N3: { x: 78, y: 35, w: 10, h: 18 },   // tablet far right
+  K6: { x: 3, y: 36, w: 14, h: 18 },    // INVENTORY FILE folder far left
+  N1: { x: 16, y: 36, w: 10, h: 18 },   // laptop with social media
+  K4: { x: 42, y: 27, w: 14, h: 20 },   // monitor screen center
+  K3: { x: 59, y: 30, w: 10, h: 22 },   // Winter Sale poster right of monitor
+  K1: { x: 63, y: 55, w: 12, h: 14 },   // papers/ledger on right desk
+  K5: { x: 19, y: 63, w: 12, h: 14 },   // papers on desk
+  N2: { x: 25, y: 36, w: 10, h: 14 },   // open book on desk
+  N3: { x: 77, y: 76, w: 10, h: 18 },   // tablet far right
 };
 
 // Map phase IDs to scene images
