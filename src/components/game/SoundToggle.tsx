@@ -1,7 +1,6 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { Volume2, VolumeX, Music, Settings, RotateCcw, Home } from "lucide-react";
+import { Volume2, VolumeX, Music, Settings, RotateCcw } from "lucide-react";
 import { useSound } from "@/hooks/useSoundEffects";
 import { useMusic } from "@/hooks/useBackgroundMusic";
 import { useGame } from "@/contexts/GameContext";
@@ -10,7 +9,6 @@ export const SoundToggle = () => {
   const { isSoundEnabled, setIsSoundEnabled, playSound } = useSound();
   const { isMusicEnabled, toggleMusic, volume, setVolume } = useMusic();
   const { resetGame } = useGame();
-  const navigate = useNavigate();
 
   const handleReset = () => {
     if (window.confirm("هل أنت متأكد إنك عايز تبدأ من الأول؟ كل التقدم هيتمسح.")) {
@@ -18,11 +16,6 @@ export const SoundToggle = () => {
       window.location.reload();
     }
   };
-
-  const handleBackToSelector = () => {
-    navigate("/");
-  };
-
   const [showPanel, setShowPanel] = useState(false);
 
   const handleSoundToggle = () => {
@@ -142,19 +135,9 @@ export const SoundToggle = () => {
               </p>
             </div>
 
-            {/* Back to Selector */}
-            <motion.button
-              className="mt-3 w-full flex items-center justify-center gap-2 py-2 px-3 rounded-lg bg-muted hover:bg-muted/80 transition-colors text-sm font-medium text-foreground"
-              onClick={handleBackToSelector}
-              whileTap={{ scale: 0.95 }}
-            >
-              <Home className="w-4 h-4" />
-              اختيار القضايا
-            </motion.button>
-
             {/* Reset Button */}
             <motion.button
-              className="mt-2 w-full flex items-center justify-center gap-2 py-2 px-3 rounded-lg bg-destructive/10 text-destructive hover:bg-destructive/20 transition-colors text-sm font-medium"
+              className="mt-3 w-full flex items-center justify-center gap-2 py-2 px-3 rounded-lg bg-destructive/10 text-destructive hover:bg-destructive/20 transition-colors text-sm font-medium"
               onClick={handleReset}
               whileTap={{ scale: 0.95 }}
             >
