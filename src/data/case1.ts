@@ -827,7 +827,7 @@ export const REFERENCE_MATRIX: Record<string, Record<string, string>> = {
 
 export interface Ending {
   id: string;
-  type: "excellent" | "partial" | "wrong" | "missing";
+  type: "excellent" | "partial" | "wrong" | "missing" | "trust_lost";
   title: string;
   rank: string;
   rankIcon: string;
@@ -960,6 +960,200 @@ export const ABU_SAEED_EXTRA_DIALOGUES: InterviewDialogue[] = [
   { characterId: "detective", text: "لسه بجمع بيانات. كل معلومة مهمة.", mood: "neutral" },
   { characterId: "abuSaeed", text: "خد وقتك بس أرجوك اوصل للسبب. المحل ده حياتي.", mood: "nervous" },
 ];
+
+// ============================================
+// نهاية فقدان الثقة (Trust Lost)
+// ============================================
+
+export const TRUST_LOST_ENDING: Ending = {
+  id: "ending-trust-lost",
+  type: "trust_lost",
+  title: "🚪 أبو سعيد أنهى الجلسة",
+  rank: "لم يكتمل التحليل",
+  rankIcon: "🚫",
+  description: "أبو سعيد حس إنك بتقفز للحلول قبل ما تفهم المشكلة… وقرر يوقف الجلسة.",
+  consequences: [
+    "أبو سعيد فقد الثقة في أسلوبك",
+    "ما قدرتش توصل للبيانات أصلاً",
+    "المشكلة فضلت بدون حل",
+  ],
+  score: 0,
+  abuSaeedDialogues: [
+    { characterId: "abuSaeed", text: "معلش يا أستاذ… حاسس إنك مش مركز معايا.", mood: "nervous" },
+    { characterId: "abuSaeed", text: "أنا محتاج حد يسمعني الأول ويفهم المشكلة… مش يديني حلول من أول دقيقة.", mood: "angry" },
+    { characterId: "abuSaeed", text: "خليها على كده… هدور على حد تاني. شكراً على وقتك.", mood: "neutral" },
+  ],
+  lesson: "أهم مهارة في تحليل البيانات هي سؤال الأسئلة الصح. لو قفزت للحلول قبل ما تفهم المشكلة، هتخسر ثقة العميل وهتضيع وقتك. ابدأ دايماً بتكسير المشكلة لأجزاء صغيرة (Decomposition) قبل ما تفترض أي حل.",
+};
+
+// ============================================
+// نقاط الأسئلة التفاعلية (Interactive Question Points)
+// ============================================
+
+export interface QuestionOption {
+  id: string;
+  text: string;
+  type: "decomposition" | "scope" | "premature";
+  response: SceneDialogue[];
+  insight: string | null;
+  trustCost: number; // 0 or -1
+}
+
+export interface QuestionPoint {
+  sceneIndex: number;
+  afterDialogueIndex: number; // show question picker after this dialogue line
+  options: QuestionOption[];
+}
+
+export const QUESTION_POINTS: QuestionPoint[] = [
+  {
+    sceneIndex: 0,
+    afterDialogueIndex: 3, // after "بس الأرقام… الأرقام مش مريحة"
+    options: [
+      {
+        id: "Q1A",
+        text: "لما تقول الأرقام مش مريحة — تقصد إيه بالظبط؟ الإيراد الإجمالي؟ ولا الصافي؟ ولا عدد الفواتير؟",
+        type: "decomposition",
+        trustCost: 0,
+        insight: "أبو سعيد ببص على الصافي — مش واضح لو الإجمالي مختلف",
+        response: [
+          { characterId: "abuSaeed", text: "سؤال مهم… أنا ببص على الرقم النهائي اللي بيطلع من الجهاز آخر اليوم. نورة بتقولي ده 'الصافي'. بس أنا مش فاهم الفرق بينه وبين الإجمالي بصراحة.", mood: "neutral" },
+        ],
+      },
+      {
+        id: "Q1B",
+        text: "الانخفاض ده في أصناف معينة ولا عام؟",
+        type: "scope",
+        trustCost: 0,
+        insight: "الانخفاض يبدو عام وليس خاص بصنف معين",
+        response: [
+          { characterId: "abuSaeed", text: "حاسس إنه عام… مش صنف واحد. بس ما بصيتش بالتفصيل.", mood: "neutral" },
+        ],
+      },
+      {
+        id: "Q1C",
+        text: "يمكن الموسم هادي والطلب أضعف في الفترة دي؟",
+        type: "premature",
+        trustCost: -1,
+        insight: null,
+        response: [
+          { characterId: "abuSaeed", text: "يعني إنت جاي تقولي الموسم هو السبب وخلاص؟ أنا قلت لك الناس موجودة!", mood: "angry" },
+        ],
+      },
+    ],
+  },
+  {
+    sceneIndex: 1,
+    afterDialogueIndex: 2, // after "المرة دي الفرق أكبر من المعتاد"
+    options: [
+      {
+        id: "Q2A",
+        text: "الرقم اللي بتقارنه — ده قبل المرتجعات والخصومات ولا بعدها؟",
+        type: "decomposition",
+        trustCost: 0,
+        insight: "أبو سعيد مش متأكد إذا الرقم قبل ولا بعد المرتجعات",
+        response: [
+          { characterId: "abuSaeed", text: "ما أعرفش بصراحة… نورة هي اللي بتطبع التقرير. بس أنا عارف إننا بنرجّع بضاعة وبنعمل خصومات ساعات.", mood: "neutral" },
+        ],
+      },
+      {
+        id: "Q2B",
+        text: "كام فاتورة تقريبا في اليوم؟ العدد اتغير؟",
+        type: "scope",
+        trustCost: 0,
+        insight: "الفواتير ثابتة ~85/يوم — الحركة موجودة",
+        response: [
+          { characterId: "abuSaeed", text: "80-90 في اليوم… مش حاسس إنها قلت كتير.", mood: "neutral" },
+        ],
+      },
+      {
+        id: "Q2C",
+        text: "المحل المجاور اللي بيعمل عروض — هو ده السبب؟",
+        type: "premature",
+        trustCost: -1,
+        insight: null,
+        response: [
+          { characterId: "abuSaeed", text: "ممكن… بس أنا مش عايز أقول آه وخلاص. مش عندي حاجة تأكد.", mood: "suspicious" },
+        ],
+      },
+    ],
+  },
+  {
+    sceneIndex: 2,
+    afterDialogueIndex: 3, // after "لو حد اخد حاجه معجبتوش او فيها مشكلة بيرجعها عادي"
+    options: [
+      {
+        id: "Q3A",
+        text: "المرتجعات والاستبدالات — زادت الفترة دي؟ ولا ثابتة؟",
+        type: "decomposition",
+        trustCost: 0,
+        insight: "نورة اشتكت من ضغط آخر اليوم — ممكن مرتجعات، ممكن زحمة، ممكن الجهاز",
+        response: [
+          { characterId: "abuSaeed", text: "هو أنا مش متابع بالظبط… بس نورة اشتكت إن الضغط زاد آخر اليوم. ممكن يكون ليها علاقة… مش عارف.", mood: "neutral" },
+        ],
+      },
+      {
+        id: "Q3B",
+        text: "البضاعة الجديدة — الناس عاجباها؟",
+        type: "scope",
+        trustCost: 0,
+        insight: "مفيش شكاوى على البضاعة الجديدة",
+        response: [
+          { characterId: "abuSaeed", text: "مفيش شكاوى كبيرة… الناس بتجرب عادي.", mood: "neutral" },
+        ],
+      },
+      {
+        id: "Q3C",
+        text: "أكيد فيه مشكلة في الجهاز أو التسجيل",
+        type: "premature",
+        trustCost: -1,
+        insight: null,
+        response: [
+          { characterId: "abuSaeed", text: "إنت بتقول أكيد من غير ما تشوف حاجة؟ ده مش تحليل ده تخمين.", mood: "angry" },
+        ],
+      },
+    ],
+  },
+  {
+    sceneIndex: 3,
+    afterDialogueIndex: 4, // after "كل اللي أعرفه: الرقم النهائي أقل من اللي متوقعه"
+    options: [
+      {
+        id: "Q4A",
+        text: "خليني ألخص: الحركة موجودة والأسعار ثابتة — يبقى المشكلة مش في البيع نفسه. فيه حاجة بتحصل بتخلي الرقم النهائي أقل. محتاج أشوف البيانات عشان أعرف إيه هي.",
+        type: "decomposition",
+        trustCost: 0,
+        insight: "التأطير: الحركة موجودة بس الرقم النهائي أقل — فيه حاجة بتقلله",
+        response: [
+          { characterId: "abuSaeed", text: "ده كلام منطقي… فعلا الرقم النهائي هو اللي بيقلقني. اتفضل — كل الورق تحت إيدك.", mood: "happy" },
+        ],
+      },
+      {
+        id: "Q4B",
+        text: "محتاج أشوف كل التقارير والفواتير",
+        type: "scope",
+        trustCost: 0,
+        insight: null,
+        response: [
+          { characterId: "abuSaeed", text: "الورق كله تحت إيدك… بس إنت هتبص على إيه فيه بالظبط؟", mood: "neutral" },
+        ],
+      },
+      {
+        id: "Q4C",
+        text: "أنا شايف إن المنافس هو المشكلة — لازم تعمل عروض",
+        type: "premature",
+        trustCost: -1,
+        insight: null,
+        response: [
+          { characterId: "abuSaeed", text: "إنت بتديني حل قبل ما تفهم المشكلة! أنا جايبك تحلل مش تنصح.", mood: "angry" },
+        ],
+      },
+    ],
+  },
+];
+
+// Hypothesis IDs that get highlighted when player has 3+ insights
+export const INSIGHT_HIGHLIGHTED_HYPOTHESES = ["H1", "H3", "H4", "H8"];
 
 // Legacy exports for backward compatibility
 export const INTRO_DIALOGUES = INTRO_SCENES.flatMap((s) => s.dialogues);

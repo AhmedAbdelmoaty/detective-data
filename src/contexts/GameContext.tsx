@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useCallback, useEffect, ReactNode } from "react";
-import { HYPOTHESES, EVIDENCE_ITEMS, DASHBOARD_DATA, ENDINGS, DIAGNOSTIC_EVIDENCE_IDS, PHASES } from "@/data/case1";
+import { HYPOTHESES, EVIDENCE_ITEMS, DASHBOARD_DATA, ENDINGS, DIAGNOSTIC_EVIDENCE_IDS, PHASES, TRUST_LOST_ENDING } from "@/data/case1";
 
 // ============================================
 // Types
@@ -62,6 +62,11 @@ export interface GameState {
   // Scene system: how the user entered the current room
   entryMethod: "cta" | "direct";
   lastCTAPhaseIndex: number;
+
+  // Interactive questioning (Ask Right)
+  trustBudget: number;
+  insights: string[];
+  questionChoices: Record<number, string>; // sceneIndex → questionId
 }
 
 interface GameContextType {
@@ -118,6 +123,12 @@ interface GameContextType {
   getProgress: () => number;
   getEnding: () => typeof ENDINGS[0] | null;
   resetGame: () => void;
+
+  // Interactive questioning (Ask Right)
+  recordQuestionChoice: (sceneIndex: number, questionId: string, insight: string | null, trustCost: number) => void;
+  getTrustBudget: () => number;
+  getInsights: () => string[];
+  isTrustLost: () => boolean;
 }
 
 // ============================================
@@ -146,6 +157,9 @@ const initialState: GameState = {
   visitedRooms: [],
   entryMethod: "direct",
   lastCTAPhaseIndex: -1,
+  trustBudget: 3,
+  insights: [],
+  questionChoices: {},
 };
 
 // ============================================
@@ -452,6 +466,34 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
     setState(initialState);
   }, []);
 
+  // Interactive questioning (Ask Right)
+  const recordQuestionChoice = useCallback((sceneIndex: number, questionId: string, insight: string | null, trustCost: number) => {
+    setState(prev => {
+      const newTrust = Math.max(0, prev.trustBudget + trustCost);
+      const newInsights = insight && !prev.insights.includes(insight)
+        ? [...prev.insights, insight]
+        : prev.insights;
+      return {
+        ...prev,
+        trustBudget: newTrust,
+        insights: newInsights,
+        questionChoices: { ...prev.questionChoices, [sceneIndex]: questionId },
+      };
+    });
+  }, []);
+
+  const getTrustBudget = useCallback((): number => {
+    return state.trustBudget;
+  }, [state.trustBudget]);
+
+  const getInsights = useCallback((): string[] => {
+    return state.insights;
+  }, [state.insights]);
+
+  const isTrustLost = useCallback((): boolean => {
+    return state.trustBudget <= 0;
+  }, [state.trustBudget]);
+
   return (
     <GameContext.Provider value={{
       state,
@@ -485,6 +527,10 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
       getProgress,
       getEnding,
       resetGame,
+      recordQuestionChoice,
+      getTrustBudget,
+      getInsights,
+      isTrustLost,
     }}>
       {children}
     </GameContext.Provider>
