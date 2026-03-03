@@ -1,7 +1,8 @@
 import { motion } from "framer-motion";
 import { useGame } from "@/contexts/GameContext";
-import { HYPOTHESES } from "@/data/case1";
+import { HYPOTHESES, INSIGHT_HIGHLIGHTED_HYPOTHESES } from "@/data/case1";
 import { cn } from "@/lib/utils";
+import { Search } from "lucide-react";
 import storeFrontImg from "@/assets/scenes/store-front.png";
 
 interface HypothesisSelectScreenProps {
@@ -9,7 +10,9 @@ interface HypothesisSelectScreenProps {
 }
 
 export const HypothesisSelectScreen = ({ onComplete }: HypothesisSelectScreenProps) => {
-  const { state, toggleHypothesis, isHypothesisSelected, advancePhase } = useGame();
+  const { state, toggleHypothesis, isHypothesisSelected, advancePhase, getInsights } = useGame();
+  const insights = getInsights();
+  const showHighlights = insights.length >= 3;
 
   const handleStart = () => {
     if (state.selectedHypotheses.length === 4) {
@@ -41,15 +44,17 @@ export const HypothesisSelectScreen = ({ onComplete }: HypothesisSelectScreenPro
           {HYPOTHESES.map((h, i) => {
             const isSelected = isHypothesisSelected(h.id);
             const isFull = state.selectedHypotheses.length >= 4 && !isSelected;
+            const isHighlighted = showHighlights && INSIGHT_HIGHLIGHTED_HYPOTHESES.includes(h.id);
             return (
               <motion.button
                 key={h.id}
                 onClick={() => { if (!isFull) toggleHypothesis(h.id); }}
                 disabled={isFull}
                 className={cn(
-                  "p-4 rounded-xl border text-right transition-all",
+                  "p-4 rounded-xl border text-right transition-all relative",
                   isSelected ? "bg-primary/20 border-primary ring-2 ring-primary/30" :
                   isFull ? "bg-muted/30 border-border opacity-50 cursor-not-allowed" :
+                  isHighlighted ? "bg-card/50 border-amber-500/40 hover:border-primary/50" :
                   "bg-card/50 border-border hover:border-primary/50"
                 )}
                 initial={{ opacity: 0, y: 20 }}
@@ -57,6 +62,12 @@ export const HypothesisSelectScreen = ({ onComplete }: HypothesisSelectScreenPro
                 transition={{ delay: i * 0.05 }}
                 whileHover={!isFull ? { scale: 1.02 } : {}}
               >
+                {isHighlighted && !isSelected && (
+                  <div className="absolute top-2 left-2 flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-500/20 border border-amber-500/30">
+                    <Search className="w-3 h-3 text-amber-400" />
+                    <span className="text-[10px] text-amber-400 font-bold">مرتبط بتحليلك</span>
+                  </div>
+                )}
                 <div className="flex items-start gap-3">
                   <div className={cn("w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold shrink-0",
                     isSelected ? "bg-primary text-primary-foreground" : "bg-secondary text-muted-foreground"
