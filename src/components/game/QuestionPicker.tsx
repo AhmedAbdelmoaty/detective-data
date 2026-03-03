@@ -1,6 +1,6 @@
 import { useState, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { HelpCircle, AlertTriangle, Search, CheckCircle } from "lucide-react";
+import { HelpCircle, CheckCircle } from "lucide-react";
 import type { QuestionOption } from "@/data/case1";
 
 interface QuestionPickerProps {
@@ -8,24 +8,6 @@ interface QuestionPickerProps {
   onSelect: (option: QuestionOption) => void;
   disabled?: boolean;
 }
-
-const typeConfig = {
-  decomposition: {
-    icon: Search,
-    label: "تكسير",
-    selectedBg: "bg-emerald-500/20 border-emerald-500/60 ring-2 ring-emerald-500/30",
-  },
-  scope: {
-    icon: HelpCircle,
-    label: "نطاق",
-    selectedBg: "bg-blue-500/20 border-blue-500/60 ring-2 ring-blue-500/30",
-  },
-  premature: {
-    icon: AlertTriangle,
-    label: "فرضية مبكرة",
-    selectedBg: "bg-red-500/20 border-red-500/60 ring-2 ring-red-500/30",
-  },
-};
 
 export const QuestionPicker = ({ options, onSelect, disabled }: QuestionPickerProps) => {
   const [selected, setSelected] = useState<string | null>(null);
@@ -43,7 +25,6 @@ export const QuestionPicker = ({ options, onSelect, disabled }: QuestionPickerPr
   const handleSelect = (option: QuestionOption) => {
     if (selected || disabled) return;
     setSelected(option.id);
-    // Small delay for visual feedback before triggering response
     setTimeout(() => onSelect(option), 600);
   };
 
@@ -54,7 +35,6 @@ export const QuestionPicker = ({ options, onSelect, disabled }: QuestionPickerPr
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
     >
-      {/* Dark overlay */}
       <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" />
 
       <motion.div
@@ -63,7 +43,6 @@ export const QuestionPicker = ({ options, onSelect, disabled }: QuestionPickerPr
         animate={{ y: 0, opacity: 1 }}
         transition={{ type: "spring", damping: 20 }}
       >
-        {/* Header */}
         <motion.div
           className="text-center mb-4"
           initial={{ y: -10, opacity: 0 }}
@@ -76,7 +55,6 @@ export const QuestionPicker = ({ options, onSelect, disabled }: QuestionPickerPr
           </span>
         </motion.div>
 
-        {/* Question cards */}
         <div className="flex flex-col gap-3">
           {shuffled.map((option, i) => {
             const isSelected = selected === option.id;
@@ -90,7 +68,7 @@ export const QuestionPicker = ({ options, onSelect, disabled }: QuestionPickerPr
                 className={`
                   p-4 rounded-xl border text-right transition-all relative overflow-hidden
                   ${isSelected
-                    ? typeConfig[option.type].selectedBg
+                    ? "bg-primary/20 border-primary/60 ring-2 ring-primary/30"
                     : isOther
                       ? "bg-muted/20 border-border/30 opacity-40 scale-95"
                       : "bg-card/80 backdrop-blur-md border-border/50 hover:border-primary/50 hover:bg-card/90"
@@ -109,7 +87,7 @@ export const QuestionPicker = ({ options, onSelect, disabled }: QuestionPickerPr
                 <div className="flex items-start gap-3">
                   <div className={`
                     w-8 h-8 rounded-full flex items-center justify-center shrink-0 mt-0.5
-                    ${isSelected ? "bg-white/20" : "bg-secondary"}
+                    ${isSelected ? "bg-primary/30" : "bg-secondary"}
                   `}>
                     {isSelected ? (
                       <CheckCircle className="w-4 h-4 text-foreground" />

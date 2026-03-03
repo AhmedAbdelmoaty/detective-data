@@ -67,6 +67,7 @@ export interface GameState {
   trustBudget: number;
   insights: string[];
   questionChoices: Record<number, string>; // sceneIndex → questionId
+  lastQuestionWasPremature: boolean; // for trust recovery
 }
 
 interface GameContextType {
@@ -160,6 +161,7 @@ const initialState: GameState = {
   trustBudget: 3,
   insights: [],
   questionChoices: {},
+  lastQuestionWasPremature: false,
 };
 
 // ============================================
@@ -469,7 +471,16 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
   // Interactive questioning (Ask Right)
   const recordQuestionChoice = useCallback((sceneIndex: number, questionId: string, insight: string | null, trustCost: number) => {
     setState(prev => {
-      const newTrust = Math.max(0, prev.trustBudget + trustCost);
+      let newTrust = prev.trustBudget + trustCost;
+      const isPremature = trustCost < 0;
+      const isKeyInsight = insight !== null && trustCost === 0 && questionId.endsWith("A");
+      
+      // Trust recovery: key insight after premature → +1 (max 3)
+      if (isKeyInsight && prev.lastQuestionWasPremature) {
+        newTrust = Math.min(3, newTrust + 1);
+      }
+      
+      newTrust = Math.max(0, newTrust);
       const newInsights = insight && !prev.insights.includes(insight)
         ? [...prev.insights, insight]
         : prev.insights;
@@ -478,6 +489,7 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
         trustBudget: newTrust,
         insights: newInsights,
         questionChoices: { ...prev.questionChoices, [sceneIndex]: questionId },
+        lastQuestionWasPremature: isPremature,
       };
     });
   }, []);

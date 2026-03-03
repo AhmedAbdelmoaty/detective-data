@@ -12,7 +12,7 @@ interface HypothesisSelectScreenProps {
 export const HypothesisSelectScreen = ({ onComplete }: HypothesisSelectScreenProps) => {
   const { state, toggleHypothesis, isHypothesisSelected, advancePhase, getInsights } = useGame();
   const insights = getInsights();
-  const showHighlights = insights.length >= 3;
+  const showHighlights = insights.length >= 5;
 
   const handleStart = () => {
     if (state.selectedHypotheses.length === 4) {

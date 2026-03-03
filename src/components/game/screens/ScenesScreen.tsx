@@ -23,28 +23,97 @@ export const ScenesScreen = ({ onComplete }: ScenesScreenProps) => {
   const [scenePhase, setScenePhase] = useState<ScenePhase>("dialogue-before");
   const [responseDialogues, setResponseDialogues] = useState<SceneDialogue[]>([]);
   const [trustLostScreen, setTrustLostScreen] = useState(false);
+  const [bridgeDialogues, setBridgeDialogues] = useState<SceneDialogue[]>([]);
   const { addToNotebook, isInNotebook, recordQuestionChoice, state } = useGame();
 
   const scene = INTRO_SCENES[currentScene];
   const questionPoint = QUESTION_POINTS.find(qp => qp.sceneIndex === currentScene);
   const savedNoteIds = [...Array(100)].map((_, i) => `S${i}`).filter(id => isInNotebook(id));
 
+  // Get the opening dialogues for the current scene
+  // For scenes after the first, prepend bridge dialogues from previous choice
+  const getOpeningDialogues = useCallback((): SceneDialogue[] => {
+    const sceneDialogues = scene?.dialogues || [];
+    if (currentScene === 0) return sceneDialogues;
+
+    // Get the bridge from the previous scene based on what was chosen
+    const prevScene = INTRO_SCENES[currentScene - 1];
+    const prevChoice = state.questionChoices[currentScene - 1];
+    
+    let bridge: SceneDialogue[] = [];
+    if (prevScene?.bridgeVariants && prevChoice) {
+      const optionIndex = prevChoice.endsWith("A") ? "after1" : prevChoice.endsWith("B") ? "after2" : "after3";
+      bridge = prevScene.bridgeVariants[optionIndex] || [];
+    }
+
+    // Also get the scene-specific opener based on previous choice (for scenes with dynamic openers)
+    let dynamicOpener: SceneDialogue[] = [];
+    if (currentScene === 1) {
+      // Scene 2 has fully dynamic openers based on scene 1 choice
+      if (prevChoice?.endsWith("A")) {
+        dynamicOpener = [{ characterId: "abuSaeed", text: "وأنا عندي عادة… كل آخر أسبوع بكتب رقم تقريبي في الدفتر من اللي شفته… وبعدين أقارنه بتقرير نورة. المرة دي الفرق أكبر من المعتاد.", mood: "neutral" }];
+      } else if (prevChoice?.endsWith("B")) {
+        dynamicOpener = [{ characterId: "abuSaeed", text: "من السبت ده وأنا ببص على الرقم اللي بيطلع آخر اليوم… وبقارنه باللي في دماغي. الفرق كبير المرة دي.", mood: "neutral" }];
+      } else {
+        dynamicOpener = [{ characterId: "abuSaeed", text: "خليني أقولك حاجة… أنا عندي دفتر ببص فيه كل أسبوع. والرقم اللي فيه مش زي اللي في التقرير. الفرق المرة دي كبير.", mood: "neutral" }];
+      }
+    } else if (currentScene === 2) {
+      if (prevChoice?.endsWith("A")) {
+        dynamicOpener = [{ characterId: "abuSaeed", text: "في أيام تلاقي الداخلين كتير وتقول نهارده هيتقفل كويس… وبعدين تلاقي الرقم مش زي ما توقعت.", mood: "neutral" }];
+      } else if (prevChoice?.endsWith("B")) {
+        dynamicOpener = [{ characterId: "abuSaeed", text: "الغريبة إن الفواتير ثابتة بس الرقم بينزل. يعني في أيام فيها فواتير كتير بس الرقم النهائي برضو أقل.", mood: "neutral" }];
+      } else {
+        dynamicOpener = [{ characterId: "abuSaeed", text: "بعيدا عن اللي قلته… أنا لاحظ حاجة تانية. مش كل الأيام زي بعض.", mood: "neutral" }];
+      }
+    } else if (currentScene === 3) {
+      if (prevChoice?.endsWith("A")) {
+        dynamicOpener = [{ characterId: "abuSaeed", text: "وأنا بشوف حاجة في المحل… الناس بتدخل بتقيس بتسأل… وبعدين بتطلع بحاجة خفيفة.", mood: "neutral" }];
+      } else if (prevChoice?.endsWith("B")) {
+        dynamicOpener = [{ characterId: "abuSaeed", text: "والغريب إن الناس مش بتشتكي من البضاعة… بس بتلاقيهم بيقيسوا كتير وبيمشوا بحاجة واحدة بس.", mood: "neutral" }];
+      } else {
+        dynamicOpener = [{ characterId: "abuSaeed", text: "بس بغض النظر… خليني أقولك اللي بشوفه بعيني. الناس بتدخل… بتقيس…", mood: "neutral" }];
+      }
+    } else if (currentScene === 4) {
+      if (prevChoice?.endsWith("A")) {
+        dynamicOpener = [{ characterId: "abuSaeed", text: "وبالنسبة لسياسة المحل… أنا اللي يهمني إن الزبون يطلع مطمن. لو مقاس مش مظبوط بنبدل، ولو معجبتوش بيرجعها عادي.", mood: "neutral" }];
+      } else if (prevChoice?.endsWith("B")) {
+        dynamicOpener = [{ characterId: "abuSaeed", text: "الناس موجودة وده كويس. بس عندنا برضو سياسة مرنة… لو حد عايز يبدل أو يرجع، مش بنقفل الباب في وشه.", mood: "neutral" }];
+      } else {
+        dynamicOpener = [{ characterId: "abuSaeed", text: "بعيدا عن اللي قلته… خليني أقولك عن حاجة تانية في المحل. عندنا سياسة مرنة في المرتجعات والاستبدال.", mood: "neutral" }];
+      }
+    } else if (currentScene === 5) {
+      if (prevChoice?.endsWith("A")) {
+        dynamicOpener = [{ characterId: "abuSaeed", text: "خالد مدير الصالة… ونورة على الكاشير. خالد ساعات بيقولي 'النهارده في حركة بس الشراء قليل'. ونورة بتشتكي من الضغط آخر اليوم.", mood: "neutral" }];
+      } else if (prevChoice?.endsWith("B")) {
+        dynamicOpener = [{ characterId: "abuSaeed", text: "نورة على الكاشير وخالد في الصالة. الاتنين معايا من فترة. خالد بيقولي 'النهارده الشراء قليل'… مش عارف يقصد إيه بالظبط.", mood: "neutral" }];
+      } else {
+        dynamicOpener = [{ characterId: "abuSaeed", text: "الموظفين نفسهم… خالد ونورة. خالد بيقول 'الشراء قليل' ونورة بتشتكي من الضغط. مفيش تغيير في الناس.", mood: "neutral" }];
+      }
+    }
+
+    return [...bridge, ...dynamicOpener, ...sceneDialogues];
+  }, [scene, currentScene, state.questionChoices]);
+
   // Split dialogues: before question point and after
   const getBeforeDialogues = useCallback(() => {
-    if (!scene || !questionPoint) return scene?.dialogues || [];
-    return scene.dialogues.slice(0, questionPoint.afterDialogueIndex + 1);
-  }, [scene, questionPoint]);
-
-  const getAfterDialogues = useCallback(() => {
-    if (!scene || !questionPoint) return [];
-    return scene.dialogues.slice(questionPoint.afterDialogueIndex + 1);
-  }, [scene, questionPoint]);
+    const allDialogues = getOpeningDialogues();
+    if (!questionPoint) return allDialogues;
+    
+    // afterDialogueIndex is relative to the scene's own dialogues
+    // But we prepended bridge+dynamic, so we need to adjust
+    if (questionPoint.afterDialogueIndex === -1) {
+      // Question appears immediately after bridge/dynamic opener
+      return allDialogues;
+    }
+    
+    // Show all dialogues (bridge + dynamic + scene) then question
+    return allDialogues;
+  }, [getOpeningDialogues, questionPoint]);
 
   const handleBeforeComplete = () => {
     if (questionPoint && !state.questionChoices[currentScene]) {
       setScenePhase("question");
     } else {
-      // No question point for this scene or already answered
       handleSceneComplete();
     }
   };
@@ -64,9 +133,8 @@ export const ScenesScreen = ({ onComplete }: ScenesScreenProps) => {
       return;
     }
 
-    // Build response dialogues: Abu Saeed's response + remaining scene dialogues
-    const afterDialogues = getAfterDialogues();
-    setResponseDialogues([...option.response, ...afterDialogues]);
+    // Build response dialogues
+    setResponseDialogues([...option.response]);
     setScenePhase("dialogue-after");
   };
 
@@ -92,32 +160,24 @@ export const ScenesScreen = ({ onComplete }: ScenesScreenProps) => {
   if (trustLostScreen) {
     return (
       <div className="relative h-screen overflow-hidden">
-        <img src={sceneBgs[currentScene] || abuSaeed1} alt="Scene" className="w-full h-full object-cover" />
+        <img src={sceneBgs[currentScene % sceneBgs.length]} alt="Scene" className="w-full h-full object-cover" />
         <div className="absolute inset-0 bg-black/80" />
         <motion.div
           className="absolute inset-0 z-20 flex flex-col items-center justify-center p-8 text-center"
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
         >
-          <motion.div
-            className="text-6xl mb-6"
-            initial={{ scale: 0 }}
-            animate={{ scale: 1 }}
-            transition={{ type: "spring", delay: 0.3 }}
-          >
+          <motion.div className="text-6xl mb-6" initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: "spring", delay: 0.3 }}>
             🚪
           </motion.div>
           <h2 className="text-2xl font-bold text-foreground mb-3">{TRUST_LOST_ENDING.title}</h2>
           <p className="text-muted-foreground mb-6 max-w-md">{TRUST_LOST_ENDING.description}</p>
-
           <div className="bg-card/50 backdrop-blur-sm border border-border rounded-xl p-4 mb-6 max-w-md text-right">
             <p className="text-sm font-bold text-primary mb-2">💡 الدرس المستفاد</p>
             <p className="text-sm text-muted-foreground leading-relaxed">{TRUST_LOST_ENDING.lesson}</p>
           </div>
-
           <motion.button
             onClick={() => {
-              // Reset and restart from scenes
               setCurrentScene(0);
               setScenePhase("dialogue-before");
               setResponseDialogues([]);
@@ -134,7 +194,6 @@ export const ScenesScreen = ({ onComplete }: ScenesScreenProps) => {
     );
   }
 
-  // Determine which dialogues to show based on phase
   const currentDialogues = scenePhase === "dialogue-after" ? responseDialogues : getBeforeDialogues();
   const currentOnComplete = scenePhase === "dialogue-after" ? handleAfterComplete : handleBeforeComplete;
 
@@ -149,7 +208,7 @@ export const ScenesScreen = ({ onComplete }: ScenesScreenProps) => {
           exit={{ opacity: 0 }}
           transition={{ duration: 0.5 }}
         >
-          <img src={sceneBgs[currentScene] || abuSaeed1} alt="Scene" className="w-full h-full object-cover" />
+          <img src={sceneBgs[currentScene % sceneBgs.length]} alt="Scene" className="w-full h-full object-cover" />
           <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-black/20" />
         </motion.div>
       </AnimatePresence>
@@ -179,10 +238,7 @@ export const ScenesScreen = ({ onComplete }: ScenesScreenProps) => {
       {/* Question picker */}
       <AnimatePresence>
         {scenePhase === "question" && questionPoint && (
-          <QuestionPicker
-            options={questionPoint.options}
-            onSelect={handleQuestionSelect}
-          />
+          <QuestionPicker options={questionPoint.options} onSelect={handleQuestionSelect} />
         )}
       </AnimatePresence>
 
