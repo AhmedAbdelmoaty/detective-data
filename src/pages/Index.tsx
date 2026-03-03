@@ -1,71 +1,92 @@
-import { motion } from "framer-motion";
-import { useNavigate } from "react-router-dom";
-import { Search, FileText } from "lucide-react";
+import { useState, useEffect } from "react";
+import { IntroScreen } from "@/components/game/screens/IntroScreen";
+import { OnboardingScreen } from "@/components/game/screens/OnboardingScreen";
+import { ScenesScreen } from "@/components/game/screens/ScenesScreen";
+import { HypothesisSelectScreen } from "@/components/game/screens/HypothesisSelectScreen";
+import { BriefingScreen } from "@/components/game/screens/BriefingScreen";
+import { AnalystHubScreen } from "@/components/game/screens/AnalystHubScreen";
+import { OfficeScreen } from "@/components/game/screens/OfficeScreen";
+import { EvidenceScreen } from "@/components/game/screens/EvidenceScreen";
+import { DashboardScreen } from "@/components/game/screens/DashboardScreen";
+import { FloorScreen } from "@/components/game/screens/FloorScreen";
+import { AnalysisScreen } from "@/components/game/screens/AnalysisScreen";
+import { ResultScreen } from "@/components/game/screens/ResultScreen";
+import { SoundProvider } from "@/hooks/useSoundEffects";
+import { MusicProvider, useMusic } from "@/hooks/useBackgroundMusic";
+import { SoundToggle } from "@/components/game/SoundToggle";
+import { FloatingNotebook } from "@/components/game/FloatingNotebook";
+import { GameProvider } from "@/contexts/GameContext";
 
-const cases = [
-  {
-    id: "case1",
-    path: "/case1",
-    title: "القضية الأولى",
-    subtitle: "المهمة التحليلية",
-    description: "تحقيق كامل مع أدلة ومقابلات وتحليل بيانات",
-    icon: <FileText className="w-8 h-8" />,
-    status: "متاح",
-  },
-  {
-    id: "qf",
-    path: "/qf",
-    title: "اسأل صح",
-    subtitle: "تأطير المشكلة",
-    description: "تعلّم تسأل الأسئلة الصح قبل ما تدور على الإجابة",
-    icon: <Search className="w-8 h-8" />,
-    status: "متاح",
-  },
-];
+type Screen =
+  | "intro"
+  | "onboarding"
+  | "scenes"
+  | "hypothesis-select"
+  | "briefing"
+  | "analyst-hub"
+  | "office"
+  | "evidence"
+  | "dashboard"
+  | "floor"
+  | "analysis"
+  | "result";
 
-const Index = () => {
-  const navigate = useNavigate();
+const showNotebookScreens: Screen[] = ["analyst-hub", "office", "evidence", "dashboard", "floor", "analysis"];
+
+const GameContent = () => {
+  const [currentScreen, setCurrentScreen] = useState<Screen>(
+    () => (localStorage.getItem("detective-game-screen") as Screen) || "intro",
+  );
+  const { setCurrentRoom } = useMusic();
+
+  useEffect(() => {
+    localStorage.setItem("detective-game-screen", currentScreen);
+  }, [currentScreen]);
+
+  const handleNavigate = (screen: string) => {
+    setCurrentScreen(screen as Screen);
+  };
+
+  useEffect(() => {
+    const roomTypes = ["intro", "office", "evidence", "analysis", "floor", "result"];
+    if (roomTypes.includes(currentScreen)) {
+      setCurrentRoom(currentScreen as any);
+    }
+  }, [currentScreen, setCurrentRoom]);
+
+  const showNotebook = showNotebookScreens.includes(currentScreen);
 
   return (
-    <div className="min-h-screen bg-background flex flex-col items-center justify-center p-6" dir="rtl">
-      <motion.div
-        className="text-center mb-12"
-        initial={{ y: -30, opacity: 0 }}
-        animate={{ y: 0, opacity: 1 }}
-      >
-        <h1 className="text-4xl md:text-5xl font-bold text-foreground mb-3 font-display">
-          🔍 وكالة المحقق
-        </h1>
-        <p className="text-muted-foreground text-lg">اختر المهمة</p>
-      </motion.div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-2xl w-full">
-        {cases.map((c, i) => (
-          <motion.button
-            key={c.id}
-            onClick={() => navigate(c.path)}
-            className="p-6 rounded-2xl border border-border bg-card/50 backdrop-blur-sm text-right hover:border-primary/50 transition-colors group"
-            initial={{ y: 20, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            transition={{ delay: 0.2 + i * 0.1 }}
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-          >
-            <div className="flex items-start gap-4">
-              <div className="p-3 rounded-xl bg-primary/10 text-primary group-hover:bg-primary/20 transition-colors">
-                {c.icon}
-              </div>
-              <div className="flex-1">
-                <h2 className="text-xl font-bold text-foreground mb-1">{c.title}</h2>
-                <p className="text-sm text-primary mb-2">{c.subtitle}</p>
-                <p className="text-sm text-muted-foreground">{c.description}</p>
-              </div>
-            </div>
-            <div className="mt-4 text-xs text-success font-bold">● {c.status}</div>
-          </motion.button>
-        ))}
-      </div>
+    <div className="min-h-screen bg-background">
+      <SoundToggle />
+      {showNotebook && <FloatingNotebook />}
+      {currentScreen === "intro" && <IntroScreen onNavigate={() => handleNavigate("onboarding")} />}
+      {currentScreen === "onboarding" && <OnboardingScreen onComplete={() => handleNavigate("scenes")} />}
+      {currentScreen === "scenes" && <ScenesScreen onComplete={() => handleNavigate("hypothesis-select")} />}
+      {currentScreen === "hypothesis-select" && (
+        <HypothesisSelectScreen onComplete={() => handleNavigate("briefing")} />
+      )}
+      {currentScreen === "briefing" && <BriefingScreen onNavigate={handleNavigate} />}
+      {currentScreen === "analyst-hub" && <AnalystHubScreen onNavigate={handleNavigate} />}
+      {currentScreen === "office" && <OfficeScreen onNavigate={handleNavigate} />}
+      {currentScreen === "evidence" && <EvidenceScreen onNavigate={handleNavigate} />}
+      {currentScreen === "dashboard" && <DashboardScreen onNavigate={handleNavigate} />}
+      {currentScreen === "floor" && <FloorScreen onNavigate={handleNavigate} />}
+      {currentScreen === "analysis" && <AnalysisScreen onNavigate={handleNavigate} />}
+      {currentScreen === "result" && <ResultScreen onNavigate={handleNavigate} />}
     </div>
+  );
+};
+
+const Index = () => {
+  return (
+    <GameProvider>
+      <MusicProvider>
+        <SoundProvider>
+          <GameContent />
+        </SoundProvider>
+      </MusicProvider>
+    </GameProvider>
   );
 };
 
