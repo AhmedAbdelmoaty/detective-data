@@ -93,7 +93,7 @@ export const HYPOTHESES: Hypothesis[] = [
 ];
 
 // ============================================
-// مشاهد أبو سعيد (7 محطات تفاعلية)
+// مشاهد أبو سعيد (4 مشاهد افتتاحية)
 // ============================================
 
 export interface SceneDialogue {
@@ -107,137 +107,133 @@ export interface SceneDialogue {
 
 export interface IntroScene {
   id: string;
-  backgroundImage: string;
+  backgroundImage: string; // placeholder for now
   dialogues: SceneDialogue[];
-  bridgeVariants?: {
-    after1: SceneDialogue[];
-    after2: SceneDialogue[];
-    after3: SceneDialogue[];
-  };
 }
 
 export const INTRO_SCENES: IntroScene[] = [
-  // المحطة 1 — "الأرقام مش مريحة"
   {
     id: "scene-1",
     backgroundImage: "scene-1",
     dialogues: [
       { characterId: "abuSaeed", text: "أهلًا… نورت يا أستاذ. اتفضل اقعد.", mood: "neutral" },
-      { characterId: "abuSaeed", text: "أنا بقالي يومين دماغي مش سايباني… وقلت لازم أقابلك.", mood: "neutral" },
-      { characterId: "abuSaeed", text: "بص… المحل مش فاضي… وفي حركة… بس الأرقام مش مريحة.", mood: "neutral" },
+      {
+        characterId: "abuSaeed",
+        text: "تشرب شاي؟… قلت أهو نقعد دقيقتين بهدوء. أنا بقالي يومين دماغي مش سايباني… وقلت لازم أقابلك وأحكيلك اللي حاصل.",
+        mood: "neutral",
+      },
+      { characterId: "detective", text: "تمام… قولّي.", mood: "neutral" },
+      { characterId: "abuSaeed", text: "بص… المحل مش فاضي… وفي حركة… بس الأرقام… الأرقام مش مريحة.", mood: "neutral" },
+      {
+        characterId: "abuSaeed",
+        text: "أنا بقالي في الشغلانة دي أكتر من 12 سنة. عينك بتتعود… بتعرف اليوم عامل إزاي من أول ساعتين. بس اللي حصل آخر أسبوع خلاني حاسس إني مش فاهم الدنيا.",
+        mood: "neutral",
+      },
+      { characterId: "detective", text: "إيه اللي خلاك تقلق؟", mood: "neutral" },
+      {
+        characterId: "abuSaeed",
+        text: "خليني أحكي من الأول… من السبت اللي فات (14 فبراير) بدأت أحس إن المحل ‘مليان ناس’… مش طول اليوم… بس في ساعات معينة، خصوصًا بعد العصر وبالليل شوية.",
+        mood: "neutral",
+      },
+      {
+        characterId: "abuSaeed",
+        text: "هتلاقي ناس بتجرب… ناس بتسأل… ناس بتدخل وتطلع… فأنا طبيعي أتوقع إن اليوم ده هيطلع رقم كويس.",
+        mood: "neutral",
+      },
     ],
-    bridgeVariants: {
-      after1: [
-        { characterId: "abuSaeed", text: "أنا بقالي في الشغلانة 12 سنة. عينك بتتعود. بس اللي حصل آخر أسبوع خلاني حاسس إن فيه فرق بين اللي بشوفه بعيني والرقم اللي بيطلع.", mood: "neutral" },
-      ],
-      after2: [
-        { characterId: "abuSaeed", text: "يعني من أسبوع بس… ومش فاهم إيه اللي اتغير. خليني أكملك…", mood: "neutral" },
-      ],
-      after3: [
-        { characterId: "abuSaeed", text: "طيب… خليني أكملك الصورة.", mood: "nervous" },
-      ],
-    },
   },
-  // المحطة 2 — "الفرق بين اللي في دماغي والورقة"
   {
     id: "scene-2",
     backgroundImage: "scene-2",
-    dialogues: [], // populated dynamically from bridge
-    bridgeVariants: {
-      after1: [
-        { characterId: "abuSaeed", text: "بس فيه حاجة تانية لاحظتها… مش كل الأيام زي بعض.", mood: "neutral" },
-      ],
-      after2: [
-        { characterId: "abuSaeed", text: "الفواتير شبه ثابتة… يعني الناس لسه بتدخل. بس الرقم النهائي نازل. غريبة.", mood: "neutral" },
-      ],
-      after3: [
-        { characterId: "abuSaeed", text: "خليني أكمل…", mood: "nervous" },
-      ],
-    },
+    dialogues: [
+      {
+        characterId: "abuSaeed",
+        text: "بس لما قعدت آخر الأسبوع أبص على اللي اتسجل… لقيت إن الرقم أقل من اللي في دماغي. مش فرق بسيط… فرق يخليك تقول: في حاجة غلط.",
+        mood: "neutral",
+      },
+      { characterId: "detective", text: "دماغك بتقارن بإيه؟ بإحساسك؟ ولا بأرقام قديمة؟", mood: "neutral" },
+      {
+        characterId: "abuSaeed",
+        text: "بالإتنين. أنا عندي عادة: كل آخر أسبوع بكتب رقم تقريبي في الدفتر ده كده من اللي شفته بعيني… وبعدين أقارنه بالتقرير. طول عمره فيه فرق، بس فرق منطقي. المرة دي الفرق أكبر من المعتاد.",
+        mood: "neutral",
+      },
+      { characterId: "detective", text: "طيب يمكن الحركة اللي شايفها مش شراء؟ ناس بتتفرج بس؟", mood: "neutral" },
+      {
+        characterId: "abuSaeed",
+        text: "ده احتمال… بس برضه فيه حاجة مش راكبة. يعني… في أيام بعينها أنا شفت بعيني أكتر من حد دافع وطلع بكيس.",
+        mood: "neutral",
+      },
+      {
+        characterId: "abuSaeed",
+        text: "أنا قعدت ألفّها في دماغي كذا مرة… وكل ما أقول تفسير، ألاقيه ناقص. حاسس إن فيه تفصيلة صغيرة بتفلت مني… عشان كده جبتك… عايزك ترتب اللي حاصل ده معايا… وتفسرلي الفرق ده طالع منين.",
+        mood: "neutral",
+      },
+    ],
   },
-  // المحطة 3 — "مش كل الأيام زي بعض"
   {
     id: "scene-3",
     backgroundImage: "scene-3",
     dialogues: [
-      { characterId: "abuSaeed", text: "وأيام تانية… ناس أقل بس الرقم مقبول. مش فاهم النمط ده.", mood: "neutral" },
+      {
+        characterId: "abuSaeed",
+        text: "المحل هنا بيعتمد على حاجتين: زباين بتيجي كل شهر/شهرين وزباين مرور… داخلين يشوفوا الجديد.",
+        mood: "neutral",
+      },
+      { characterId: "detective", text: "في الفترة دي… الأسعار أو البضاعة اتغيروا؟", mood: "neutral" },
+      {
+        characterId: "abuSaeed",
+        text: "الأسعار… ما اتحركتش حركة كبيرة. والبضاعة… عندنا بضاعة جديدة استلمناها من حوالي 10 أيام واتفرشت في المحل… مش شايف شكاوى كبيرة ولا تعليقات كتير. (أنا بتابع الكلام ده… لو في حد من العملاء معاه مشكلة أو متضايق من حاجة بعرف).",
+        mood: "neutral",
+      },
+      {
+        characterId: "abuSaeed",
+        text: "أنا اللي يهمّني إن الزبون يطلع مطمّن… لو مقاس طلع مش مظبوط بنبدّل، ولو حد اخد حاجه معجبتوش او فيها مشكلة بيرجعها عادي… المهم الناس تفضل واثقة.",
+        mood: "neutral",
+      },
+      { characterId: "detective", text: "طب والشارع حواليك؟… ايه اخبار المنافسين؟", mood: "neutral" },
+      {
+        characterId: "abuSaeed",
+        text: "في محل جنبنا… مش جديد قوي، بس من فترة عامل عروض. وبيغير بنرات قدام المحل كل أسبوع تقريبًا… الناس بتلاحظ ده. هل ده مأثر؟ ممكن… بس أنا مش عايز أقول آه وخلاص.",
+        mood: "neutral",
+      },
+      { characterId: "detective", text: "طيب الموظفين… نفسهم؟ ولا في تغيير حصل؟", mood: "neutral" },
+      {
+        characterId: "abuSaeed",
+        text: "لا نفسهم… خالد مدير الصالة… ونورة على الكاشير… الناس دي معايا من فترة… وعشان كده الموضوع مضايقني… لأن مفيش تغيير كبير حصل يخلي ده يحصل فجأة.",
+        mood: "neutral",
+      },
     ],
-    bridgeVariants: {
-      after1: [
-        { characterId: "abuSaeed", text: "خليني أقولك اللي بشوفه بعيني في المحل…", mood: "neutral" },
-      ],
-      after2: [
-        { characterId: "abuSaeed", text: "البضاعة ممكن ليها علاقة ممكن لأ… بس فيه حاجة تانية بشوفها في سلوك الناس…", mood: "neutral" },
-      ],
-      after3: [
-        { characterId: "abuSaeed", text: "خليني أكمل.", mood: "nervous" },
-      ],
-    },
   },
-  // المحطة 4 — "الناس بتدخل بس…"
   {
     id: "scene-4",
     backgroundImage: "scene-4",
     dialogues: [
-      { characterId: "abuSaeed", text: "وساعات تلاقي حد دخل وقعد ربع ساعة وطلع بإيده فاضية.", mood: "neutral" },
-    ],
-    bridgeVariants: {
-      after1: [
-        { characterId: "abuSaeed", text: "خليني أقولك بقى عن سياسة المحل في موضوع المرتجعات والاستبدال…", mood: "neutral" },
-      ],
-      after2: [
-        { characterId: "abuSaeed", text: "الناس موجودة والحمد لله… بس فيه حاجة تانية محتاج تعرفها عن المحل…", mood: "neutral" },
-      ],
-      after3: [
-        { characterId: "abuSaeed", text: "خلّيني أكمل.", mood: "nervous" },
-      ],
-    },
-  },
-  // المحطة 5 — "لو حد عايز يرجّع حاجة بنرجعها"
-  {
-    id: "scene-5",
-    backgroundImage: "scene-1",
-    dialogues: [
-      { characterId: "abuSaeed", text: "المهم الناس تفضل واثقة فينا.", mood: "neutral" },
-    ],
-    bridgeVariants: {
-      after1: [
-        { characterId: "abuSaeed", text: "خليني أقولك عن خالد ونورة…", mood: "neutral" },
-      ],
-      after2: [
-        { characterId: "abuSaeed", text: "نورة شاطرة… وخالد في الصالة بيحاول يساعد. خليني أقولك عنهم…", mood: "neutral" },
-      ],
-      after3: [
-        { characterId: "abuSaeed", text: "ماشي… خليني أكمل.", mood: "nervous" },
-      ],
-    },
-  },
-  // المحطة 6 — "خالد ونورة"
-  {
-    id: "scene-6",
-    backgroundImage: "scene-2",
-    dialogues: [
-      { characterId: "abuSaeed", text: "الناس دي معايا من فترة… مفيش تغيير كبير حصل يخلي ده يحصل فجأة.", mood: "neutral" },
-    ],
-    bridgeVariants: {
-      after1: [
-        { characterId: "abuSaeed", text: "خليني أقولك آخر حاجة قبل ما تبدأ…", mood: "neutral" },
-      ],
-      after2: [
-        { characterId: "abuSaeed", text: "تمام… بس قبل ما تبدأ خليني أقولك حاجة أخيرة…", mood: "neutral" },
-      ],
-      after3: [
-        { characterId: "abuSaeed", text: "…طيب. خليني أقولك آخر حاجة.", mood: "nervous" },
-      ],
-    },
-  },
-  // المحطة 7 — "فيه تفصيلة بتفلت مني"
-  {
-    id: "scene-7",
-    backgroundImage: "scene-3",
-    dialogues: [
-      { characterId: "abuSaeed", text: "الورقة اللي بتطلع من الجهاز فيها أرقام… بس كل اللي أعرفه: الرقم النهائي أقل من اللي متوقعه.", mood: "neutral" },
-      { characterId: "abuSaeed", text: "فيه تفصيلة بتفلت مني… عشان كده جبتك.", mood: "neutral" },
+      {
+        characterId: "abuSaeed",
+        text: "اللي محيّرني إن الصورة مش ثابتة… كأن كل يوم بيحكي حكاية غير اللي قبله. يعني مثلًا…",
+        mood: "neutral",
+      },
+      {
+        characterId: "abuSaeed",
+        text: "في أيام… تلاقي الداخلين كتير، وتقول: نهارده هيتقفل كويس… وبعدين تلاقي اللي طالع… طالع بحاجة خفيفة وأحيانًا بحس إن في ناس بتقعد تجرب… ومتمشيش بحاجة. وساعات بيحصل زحمة عند الكاشير… ونورا بتحاول تخلّص بسرعة عشان الطابور ما يطوّلش….",
+        mood: "neutral",
+      },
+      { characterId: "detective", text: "طب أنت معتمد في إحساسك على إيه غير النظر؟", mood: "neutral" },
+      {
+        characterId: "abuSaeed",
+        text: "يعني… مش بس إحساس. خالد ساعات بيقولي ‘النهارده في حركة بس الشراء قليل’… ونورة بتشتكي من الضغط آخر اليوم… وأنا بنفسي بعد ما نقفل، ببص على ملخص اليوم اللي بيتطبع من الجهاز… بس مش بفهم منه كل التفاصيل.",
+        mood: "neutral",
+      },
+      {
+        characterId: "abuSaeed",
+        text: "الورقة دي فيها أرقام… بس أنا مش عارف أقرأها صح ولا غلط. كل اللي أعرفه: الرقم النهائي أقل من اللي متوقعه.",
+        mood: "neutral",
+      },
+      {
+        characterId: "abuSaeed",
+        text: "الورق كله تحت إيدك—التقارير والدفتر والفواتير، وأي حاجة طالعة من الجهاز. وكمان اقعد مع خالد شوية في الصالة، ومع نورا على الكاشير… واسأل اللي محتاجه… وفي الآخر قولي: الخلل فين بالظبط؟",
+        mood: "neutral",
+      },
     ],
   },
 ];
@@ -831,7 +827,7 @@ export const REFERENCE_MATRIX: Record<string, Record<string, string>> = {
 
 export interface Ending {
   id: string;
-  type: "excellent" | "partial" | "wrong" | "missing" | "trust_lost";
+  type: "excellent" | "partial" | "wrong" | "missing";
   title: string;
   rank: string;
   rankIcon: string;
@@ -964,226 +960,6 @@ export const ABU_SAEED_EXTRA_DIALOGUES: InterviewDialogue[] = [
   { characterId: "detective", text: "لسه بجمع بيانات. كل معلومة مهمة.", mood: "neutral" },
   { characterId: "abuSaeed", text: "خد وقتك بس أرجوك اوصل للسبب. المحل ده حياتي.", mood: "nervous" },
 ];
-
-// ============================================
-// نهاية فقدان الثقة (Trust Lost)
-// ============================================
-
-export const TRUST_LOST_ENDING: Ending = {
-  id: "ending-trust-lost",
-  type: "trust_lost",
-  title: "🚪 أبو سعيد أنهى الجلسة",
-  rank: "لم يكتمل التحليل",
-  rankIcon: "🚫",
-  description: "أبو سعيد حس إنك بتقفز للحلول قبل ما تفهم المشكلة… وقرر يوقف الجلسة.",
-  consequences: [
-    "أبو سعيد فقد الثقة في أسلوبك",
-    "ما قدرتش توصل للبيانات أصلاً",
-    "المشكلة فضلت بدون حل",
-  ],
-  score: 0,
-  abuSaeedDialogues: [
-    { characterId: "abuSaeed", text: "معلش يا أستاذ… حاسس إنك مش مركز معايا.", mood: "nervous" },
-    { characterId: "abuSaeed", text: "أنا محتاج حد يسمعني الأول ويفهم المشكلة… مش يديني حلول من أول دقيقة.", mood: "angry" },
-    { characterId: "abuSaeed", text: "خليها على كده… هدور على حد تاني. شكراً على وقتك.", mood: "neutral" },
-  ],
-  lesson: "أهم مهارة في تحليل البيانات هي سؤال الأسئلة الصح. لو قفزت للحلول قبل ما تفهم المشكلة، هتخسر ثقة العميل وهتضيع وقتك. ابدأ دايماً بتكسير المشكلة لأجزاء صغيرة (Decomposition) قبل ما تفترض أي حل.",
-};
-
-// ============================================
-// نقاط الأسئلة التفاعلية (Interactive Question Points)
-// ============================================
-
-export interface QuestionOption {
-  id: string;
-  text: string;
-  type: "key" | "secondary" | "premature"; // internal only — not shown to player
-  response: SceneDialogue[];
-  insight: string | null;
-  trustCost: number; // 0 or -1
-}
-
-export interface QuestionPoint {
-  sceneIndex: number;
-  afterDialogueIndex: number; // show question picker after this dialogue line
-  options: QuestionOption[];
-}
-
-export const QUESTION_POINTS: QuestionPoint[] = [
-  // المحطة 1
-  {
-    sceneIndex: 0,
-    afterDialogueIndex: 2,
-    options: [
-      {
-        id: "Q1A", text: "لما تقول الأرقام مش مريحة — تقصد إيه بالظبط؟ المبيعات الإجمالية؟ الصافي؟ عدد الفواتير؟",
-        type: "key", trustCost: 0,
-        insight: "أبو سعيد ببص على الصافي — الفرق بين الصافي والإجمالي مش واضحله",
-        response: [{ characterId: "abuSaeed", text: "سؤال مهم… أنا ببص على الرقم النهائي اللي بيطلع من الجهاز آخر اليوم. نورة بتقولي ده 'الصافي'. بس أنا مش فاهم الفرق بينه وبين الإجمالي بصراحة.", mood: "neutral" }],
-      },
-      {
-        id: "Q1B", text: "الانخفاض ده بدأ امتى بالظبط؟ فجأة ولا بالتدريج؟",
-        type: "secondary", trustCost: 0,
-        insight: "المشكلة بدأت 14 فبراير — أسبوع واحد بس",
-        response: [{ characterId: "abuSaeed", text: "من السبت اللي فات تقريبا… 14 فبراير. قبلها كان كل حاجة عادي.", mood: "neutral" }],
-      },
-      {
-        id: "Q1C", text: "يمكن الموسم هادي والطلب أضعف في الفترة دي",
-        type: "premature", trustCost: -1, insight: null,
-        response: [{ characterId: "abuSaeed", text: "يعني إنت جاي تقولي الموسم هو السبب وخلاص؟ أنا قلت لك الناس موجودة!", mood: "angry" }],
-      },
-    ],
-  },
-  // المحطة 2
-  {
-    sceneIndex: 1,
-    afterDialogueIndex: -1, // question appears immediately (dialogues are empty, bridge is the opener)
-    options: [
-      {
-        id: "Q2A", text: "الرقم في الدفتر — ده تقدير للمبيعات الإجمالية قبل أي خصومات ومرتجعات؟ ولا التقرير بيطلع رقم مختلف؟",
-        type: "key", trustCost: 0,
-        insight: "أبو سعيد مش متأكد لو الرقم في التقرير قبل ولا بعد المرتجعات والخصومات",
-        response: [{ characterId: "abuSaeed", text: "ما أعرفش بصراحة… نورة بتطبع التقرير. بس أنا عارف إننا بنرجّع بضاعة وبنعمل خصومات ساعات.", mood: "neutral" }],
-      },
-      {
-        id: "Q2B", text: "كام فاتورة بتعملوا تقريبا في اليوم؟ العدد اتغير؟",
-        type: "secondary", trustCost: 0,
-        insight: "عدد الفواتير ثابت ~85/يوم — الحركة موجودة",
-        response: [{ characterId: "abuSaeed", text: "80-90 في اليوم… مش حاسس إنها قلت كتير.", mood: "neutral" }],
-      },
-      {
-        id: "Q2C", text: "المحل المجاور اللي بيعمل عروض — هو ده السبب",
-        type: "premature", trustCost: -1, insight: null,
-        response: [{ characterId: "abuSaeed", text: "ممكن… بس مش عندي حاجة تأكد. أنا مش عايز أرمي التهمة من غير دليل.", mood: "suspicious" }],
-      },
-    ],
-  },
-  // المحطة 3
-  {
-    sceneIndex: 2,
-    afterDialogueIndex: 0,
-    options: [
-      {
-        id: "Q3A", text: "الأيام اللي الفرق فيها كبير — في نمط؟ أيام معينة من الأسبوع؟ أو أوقات معينة من اليوم؟",
-        type: "key", trustCost: 0,
-        insight: "أيام الذروة (خميس/جمعة) وآخر اليوم فيها ضغط — الفرق ممكن يكون أكبر فيها",
-        response: [{ characterId: "abuSaeed", text: "الخميس والجمعة بيكون في ناس أكتر. وآخر اليوم بيبقى في ضغط. بس هل الفرق بيكون أكبر في الأيام دي؟ ما بصيتش بالطريقة دي.", mood: "neutral" }],
-      },
-      {
-        id: "Q3B", text: "البضاعة الجديدة اللي وصلت — ممكن تكون مش عاجبة الناس؟",
-        type: "secondary", trustCost: 0,
-        insight: "البضاعة الجديدة والمشكلة في نفس الفترة — بس مفيش شكاوى",
-        response: [{ characterId: "abuSaeed", text: "وصلت من حوالي 10 أيام… والمشكلة بدأت تقريبا نفس الفترة. بس مفيش شكاوى كبيرة.", mood: "neutral" }],
-      },
-      {
-        id: "Q3C", text: "أكيد الجهاز فيه مشكلة أو نورة بتغلط في التسجيل",
-        type: "premature", trustCost: -1, insight: null,
-        response: [{ characterId: "abuSaeed", text: "إنت بتقول أكيد من غير ما تشوف رقم واحد؟ ده مش تحليل ده تخمين.", mood: "angry" }],
-      },
-    ],
-  },
-  // المحطة 4
-  {
-    sceneIndex: 3,
-    afterDialogueIndex: 0,
-    options: [
-      {
-        id: "Q4A", text: "يعني الناس بتشتري بس بتاخد أقل من الأول؟ ولا في ناس أصلا مش بتشتري خالص؟ فيه فرق بين الحالتين",
-        type: "key", trustCost: 0,
-        insight: "الناس لسه بتشتري بس عدد القطع في الفاتورة أقل — سلة الشراء قلت",
-        response: [{ characterId: "abuSaeed", text: "الاتنين بيحصلوا… بس اللي بيحصل أكتر إن الناس بتشتري… بس بتطلع بحاجة أو اتنين. زمان كان ممكن 3-4 قطع.", mood: "neutral" }],
-      },
-      {
-        id: "Q4B", text: "الناس الجديدة بتعرف المحل إزاي؟ من إعلانات ولا مرور عادي؟",
-        type: "secondary", trustCost: 0,
-        insight: "الترافيك طبيعي — مفيش حملات إعلانية",
-        response: [{ characterId: "abuSaeed", text: "معظمها مرور… وفيه ناس بترجع كل فترة. مفيش إعلانات الفترة دي.", mood: "neutral" }],
-      },
-      {
-        id: "Q4C", text: "واضح إن الناس بتروح للمنافس اللي بيعمل عروض",
-        type: "premature", trustCost: -1, insight: null,
-        response: [{ characterId: "abuSaeed", text: "إنت لسه مشوفتش رقم واحد وبتقولي واضح؟ مش محتاج حد يقولي اللي عايز يسمعه.", mood: "angry" }],
-      },
-    ],
-  },
-  // المحطة 5
-  {
-    sceneIndex: 4,
-    afterDialogueIndex: 0,
-    options: [
-      {
-        id: "Q5A", text: "المرتجعات والاستبدالات دي — حسيت إنها زادت الفترة دي؟ ولا ثابتة زي كل شهر؟",
-        type: "key", trustCost: 0,
-        insight: "نورة اشتكت من ضغط آخر اليوم — ممكن مرتجعات، ممكن زحمة، ممكن حاجة تانية",
-        response: [{ characterId: "abuSaeed", text: "مش متابع بالظبط… بس نورة اشتكت إن الضغط زاد آخر اليوم. ممكن يكون ليها علاقة بالمرتجعات… ممكن الزحمة… مش عارف.", mood: "neutral" }],
-      },
-      {
-        id: "Q5B", text: "نورة بتشتكي من إيه بالظبط؟ الضغط ده في أوقات معينة ولا طول اليوم؟",
-        type: "secondary", trustCost: 0,
-        insight: "الضغط على نورة من 5 لـ 8 — وقت الذروة",
-        response: [{ characterId: "abuSaeed", text: "آخر اليوم بالذات… من 5 لـ 8 تقريبا. بتبقى لوحدها وبتحاول تخلص الطابور.", mood: "neutral" }],
-      },
-      {
-        id: "Q5C", text: "لازم تغير سياسة المرتجعات دي — ده بيكلفك",
-        type: "premature", trustCost: -1, insight: null,
-        response: [{ characterId: "abuSaeed", text: "إنت بتديني حل قبل ما تعرف لو ده أصلا سبب! أنا مش جايبك تنصحني… جايبك تحلل.", mood: "angry" }],
-      },
-    ],
-  },
-  // المحطة 6
-  {
-    sceneIndex: 5,
-    afterDialogueIndex: 0,
-    options: [
-      {
-        id: "Q6A", text: "خالد لما بيقول 'الشراء قليل' — بيقصد عدد الناس اللي بتشتري؟ ولا حجم اللي بتشتريه؟ ولا قيمة الفاتورة؟",
-        type: "key", trustCost: 0,
-        insight: "خالد بيلاحظ تغير في سلوك الزبون — محتاج تسأله مباشرة",
-        response: [{ characterId: "abuSaeed", text: "مش عارف بيقصد أنهي بالظبط. بس بيقول الزبون بيقيس كتير وبيمشي بحاجة واحدة. تقدر تسأله هو.", mood: "neutral" }],
-      },
-      {
-        id: "Q6B", text: "الجهاز بتاع نورة — بيطبع ملخص تفصيلي ولا رقم واحد بس آخر اليوم؟",
-        type: "secondary", trustCost: 0,
-        insight: "ملخص الجهاز فيه رقم نهائي بس — نورة عندها التفاصيل",
-        response: [{ characterId: "abuSaeed", text: "بيطبع ورقة فيها رقم نهائي… بس نورة ممكن تطلعلك تفاصيل أكتر.", mood: "neutral" }],
-      },
-      {
-        id: "Q6C", text: "واضح إن نورة بتغلط من الضغط — لازم تحط حد يساعدها",
-        type: "premature", trustCost: -1, insight: null,
-        response: [{ characterId: "abuSaeed", text: "إنت بتتهم نورة من غير ما تشوف ورقة واحدة؟ دي شغالة ومحترمة!", mood: "angry" }],
-      },
-    ],
-  },
-  // المحطة 7
-  {
-    sceneIndex: 6,
-    afterDialogueIndex: 1,
-    options: [
-      {
-        id: "Q7A", text: "قبل ما أشوف البيانات — إيه أكتر حاجة بتقلقك؟ الرقم اللي بيطلع من الجهاز… ولا إحساسك إن الناس بتشتري أقل… ولا حاجة تالتة؟",
-        type: "key", trustCost: 0,
-        insight: "أبو سعيد متأكد إن الناس موجودة بس الرقم النهائي مش متوقع — فيه فجوة بين الحركة والنتيجة",
-        response: [{ characterId: "abuSaeed", text: "الرقم. الرقم النهائي. أنا شايف الناس موجودة… بس الرقم مش متماشي مع اللي بشوفه. ده اللي بيأكلني.", mood: "neutral" },
-          { characterId: "abuSaeed", text: "اتفضل — كل الورق والتقارير تحت إيدك. واقعد مع خالد ونورة واسأل اللي محتاجه.", mood: "happy" }],
-      },
-      {
-        id: "Q7B", text: "طيب أنا هبدأ أبص على كل التقارير والفواتير وأشوف",
-        type: "secondary", trustCost: 0, insight: null,
-        response: [{ characterId: "abuSaeed", text: "الورق كله تحت إيدك… بس عايز أفهم — هتبص على إيه بالظبط؟", mood: "neutral" },
-          { characterId: "abuSaeed", text: "يلا… وربنا يوفقك.", mood: "neutral" }],
-      },
-      {
-        id: "Q7C", text: "أنا شايف المشكلة واضحة — محتاج تعمل عروض زي المحل اللي جنبك",
-        type: "premature", trustCost: -1, insight: null,
-        response: [{ characterId: "abuSaeed", text: "إنت بتديني حل قبل ما تبدأ أصلا! أنا جايبك تحلل… مش تنصح.", mood: "angry" },
-          { characterId: "abuSaeed", text: "ماشي… الورق تحت إيدك.", mood: "nervous" }],
-      },
-    ],
-  },
-];
-
-// Hypothesis IDs that get highlighted when player has 5+ key insights
-export const INSIGHT_HIGHLIGHTED_HYPOTHESES = ["H1", "H3", "H4", "H8"];
 
 // Legacy exports for backward compatibility
 export const INTRO_DIALOGUES = INTRO_SCENES.flatMap((s) => s.dialogues);
