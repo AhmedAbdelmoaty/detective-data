@@ -258,7 +258,7 @@ export const InterviewQuestionsScreen = ({ onComplete }: Props) => {
   return (
     <div className="relative min-h-screen overflow-hidden">
       <div className="absolute inset-0">
-        <img src={storeOfficeImg} alt="Office" className="w-full h-full object-cover" />
+        <img src={storeFrontImg} alt="Office" className="w-full h-full object-cover" />
         <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" />
       </div>
 
