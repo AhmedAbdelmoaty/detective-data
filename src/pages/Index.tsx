@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { IntroScreen } from "@/components/game/screens/IntroScreen";
 import { OnboardingScreen } from "@/components/game/screens/OnboardingScreen";
 import { ScenesScreen } from "@/components/game/screens/ScenesScreen";
+import { InterviewQuestionsScreen } from "@/components/game/screens/InterviewQuestionsScreen";
 import { HypothesisSelectScreen } from "@/components/game/screens/HypothesisSelectScreen";
 import { BriefingScreen } from "@/components/game/screens/BriefingScreen";
 import { AnalystHubScreen } from "@/components/game/screens/AnalystHubScreen";
@@ -21,6 +22,7 @@ type Screen =
   | "intro"
   | "onboarding"
   | "scenes"
+  | "interview"
   | "hypothesis-select"
   | "briefing"
   | "analyst-hub"
@@ -62,7 +64,8 @@ const GameContent = () => {
       {showNotebook && <FloatingNotebook />}
       {currentScreen === "intro" && <IntroScreen onNavigate={() => handleNavigate("onboarding")} />}
       {currentScreen === "onboarding" && <OnboardingScreen onComplete={() => handleNavigate("scenes")} />}
-      {currentScreen === "scenes" && <ScenesScreen onComplete={() => handleNavigate("hypothesis-select")} />}
+      {currentScreen === "scenes" && <ScenesScreen onComplete={() => handleNavigate("interview")} />}
+      {currentScreen === "interview" && <InterviewQuestionsScreen onComplete={() => handleNavigate("hypothesis-select")} />}
       {currentScreen === "hypothesis-select" && (
         <HypothesisSelectScreen onComplete={() => handleNavigate("briefing")} />
       )}
