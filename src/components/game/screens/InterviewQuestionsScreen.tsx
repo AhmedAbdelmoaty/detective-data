@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useGame } from "@/contexts/GameContext";
 import { HYPOTHESES } from "@/data/case1";
-import storeOfficeImg from "@/assets/rooms/office-room.png";
+import storeFrontImg from "@/assets/scenes/store-front.png";
 
 type Axis = "price" | "inventory" | "competition";
 
@@ -53,7 +53,7 @@ export const InterviewQuestionsScreen = ({ onComplete }: Props) => {
           if (opt.id === "q1b") return "بعد العصر والويك إند… بس أنا قصدي الفلوس في الآخر.";
           return "لا… من غير اتهامات. خلّينا نفهم الأول.";
         },
-        bridge: "تمام… كمّل." ,
+        bridge: "تمام… كمّل.",
       },
       {
         id: "q2",
@@ -68,7 +68,7 @@ export const InterviewQuestionsScreen = ({ onComplete }: Props) => {
           if (opt.id === "q2b") return "مش كل يوم… يوم كويس ويوم أقل… بس المتوسط نازل.";
           return "أنا مش عايز أحكم على حد قبل ما يبقى في دليل.";
         },
-        bridge: "طيب." ,
+        bridge: "طيب.",
       },
       {
         id: "q3",
@@ -83,7 +83,7 @@ export const InterviewQuestionsScreen = ({ onComplete }: Props) => {
           if (opt.id === "q3b") return "خلّينا نقول حوالي تلات أسابيع.";
           return "ممكن… وممكن لأ. ماينفعش نحكم بدري.";
         },
-        bridge: "تمام." ,
+        bridge: "تمام.",
       },
       {
         id: "q4",
@@ -98,7 +98,7 @@ export const InterviewQuestionsScreen = ({ onComplete }: Props) => {
           if (opt.id === "q4b") return "مش شايف شكوى واضحة… زي أي وقت يعني.";
           return "مش بالبساطة دي.";
         },
-        bridge: "طيب." ,
+        bridge: "طيب.",
       },
       {
         id: "q5",
@@ -113,7 +113,7 @@ export const InterviewQuestionsScreen = ({ onComplete }: Props) => {
           if (opt.id === "q5b") return "بتختلف… يوم ده ويوم ده. صعب أحدد.";
           return "ممكن… بس مش عايز أقررها كده.";
         },
-        bridge: "تمام." ,
+        bridge: "تمام.",
       },
       {
         id: "q6",
@@ -128,7 +128,7 @@ export const InterviewQuestionsScreen = ({ onComplete }: Props) => {
           if (opt.id === "q6b") return "ممكن… بس برضه الزحمة موجودة فمش مطمّن للتفسير ده.";
           return "ماينفعش نقفلها على كده.";
         },
-        bridge: "آخر سؤال." ,
+        bridge: "آخر سؤال.",
       },
       {
         id: "q7",
@@ -149,7 +149,11 @@ export const InterviewQuestionsScreen = ({ onComplete }: Props) => {
 
   const [idx, setIdx] = useState(0);
   const [strikes, setStrikes] = useState(0);
-  const [ruledOut, setRuledOut] = useState<Record<Axis, boolean>>({ price: false, inventory: false, competition: false });
+  const [ruledOut, setRuledOut] = useState<Record<Axis, boolean>>({
+    price: false,
+    inventory: false,
+    competition: false,
+  });
   const [weakCount, setWeakCount] = useState(0);
   const [lastReply, setLastReply] = useState<string | null>(null);
   const [isCut, setIsCut] = useState(false);
@@ -199,9 +203,9 @@ export const InterviewQuestionsScreen = ({ onComplete }: Props) => {
         return;
       }
     }
-    if (opt.kind === "weak") setWeakCount(c => c + 1);
+    if (opt.kind === "weak") setWeakCount((c) => c + 1);
     if (opt.kind === "strong" && opt.rulesOut) {
-      setRuledOut(prev => ({ ...prev, [opt.rulesOut!]: true }));
+      setRuledOut((prev) => ({ ...prev, [opt.rulesOut!]: true }));
     }
 
     // Advance after a short beat
@@ -210,7 +214,7 @@ export const InterviewQuestionsScreen = ({ onComplete }: Props) => {
       if (idx >= rounds.length - 1) {
         finish();
       } else {
-        setIdx(i => i + 1);
+        setIdx((i) => i + 1);
       }
     }, 900);
   };
@@ -228,10 +232,22 @@ export const InterviewQuestionsScreen = ({ onComplete }: Props) => {
   const header = (
     <div className="text-center mb-5">
       <h1 className="text-2xl font-bold text-foreground">مقابلة أبو سعيد</h1>
-      <p className="text-muted-foreground text-sm mt-1">اختار سؤال واحد في كل خطوة. اسأل صح عشان تنفي أسباب وتضيّق الدائرة.</p>
+      <p className="text-muted-foreground text-sm mt-1">
+        اختار سؤال واحد في كل خطوة. اسأل صح عشان تنفي أسباب وتضيّق الدائرة.
+      </p>
       <div className="mt-3 flex items-center justify-center gap-2 text-xs">
-        <span className="px-2 py-1 rounded-full bg-secondary/60 text-muted-foreground">خطوة {idx + 1}/{rounds.length}</span>
-        <span className={"px-2 py-1 rounded-full " + (strikes === 0 ? "bg-emerald-500/15 text-emerald-200" : strikes === 1 ? "bg-yellow-500/15 text-yellow-200" : "bg-red-500/15 text-red-200")}
+        <span className="px-2 py-1 rounded-full bg-secondary/60 text-muted-foreground">
+          خطوة {idx + 1}/{rounds.length}
+        </span>
+        <span
+          className={
+            "px-2 py-1 rounded-full " +
+            (strikes === 0
+              ? "bg-emerald-500/15 text-emerald-200"
+              : strikes === 1
+                ? "bg-yellow-500/15 text-yellow-200"
+                : "bg-red-500/15 text-red-200")
+          }
         >
           strikes: {strikes}/2
         </span>
@@ -301,9 +317,7 @@ export const InterviewQuestionsScreen = ({ onComplete }: Props) => {
           )}
 
           {!isCut && idx === rounds.length - 1 && !lastReply && (
-            <div className="mt-4 text-center text-muted-foreground text-xs">
-              جاري إنهاء المقابلة…
-            </div>
+            <div className="mt-4 text-center text-muted-foreground text-xs">جاري إنهاء المقابلة…</div>
           )}
         </div>
 
