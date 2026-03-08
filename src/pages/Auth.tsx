@@ -2,6 +2,7 @@ import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { Mail, Lock, LogIn, UserPlus, AlertCircle } from "lucide-react";
 import storeFrontImg from "@/assets/scenes/store-front.png";
 
@@ -147,6 +148,13 @@ const Auth = () => {
                   </motion.div>
                 )}
               </AnimatePresence>
+
+              {/* Forgot password link */}
+              {isLogin && (
+                <Link to="/forgot-password" className="text-primary text-xs hover:underline block text-left">
+                  نسيت كلمة المرور؟
+                </Link>
+              )}
 
               {/* Submit */}
               <motion.button

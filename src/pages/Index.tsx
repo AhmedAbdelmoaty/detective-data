@@ -18,6 +18,7 @@ import { MusicProvider, useMusic } from "@/hooks/useBackgroundMusic";
 import { SoundToggle } from "@/components/game/SoundToggle";
 import { FloatingNotebook } from "@/components/game/FloatingNotebook";
 import { GameProvider } from "@/contexts/GameContext";
+import { LogOut } from "lucide-react";
 
 type Screen =
   | "company-briefing"
@@ -37,7 +38,7 @@ type Screen =
 const showNotebookScreens: Screen[] = ["analyst-hub", "office", "evidence", "dashboard", "floor", "analysis"];
 
 const GameContent = () => {
-  const { profile } = useAuth();
+  const { profile, signOut } = useAuth();
   const [currentScreen, setCurrentScreen] = useState<Screen>(
     () => (localStorage.getItem("detective-game-screen") as Screen) || "company-briefing",
   );
@@ -63,6 +64,13 @@ const GameContent = () => {
   return (
     <div className="min-h-screen bg-background">
       <SoundToggle />
+      <button
+        onClick={signOut}
+        className="fixed top-4 left-4 z-50 p-2 rounded-lg bg-card/80 backdrop-blur-md border border-border text-muted-foreground hover:text-destructive hover:border-destructive/50 transition-colors"
+        title="تسجيل الخروج"
+      >
+        <LogOut className="w-5 h-5" />
+      </button>
       {showNotebook && <FloatingNotebook />}
       {currentScreen === "company-briefing" && <CompanyBriefingScreen onComplete={() => handleNavigate("intro")} />}
       {currentScreen === "intro" && <IntroScreen onNavigate={() => handleNavigate("onboarding")} />}
