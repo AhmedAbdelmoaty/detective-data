@@ -216,10 +216,10 @@ export const EnhancedDialogue = ({
             animate={{ x: 0, opacity: 1 }}
           >
             <h4 className={`font-bold text-lg ${colors.name}`}>
-              {names.ar}
+              {resolvedNames.ar}
             </h4>
             <span className="text-muted-foreground text-sm">
-              ({names.en})
+              ({resolvedNames.en})
             </span>
           </motion.div>
 

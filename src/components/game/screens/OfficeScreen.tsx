@@ -215,6 +215,8 @@ export const OfficeScreen = ({ onNavigate }: OfficeScreenProps) => {
                 onNavigate("result");
               }}
               allowClickOutside={false}
+              playerName={profile?.display_name || undefined}
+              playerGender={profile?.gender as "male" | "female" | undefined}
             />
           </motion.div>
         )}

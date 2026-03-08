@@ -69,6 +69,8 @@ export const ScenesScreen = ({ onComplete }: ScenesScreenProps) => {
             allowClickOutside={false}
             onSaveNote={handleSaveNote}
             savedNoteIds={savedNoteIds}
+            playerName={profile?.display_name || undefined}
+            playerGender={profile?.gender as "male" | "female" | undefined}
           />
         </motion.div>
       )}
