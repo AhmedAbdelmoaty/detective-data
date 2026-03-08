@@ -16,6 +16,7 @@ interface OfficeScreenProps {
 
 export const OfficeScreen = ({ onNavigate }: OfficeScreenProps) => {
   const { state, addToNotebook, isInNotebook } = useGame();
+  const { profile } = useAuth();
   const { playSound } = useSound();
   const [activePanel, setActivePanel] = useState<string | null>(null);
   const [showReplayScenes, setShowReplayScenes] = useState(false);
