@@ -18,6 +18,7 @@ const sceneBgs = [abuSaeed1, abuSaeed2, abuSaeed3, abuSaeed4];
 export const ScenesScreen = ({ onComplete }: ScenesScreenProps) => {
   const [currentScene, setCurrentScene] = useState(0);
   const { addToNotebook, isInNotebook } = useGame();
+  const { profile } = useAuth();
   const scene = INTRO_SCENES[currentScene];
   const savedNoteIds = [...Array(100)].map((_, i) => `S${i}`).filter(id => isInNotebook(id));
 
