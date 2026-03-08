@@ -168,8 +168,8 @@ export const CompanyBriefingScreen = ({ onComplete, isReviewMode = false }: Comp
         animate={{ opacity: 1, y: 0 }}
       >
         <p className="text-muted-foreground text-sm">🏢 مكتب الشركة</p>
-        <h2 className="text-accent font-bold text-lg">IMP</h2>
-        <p className="text-muted-foreground text-xs">Institute of Management Professionals</p>
+        <h2 className="text-accent font-bold text-lg">Pinnacle Consulting</h2>
+        <p className="text-muted-foreground text-xs">بيناكل للاستشارات</p>
       </motion.div>
 
       <EnhancedDialogue
