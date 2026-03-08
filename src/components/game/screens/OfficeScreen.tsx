@@ -5,6 +5,7 @@ import { InteractiveRoom } from "../InteractiveRoom";
 import { EnhancedDialogue } from "../EnhancedDialogue";
 import { GameOverlay } from "../GameOverlay";
 import { useGame } from "@/contexts/GameContext";
+import { useAuth } from "@/contexts/AuthContext";
 import { useSound } from "@/hooks/useSoundEffects";
 import { CASE_INFO, INTRO_SCENES, ABU_SAEED_EXTRA_DIALOGUES, ENDINGS, HYPOTHESES } from "@/data/case1";
 import detectiveOffice from "@/assets/rooms/detective-office.png";
