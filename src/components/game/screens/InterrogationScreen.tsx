@@ -17,6 +17,7 @@ interface InterrogationScreenProps {
 
 export const InterrogationScreen = ({ onNavigate }: InterrogationScreenProps) => {
   const { state, addToNotebook, isInNotebook, markInterviewComplete, isInterviewComplete } = useGame();
+  const { profile } = useAuth();
   const { playSound } = useSound();
   const [activeCharacter, setActiveCharacter] = useState<string | null>(null);
 
