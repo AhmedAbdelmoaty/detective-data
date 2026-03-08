@@ -24,6 +24,8 @@ interface EnhancedDialogueProps {
   onIndexChange?: (index: number) => void;
   onSaveNote?: (saveId: string, saveText: string) => void;
   savedNoteIds?: string[];
+  playerName?: string;
+  playerGender?: "male" | "female";
 }
 
 const characterColors: Record<string, { bg: string; border: string; name: string }> = {
