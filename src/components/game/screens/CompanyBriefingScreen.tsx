@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import { useAuth } from "@/contexts/AuthContext";
 import { gText } from "@/lib/gText";
 import { EnhancedDialogue } from "../EnhancedDialogue";
@@ -24,8 +24,18 @@ export const CompanyBriefingScreen = ({ onComplete }: CompanyBriefingScreenProps
       mood: "happy" as const,
     },
     {
+      characterId: "detective",
+      text: `الحمد لله يا أستاذ منصور، تمام.`,
+      mood: "happy" as const,
+    },
+    {
       characterId: "mansour",
       text: `اليوم عندنا موضوع مهم. وصلنا طلب استشارة جديد، وأنا ${gText("شايفك الشخص المناسب ليه", "شايفك الشخص المناسب ليه", g)}.`,
+      mood: "neutral" as const,
+    },
+    {
+      characterId: "detective",
+      text: `تحت أمرك يا أستاذ منصور. إيه التفاصيل؟`,
       mood: "neutral" as const,
     },
     {
@@ -39,14 +49,24 @@ export const CompanyBriefingScreen = ({ onComplete }: CompanyBriefingScreenProps
       mood: "neutral" as const,
     },
     {
+      characterId: "detective",
+      text: gText("فاهم. يعني المطلوب أحلل الموقف وأوصل للسبب؟", "فاهمة. يعني المطلوب أحلل الموقف وأوصل للسبب؟", g),
+      mood: "neutral" as const,
+    },
+    {
       characterId: "mansour",
-      text: `المطلوب ${gText("منك تروح", "منك تروحي", g)} المتجر، ${gText("تقابل", "تقابلي", g)} أبو سعيد، ${gText("تسمع", "تسمعي", g)} منه، و${gText("تحلل", "تحللي", g)} الموقف. ${gText("شوف", "شوفي", g)} البيانات، ${gText("اتكلم", "اتكلمي", g)} مع الموظفين، و${gText("حاول توصل", "حاولي توصلي", g)} للسبب الحقيقي.`,
+      text: `بالظبط. المطلوب ${gText("تروح", "تروحي", g)} المتجر، ${gText("تقابل", "تقابلي", g)} أبو سعيد، ${gText("تسمع", "تسمعي", g)} منه، و${gText("تحلل", "تحللي", g)} الموقف. ${gText("شوف", "شوفي", g)} البيانات، ${gText("اتكلم", "اتكلمي", g)} مع الموظفين، و${gText("حاول توصل", "حاولي توصلي", g)} للسبب الحقيقي.`,
       mood: "neutral" as const,
     },
     {
       characterId: "mansour",
       text: `أبو سعيد راجل محترم وبيثق فينا. ${gText("فخلّي شغلك يعكس", "فخلّي شغلك يعكس", g)} مستوى الشركة.`,
       mood: "neutral" as const,
+    },
+    {
+      characterId: "detective",
+      text: gText("إن شاء الله يا أستاذ منصور. مش هخيب ظنك.", "إن شاء الله يا أستاذ منصور. مش هخيب ظنك.", g),
+      mood: "happy" as const,
     },
     {
       characterId: "mansour",
@@ -69,7 +89,6 @@ export const CompanyBriefingScreen = ({ onComplete }: CompanyBriefingScreenProps
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.6 }}
         >
-          {/* Player avatar */}
           <motion.div
             className="mx-auto w-28 h-28 rounded-full overflow-hidden border-4 border-accent glow-accent"
             initial={{ scale: 0 }}
@@ -79,7 +98,6 @@ export const CompanyBriefingScreen = ({ onComplete }: CompanyBriefingScreenProps
             <img src={avatarImg} alt={name} className="w-full h-full object-cover" />
           </motion.div>
 
-          {/* Motivational text */}
           <motion.div
             className="p-6 rounded-xl bg-card/80 backdrop-blur-md border border-border space-y-4"
             initial={{ y: 20, opacity: 0 }}
@@ -110,7 +128,6 @@ export const CompanyBriefingScreen = ({ onComplete }: CompanyBriefingScreenProps
             </p>
           </motion.div>
 
-          {/* Start button */}
           <motion.button
             onClick={onComplete}
             className="relative px-8 py-4 rounded-xl text-lg font-bold overflow-hidden group w-full"
@@ -138,11 +155,9 @@ export const CompanyBriefingScreen = ({ onComplete }: CompanyBriefingScreenProps
 
   return (
     <div className="min-h-screen bg-background relative">
-      {/* Office background */}
       <div className="absolute inset-0 bg-gradient-to-b from-secondary via-background to-background" />
       <div className="absolute inset-0 bg-grid-pattern opacity-5" />
 
-      {/* Office scene header */}
       <motion.div
         className="relative z-10 pt-12 pb-4 text-center"
         initial={{ opacity: 0, y: -20 }}
@@ -152,7 +167,6 @@ export const CompanyBriefingScreen = ({ onComplete }: CompanyBriefingScreenProps
         <h2 className="text-accent font-bold text-lg">IMP Consulting</h2>
       </motion.div>
 
-      {/* Dialogue */}
       <EnhancedDialogue
         dialogues={dialogues}
         isActive={phase === "dialogue"}

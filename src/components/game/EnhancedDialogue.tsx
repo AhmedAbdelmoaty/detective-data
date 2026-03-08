@@ -33,7 +33,7 @@ const characterColors: Record<string, { bg: string; border: string; name: string
   khaled: { bg: "from-red-900/90 to-red-950/90", border: "border-red-500/50", name: "text-red-400" },
   noura: { bg: "from-purple-900/90 to-purple-950/90", border: "border-purple-500/50", name: "text-purple-400" },
   umFahd: { bg: "from-cyan-900/90 to-cyan-950/90", border: "border-cyan-500/50", name: "text-cyan-400" },
-  mansour: { bg: "from-amber-900/90 to-amber-950/90", border: "border-amber-500/50", name: "text-amber-400" },
+  mansour: { bg: "from-emerald-900/90 to-emerald-950/90", border: "border-emerald-500/50", name: "text-emerald-400" },
 };
 
 const characterNames: Record<string, { ar: string; en: string }> = {
