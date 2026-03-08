@@ -110,7 +110,7 @@ export const AnimatedCharacter = ({
           <motion.div className={`absolute inset-0 ${colors.bg}`} animate={{ opacity: [0.3, 0.6, 0.3] }} transition={{ duration: 2, repeat: Infinity }} />
         )}
         <motion.img
-          src={character.image}
+          src={displayImage}
           alt={character.nameEn}
           className={`${sizeClass.image} object-cover rounded-full`}
           animate={isSpeaking ? { scale: [1, 1.02, 1], transition: { duration: 0.3, repeat: Infinity } } : {}}
