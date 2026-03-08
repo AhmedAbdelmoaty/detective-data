@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
@@ -9,8 +9,15 @@ const Setup = () => {
   const [name, setName] = useState("");
   const [gender, setGender] = useState<"male" | "female" | null>(null);
   const [loading, setLoading] = useState(false);
-  const { updateProfile } = useAuth();
+  const { updateProfile, isProfileComplete } = useAuth();
   const navigate = useNavigate();
+
+  // If profile already complete, skip setup
+  useEffect(() => {
+    if (isProfileComplete) {
+      navigate("/", { replace: true });
+    }
+  }, [isProfileComplete, navigate]);
 
   const handleSubmit = async () => {
     if (!name.trim() || !gender) return;
@@ -31,6 +38,8 @@ const Setup = () => {
     { id: "female" as const, label: "محللة", image: saraImg },
   ];
 
+  if (isProfileComplete) return null;
+
   return (
     <div className="min-h-screen bg-background flex items-center justify-center px-4">
       <motion.div
@@ -43,7 +52,6 @@ const Setup = () => {
           <p className="text-muted-foreground text-sm">عرّفنا بنفسك قبل ما نبدأ المهمة</p>
         </div>
 
-        {/* Name input */}
         <div>
           <label className="text-foreground text-sm font-bold mb-2 block">اسمك</label>
           <input
@@ -56,7 +64,6 @@ const Setup = () => {
           />
         </div>
 
-        {/* Character selection */}
         <div>
           <label className="text-foreground text-sm font-bold mb-3 block">اختر شخصيتك</label>
           <div className="flex gap-4 justify-center">
@@ -87,7 +94,6 @@ const Setup = () => {
           </div>
         </div>
 
-        {/* Submit */}
         <motion.button
           onClick={handleSubmit}
           disabled={!name.trim() || !gender || loading}
