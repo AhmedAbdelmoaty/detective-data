@@ -2,6 +2,8 @@ import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { BookmarkPlus, Check, X } from "lucide-react";
 import { AnimatedCharacter, type CharacterId } from "./AnimatedCharacter";
+import analystImg from "@/assets/characters/analyst.png";
+import saraImg from "@/assets/characters/sara.png";
 
 interface DialogueLine {
   characterId: string;
