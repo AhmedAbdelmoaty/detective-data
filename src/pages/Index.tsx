@@ -1,4 +1,6 @@
 import { useState, useEffect } from "react";
+import { useAuth } from "@/contexts/AuthContext";
+import { CompanyBriefingScreen } from "@/components/game/screens/CompanyBriefingScreen";
 import { IntroScreen } from "@/components/game/screens/IntroScreen";
 import { OnboardingScreen } from "@/components/game/screens/OnboardingScreen";
 import { ScenesScreen } from "@/components/game/screens/ScenesScreen";
@@ -18,6 +20,7 @@ import { FloatingNotebook } from "@/components/game/FloatingNotebook";
 import { GameProvider } from "@/contexts/GameContext";
 
 type Screen =
+  | "company-briefing"
   | "intro"
   | "onboarding"
   | "scenes"
@@ -34,8 +37,9 @@ type Screen =
 const showNotebookScreens: Screen[] = ["analyst-hub", "office", "evidence", "dashboard", "floor", "analysis"];
 
 const GameContent = () => {
+  const { profile } = useAuth();
   const [currentScreen, setCurrentScreen] = useState<Screen>(
-    () => (localStorage.getItem("detective-game-screen") as Screen) || "intro",
+    () => (localStorage.getItem("detective-game-screen") as Screen) || "company-briefing",
   );
   const { setCurrentRoom } = useMusic();
 
@@ -60,6 +64,7 @@ const GameContent = () => {
     <div className="min-h-screen bg-background">
       <SoundToggle />
       {showNotebook && <FloatingNotebook />}
+      {currentScreen === "company-briefing" && <CompanyBriefingScreen onComplete={() => handleNavigate("intro")} />}
       {currentScreen === "intro" && <IntroScreen onNavigate={() => handleNavigate("onboarding")} />}
       {currentScreen === "onboarding" && <OnboardingScreen onComplete={() => handleNavigate("scenes")} />}
       {currentScreen === "scenes" && <ScenesScreen onComplete={() => handleNavigate("hypothesis-select")} />}
