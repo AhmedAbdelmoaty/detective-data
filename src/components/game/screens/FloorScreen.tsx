@@ -67,6 +67,7 @@ const phaseSceneBgs: Record<string, string> = {
 
 export const FloorScreen = ({ onNavigate }: FloorScreenProps) => {
   const { state, addToNotebook, isInNotebook, markInterviewComplete, isInterviewComplete } = useGame();
+  const { profile } = useAuth();
   const { playSound } = useSound();
   const [activeCharacter, setActiveCharacter] = useState<string | null>(null);
 
