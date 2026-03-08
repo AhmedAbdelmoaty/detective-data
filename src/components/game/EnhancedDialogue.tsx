@@ -62,6 +62,8 @@ export const EnhancedDialogue = ({
   onIndexChange,
   onSaveNote,
   savedNoteIds = [],
+  playerName,
+  playerGender,
 }: EnhancedDialogueProps) => {
   const [internalIndex, setInternalIndex] = useState(0);
   const [displayedText, setDisplayedText] = useState("");
