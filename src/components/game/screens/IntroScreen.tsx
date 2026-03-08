@@ -1,6 +1,7 @@
 import { motion } from "framer-motion";
 import { AnimatedCharacter } from "../AnimatedCharacter";
 import { CASE_INFO, CHARACTERS } from "@/data/case1";
+import { useAuth } from "@/contexts/AuthContext";
 import storeFrontImg from "@/assets/scenes/store-front.png";
 import introCharImg from "@/assets/scenes/intro-character.png";
 

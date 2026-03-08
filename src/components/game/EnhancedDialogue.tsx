@@ -33,6 +33,7 @@ const characterColors: Record<string, { bg: string; border: string; name: string
   khaled: { bg: "from-red-900/90 to-red-950/90", border: "border-red-500/50", name: "text-red-400" },
   noura: { bg: "from-purple-900/90 to-purple-950/90", border: "border-purple-500/50", name: "text-purple-400" },
   umFahd: { bg: "from-cyan-900/90 to-cyan-950/90", border: "border-cyan-500/50", name: "text-cyan-400" },
+  mansour: { bg: "from-amber-900/90 to-amber-950/90", border: "border-amber-500/50", name: "text-amber-400" },
 };
 
 const characterNames: Record<string, { ar: string; en: string }> = {
@@ -44,6 +45,7 @@ const characterNames: Record<string, { ar: string; en: string }> = {
   khaled: { ar: "خالد", en: "Khaled" },
   noura: { ar: "نورة", en: "Noura" },
   umFahd: { ar: "أميرة", en: "Amira" },
+  mansour: { ar: "أ. منصور", en: "A. Mansour" },
 };
 
 export const EnhancedDialogue = ({
@@ -147,7 +149,7 @@ export const EnhancedDialogue = ({
   if (!isActive || !currentDialogue) return null;
 
   const isSaved = currentDialogue.saveId ? savedNoteIds.includes(currentDialogue.saveId) : false;
-  const validCharacterIds: CharacterId[] = ["ahmed", "sara", "karim", "detective", "abuSaeed", "khaled", "noura", "umFahd"];
+  const validCharacterIds: CharacterId[] = ["ahmed", "sara", "karim", "detective", "abuSaeed", "khaled", "noura", "umFahd", "mansour"];
   const animCharId = validCharacterIds.includes(currentDialogue.characterId as CharacterId)
     ? (currentDialogue.characterId as CharacterId)
     : "detective";
