@@ -23,6 +23,8 @@ interface AnimatedCharacterProps {
   onClick?: () => void;
   entrance?: "slide-left" | "slide-right" | "fade" | "zoom" | "bounce";
   className?: string;
+  imageOverride?: string;
+  nameOverride?: string;
 }
 
 const characterData: Record<CharacterId, { name: string; nameEn: string; role: string; roleEn: string; image: string; color: string }> = {
