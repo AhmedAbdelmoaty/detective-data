@@ -190,6 +190,7 @@ export const EnhancedDialogue = ({
             mood={currentDialogue.mood || "neutral"}
             showName={false}
             entrance="bounce"
+            imageOverride={detectiveImageOverride}
           />
         </motion.div>
 
