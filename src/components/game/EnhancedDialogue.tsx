@@ -2,6 +2,8 @@ import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { BookmarkPlus, Check, X } from "lucide-react";
 import { AnimatedCharacter, type CharacterId } from "./AnimatedCharacter";
+import analystImg from "@/assets/characters/analyst.png";
+import saraImg from "@/assets/characters/sara.png";
 
 interface DialogueLine {
   characterId: string;
@@ -22,6 +24,8 @@ interface EnhancedDialogueProps {
   onIndexChange?: (index: number) => void;
   onSaveNote?: (saveId: string, saveText: string) => void;
   savedNoteIds?: string[];
+  playerName?: string;
+  playerGender?: "male" | "female";
 }
 
 const characterColors: Record<string, { bg: string; border: string; name: string }> = {
@@ -58,6 +62,8 @@ export const EnhancedDialogue = ({
   onIndexChange,
   onSaveNote,
   savedNoteIds = [],
+  playerName,
+  playerGender,
 }: EnhancedDialogueProps) => {
   const [internalIndex, setInternalIndex] = useState(0);
   const [displayedText, setDisplayedText] = useState("");
@@ -69,7 +75,13 @@ export const EnhancedDialogue = ({
   
   const currentDialogue = dialogues[currentIndex];
   const colors = characterColors[currentDialogue?.characterId || "detective"];
-  const names = characterNames[currentDialogue?.characterId || "detective"];
+  const isDetective = currentDialogue?.characterId === "detective";
+  const resolvedNames = isDetective && playerName
+    ? { ar: playerName, en: playerName }
+    : characterNames[currentDialogue?.characterId || "detective"];
+  const detectiveImageOverride = isDetective && playerGender
+    ? (playerGender === "female" ? saraImg : analystImg)
+    : undefined;
 
   // Reset state when deactivated
   useEffect(() => {
@@ -178,6 +190,7 @@ export const EnhancedDialogue = ({
             mood={currentDialogue.mood || "neutral"}
             showName={false}
             entrance="bounce"
+            imageOverride={detectiveImageOverride}
           />
         </motion.div>
 
@@ -203,10 +216,10 @@ export const EnhancedDialogue = ({
             animate={{ x: 0, opacity: 1 }}
           >
             <h4 className={`font-bold text-lg ${colors.name}`}>
-              {names.ar}
+              {resolvedNames.ar}
             </h4>
             <span className="text-muted-foreground text-sm">
-              ({names.en})
+              ({resolvedNames.en})
             </span>
           </motion.div>
 

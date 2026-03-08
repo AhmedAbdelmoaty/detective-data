@@ -2,6 +2,7 @@ import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { EnhancedDialogue } from "../EnhancedDialogue";
 import { useGame } from "@/contexts/GameContext";
+import { useAuth } from "@/contexts/AuthContext";
 import { INTRO_SCENES } from "@/data/case1";
 import abuSaeed1 from "@/assets/scenes/abu-saeed-1.png";
 import abuSaeed2 from "@/assets/scenes/abu-saeed-2.png";
@@ -17,6 +18,7 @@ const sceneBgs = [abuSaeed1, abuSaeed2, abuSaeed3, abuSaeed4];
 export const ScenesScreen = ({ onComplete }: ScenesScreenProps) => {
   const [currentScene, setCurrentScene] = useState(0);
   const { addToNotebook, isInNotebook } = useGame();
+  const { profile } = useAuth();
   const scene = INTRO_SCENES[currentScene];
   const savedNoteIds = [...Array(100)].map((_, i) => `S${i}`).filter(id => isInNotebook(id));
 
@@ -67,6 +69,8 @@ export const ScenesScreen = ({ onComplete }: ScenesScreenProps) => {
             allowClickOutside={false}
             onSaveNote={handleSaveNote}
             savedNoteIds={savedNoteIds}
+            playerName={profile?.display_name || undefined}
+            playerGender={profile?.gender as "male" | "female" | undefined}
           />
         </motion.div>
       )}

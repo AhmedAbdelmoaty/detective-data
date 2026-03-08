@@ -5,6 +5,7 @@ import { InteractiveRoom } from "../InteractiveRoom";
 import { EnhancedDialogue } from "../EnhancedDialogue";
 import { GameOverlay } from "../GameOverlay";
 import { useGame } from "@/contexts/GameContext";
+import { useAuth } from "@/contexts/AuthContext";
 import { useSound } from "@/hooks/useSoundEffects";
 import { CASE_INFO, INTRO_SCENES, ABU_SAEED_EXTRA_DIALOGUES, ENDINGS, HYPOTHESES } from "@/data/case1";
 import detectiveOffice from "@/assets/rooms/detective-office.png";
@@ -15,6 +16,7 @@ interface OfficeScreenProps {
 
 export const OfficeScreen = ({ onNavigate }: OfficeScreenProps) => {
   const { state, addToNotebook, isInNotebook } = useGame();
+  const { profile } = useAuth();
   const { playSound } = useSound();
   const [activePanel, setActivePanel] = useState<string | null>(null);
   const [showReplayScenes, setShowReplayScenes] = useState(false);
@@ -169,6 +171,8 @@ export const OfficeScreen = ({ onNavigate }: OfficeScreenProps) => {
               allowClickOutside={true}
               onSaveNote={handleSaveNote}
               savedNoteIds={savedNoteIds}
+              playerName={profile?.display_name || undefined}
+              playerGender={profile?.gender as "male" | "female" | undefined}
             />
           </motion.div>
         )}
@@ -188,6 +192,8 @@ export const OfficeScreen = ({ onNavigate }: OfficeScreenProps) => {
               onComplete={() => setShowExtraDialogue(false)}
               onClose={() => setShowExtraDialogue(false)}
               allowClickOutside={true}
+              playerName={profile?.display_name || undefined}
+              playerGender={profile?.gender as "male" | "female" | undefined}
             />
           </motion.div>
         )}
@@ -209,6 +215,8 @@ export const OfficeScreen = ({ onNavigate }: OfficeScreenProps) => {
                 onNavigate("result");
               }}
               allowClickOutside={false}
+              playerName={profile?.display_name || undefined}
+              playerGender={profile?.gender as "male" | "female" | undefined}
             />
           </motion.div>
         )}

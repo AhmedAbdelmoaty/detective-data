@@ -23,6 +23,8 @@ interface AnimatedCharacterProps {
   onClick?: () => void;
   entrance?: "slide-left" | "slide-right" | "fade" | "zoom" | "bounce";
   className?: string;
+  imageOverride?: string;
+  nameOverride?: string;
 }
 
 const characterData: Record<CharacterId, { name: string; nameEn: string; role: string; roleEn: string; image: string; color: string }> = {
@@ -78,11 +80,15 @@ export const AnimatedCharacter = ({
   onClick,
   entrance = "fade",
   className = "",
+  imageOverride,
+  nameOverride,
 }: AnimatedCharacterProps) => {
   const character = characterData[characterId];
   const sizeClass = sizeClasses[size];
   const colors = colorClasses[character.color as keyof typeof colorClasses];
   const entranceAnim = entranceVariants[entrance];
+  const displayImage = imageOverride || character.image;
+  const displayName = nameOverride || character.name;
 
   return (
     <motion.div
@@ -104,7 +110,7 @@ export const AnimatedCharacter = ({
           <motion.div className={`absolute inset-0 ${colors.bg}`} animate={{ opacity: [0.3, 0.6, 0.3] }} transition={{ duration: 2, repeat: Infinity }} />
         )}
         <motion.img
-          src={character.image}
+          src={displayImage}
           alt={character.nameEn}
           className={`${sizeClass.image} object-cover rounded-full`}
           animate={isSpeaking ? { scale: [1, 1.02, 1], transition: { duration: 0.3, repeat: Infinity } } : {}}
@@ -124,7 +130,7 @@ export const AnimatedCharacter = ({
       </motion.div>
       {showName && (
         <motion.div className="mt-3 text-center" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}>
-          <p className={`font-bold ${colors.text}`}>{character.name}</p>
+          <p className={`font-bold ${colors.text}`}>{displayName}</p>
           <p className="text-xs text-muted-foreground">{character.role}</p>
         </motion.div>
       )}

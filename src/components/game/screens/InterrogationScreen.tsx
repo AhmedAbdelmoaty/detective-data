@@ -5,6 +5,7 @@ import { EnhancedDialogue } from "../EnhancedDialogue";
 import { AnimatedCharacter } from "../AnimatedCharacter";
 import { NavigationButton } from "../NavigationButton";
 import { useGame } from "@/contexts/GameContext";
+import { useAuth } from "@/contexts/AuthContext";
 import { useSound } from "@/hooks/useSoundEffects";
 import { CHARACTERS } from "@/data/case1";
 import { toast } from "sonner";
@@ -16,6 +17,7 @@ interface InterrogationScreenProps {
 
 export const InterrogationScreen = ({ onNavigate }: InterrogationScreenProps) => {
   const { state, addToNotebook, isInNotebook, markInterviewComplete, isInterviewComplete } = useGame();
+  const { profile } = useAuth();
   const { playSound } = useSound();
   const [activeCharacter, setActiveCharacter] = useState<string | null>(null);
 
@@ -122,6 +124,8 @@ export const InterrogationScreen = ({ onNavigate }: InterrogationScreenProps) =>
               allowClickOutside={isActiveCharCompleted}
               onSaveNote={handleSaveNote}
               savedNoteIds={savedNoteIds}
+              playerName={profile?.display_name || undefined}
+              playerGender={profile?.gender as "male" | "female" | undefined}
             />
           </motion.div>
         )}

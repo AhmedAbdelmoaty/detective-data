@@ -9,7 +9,7 @@ const Setup = () => {
   const [name, setName] = useState("");
   const [gender, setGender] = useState<"male" | "female" | null>(null);
   const [loading, setLoading] = useState(false);
-  const { updateProfile, isProfileComplete } = useAuth();
+  const { updateProfile, isProfileComplete, loading: authLoading } = useAuth();
   const navigate = useNavigate();
 
   // If profile already complete, skip setup
@@ -38,7 +38,7 @@ const Setup = () => {
     { id: "female" as const, label: "محللة", image: saraImg },
   ];
 
-  if (isProfileComplete) return null;
+  if (authLoading || isProfileComplete) return null;
 
   return (
     <div className="min-h-screen bg-background flex items-center justify-center px-4">
