@@ -32,7 +32,7 @@ const hotspots = [
 
 export const AnalysisScreen = ({ onNavigate }: AnalysisScreenProps) => {
   const {
-    state, canSelectHypotheses,
+    state, toggleHypothesis, isHypothesisSelected, canSelectHypotheses,
     setMatrixCell, getMatrixCell, canUseMatrix, setFinalHypothesis,
     removeFromNotebook,
   } = useGame();
@@ -46,7 +46,7 @@ export const AnalysisScreen = ({ onNavigate }: AnalysisScreenProps) => {
       return;
     }
     if (id === "matrix" && !canUseMatrix()) {
-      toast.error("محتاج يكون عندك 3 فرضيات على الأقل عشان تفتح المصفوفة!");
+      toast.error("محتاج تختار 4 فرضيات الأول!");
       return;
     }
     setActivePanel(id);
@@ -126,7 +126,6 @@ export const AnalysisScreen = ({ onNavigate }: AnalysisScreenProps) => {
     }
 
     if (activePanel === "hypotheses") {
-      const selectedH = HYPOTHESES.filter(h => state.selectedHypotheses.includes(h.id));
       return (
         <div className="bg-background/95 backdrop-blur-xl border border-primary/30 rounded-2xl p-6 max-w-3xl w-full max-h-[85vh] overflow-auto">
           <div className="flex items-center justify-between mb-4">
@@ -138,31 +137,51 @@ export const AnalysisScreen = ({ onNavigate }: AnalysisScreenProps) => {
           </div>
           <div className="space-y-4">
             <div className="flex items-center justify-between">
-              <p className="text-muted-foreground text-sm">دي الفرضيات اللي لسه واقفة بعد المقابلة:</p>
+              <p className="text-muted-foreground text-sm">اختر 4 فرضيات تعتقد إنها ممكن تكون السبب:</p>
               <span className={cn("text-sm font-bold px-3 py-1 rounded-full",
-                state.selectedHypotheses.length >= 3 ? "bg-neon-green/20 text-neon-green" : "bg-primary/20 text-primary"
+                state.selectedHypotheses.length === 4 ? "bg-neon-green/20 text-neon-green" : "bg-primary/20 text-primary"
               )}>
-                {state.selectedHypotheses.length}
+                {state.selectedHypotheses.length}/4
               </span>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              {selectedH.map((h) => (
-                <motion.div key={h.id}
-                  className="p-4 rounded-xl border text-right bg-card/50 border-border"
-                  initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
-                >
-                  <div className="flex items-start gap-3">
-                    <div className="w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold shrink-0 bg-primary text-primary-foreground">
-                      {h.id}
+              {HYPOTHESES.map((h) => {
+                const isSelected = isHypothesisSelected(h.id);
+                const isFull = state.selectedHypotheses.length >= 4 && !isSelected;
+                return (
+                  <motion.button key={h.id}
+                    onClick={() => { if (!isFull) toggleHypothesis(h.id); }}
+                    disabled={isFull}
+                    className={cn(
+                      "p-4 rounded-xl border text-right transition-all",
+                      isSelected ? "bg-primary/20 border-primary ring-2 ring-primary/30" :
+                      isFull ? "bg-muted/30 border-border opacity-50 cursor-not-allowed" :
+                      "bg-card/50 border-border hover:border-primary/50"
+                    )}
+                    whileHover={!isFull ? { scale: 1.02 } : {}}
+                  >
+                    <div className="flex items-start gap-3">
+                      <div className={cn("w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold shrink-0",
+                        isSelected ? "bg-primary text-primary-foreground" : "bg-secondary text-muted-foreground"
+                      )}>
+                        {isSelected ? "✓" : h.id}
+                      </div>
+                      <div>
+                        <p className={cn("font-bold", isSelected ? "text-primary" : "text-foreground")}>{h.text}</p>
+                        <p className="text-xs text-muted-foreground mt-1">{h.description}</p>
+                      </div>
                     </div>
-                    <div>
-                      <p className="font-bold text-foreground">{h.text}</p>
-                      <p className="text-xs text-muted-foreground mt-1">{h.description}</p>
-                    </div>
-                  </div>
-                </motion.div>
-              ))}
+                  </motion.button>
+                );
+              })}
             </div>
+            {state.selectedHypotheses.length === 4 && (
+              <motion.div className="p-4 bg-neon-green/10 border border-neon-green/30 rounded-xl text-center"
+                initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
+              >
+                <p className="text-neon-green font-bold">✓ ممتاز! دلوقتي تقدر تفتح المصفوفة وتبدأ التحليل.</p>
+              </motion.div>
+            )}
           </div>
         </div>
       );
@@ -359,7 +378,7 @@ export const AnalysisScreen = ({ onNavigate }: AnalysisScreenProps) => {
       {!canUseMatrix() && (
         <div className="absolute z-10" style={{ left: "84%", top: "46%" }}>
           <div className="px-2 py-1 rounded bg-background/80 backdrop-blur-sm border border-border text-xs text-muted-foreground flex items-center gap-1">
-            <Lock className="w-3 h-3" /> محتاج 3 فرضيات
+            <Lock className="w-3 h-3" /> محتاج 4 فرضيات
           </div>
         </div>
       )}

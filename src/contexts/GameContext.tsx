@@ -97,10 +97,6 @@ interface GameContextType {
   canSelectHypotheses: () => boolean;
   swapHypothesis: (oldId: string, newId: string) => void;
 
-  // Generated hypotheses (from interview)
-  setGeneratedHypotheses: (hypothesisIds: string[]) => void;
-  resetToInterview: () => void;
-
   // ACH Matrix
   setMatrixCell: (evidenceId: string, hypothesisId: string, value: string) => void;
   getMatrixCell: (evidenceId: string, hypothesisId: string) => string | null;
@@ -259,10 +255,12 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
   // Hypotheses
   const toggleHypothesis = useCallback((hypothesisId: string) => {
     setState(prev => {
-      // Hypotheses are generated automatically from the interview.
-      // Keep this as a no-op to prevent accidental changes from legacy UI.
-      if (prev.selectedHypotheses.includes(hypothesisId)) return prev;
-      return prev;
+      const isSelected = prev.selectedHypotheses.includes(hypothesisId);
+      if (isSelected) {
+        return { ...prev, selectedHypotheses: prev.selectedHypotheses.filter(id => id !== hypothesisId) };
+      }
+      if (prev.selectedHypotheses.length >= 4) return prev;
+      return { ...prev, selectedHypotheses: [...prev.selectedHypotheses, hypothesisId] };
     });
   }, []);
 
@@ -272,22 +270,6 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
 
   const canSelectHypotheses = useCallback((): boolean => {
     return true; // Always can select in new flow
-  }, []);
-
-  const setGeneratedHypotheses = useCallback((hypothesisIds: string[]) => {
-    setState(prev => ({
-      ...prev,
-      selectedHypotheses: hypothesisIds,
-      hasUsedSwap: true,
-    }));
-  }, []);
-
-  const resetToInterview = useCallback(() => {
-    setState(prev => ({
-      ...prev,
-      selectedHypotheses: [],
-      hasUsedSwap: false,
-    }));
   }, []);
 
   const swapHypothesis = useCallback((oldId: string, newId: string) => {
@@ -323,7 +305,7 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
   }, [state.achMatrix]);
 
   const canUseMatrix = useCallback((): boolean => {
-    return state.selectedHypotheses.length >= 3;
+    return state.selectedHypotheses.length === 4;
   }, [state.selectedHypotheses.length]);
 
   const addToMatrix = useCallback((sourceId: string) => {
@@ -426,7 +408,7 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   const canSubmitFinal = useCallback((): boolean => {
-    return state.selectedHypotheses.length >= 3 && state.finalHypothesis === null;
+    return state.selectedHypotheses.length === 4 && state.finalHypothesis === null;
   }, [state.selectedHypotheses.length, state.finalHypothesis]);
 
   // Game helpers
@@ -489,8 +471,6 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
       isHypothesisSelected,
       canSelectHypotheses,
       swapHypothesis,
-      setGeneratedHypotheses,
-      resetToInterview,
       setMatrixCell,
       getMatrixCell,
       canUseMatrix,
