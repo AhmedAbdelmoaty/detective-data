@@ -5,6 +5,7 @@ import { EnhancedDialogue } from "../EnhancedDialogue";
 import { AnimatedCharacter } from "../AnimatedCharacter";
 import { NavigationButton } from "../NavigationButton";
 import { useGame } from "@/contexts/GameContext";
+import { useAuth } from "@/contexts/AuthContext";
 import { useSound } from "@/hooks/useSoundEffects";
 import { CHARACTERS } from "@/data/case1";
 import { toast } from "sonner";
