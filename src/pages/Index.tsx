@@ -1,6 +1,7 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { CompanyBriefingScreen } from "@/components/game/screens/CompanyBriefingScreen";
+import { TravelScreen } from "@/components/game/screens/TravelScreen";
 import { IntroScreen } from "@/components/game/screens/IntroScreen";
 import { OnboardingScreen } from "@/components/game/screens/OnboardingScreen";
 import { ScenesScreen } from "@/components/game/screens/ScenesScreen";
@@ -17,11 +18,12 @@ import { SoundProvider } from "@/hooks/useSoundEffects";
 import { MusicProvider, useMusic } from "@/hooks/useBackgroundMusic";
 import { SoundToggle } from "@/components/game/SoundToggle";
 import { FloatingNotebook } from "@/components/game/FloatingNotebook";
+import { PlayerSettingsPanel } from "@/components/game/PlayerSettingsPanel";
 import { GameProvider } from "@/contexts/GameContext";
-import { LogOut } from "lucide-react";
 
 type Screen =
   | "company-briefing"
+  | "travel"
   | "intro"
   | "onboarding"
   | "scenes"
@@ -33,24 +35,35 @@ type Screen =
   | "dashboard"
   | "floor"
   | "analysis"
-  | "result";
+  | "result"
+  | "replay-briefing";
 
 const showNotebookScreens: Screen[] = ["analyst-hub", "office", "evidence", "dashboard", "floor", "analysis"];
 
 const GameContent = () => {
-  const { profile, signOut } = useAuth();
-  const [currentScreen, setCurrentScreen] = useState<Screen>(
-    () => (localStorage.getItem("detective-game-screen") as Screen) || "company-briefing",
-  );
+  const { user } = useAuth();
+  const userId = user?.id || "guest";
+  const storageKey = `detective-game-screen-${userId}`;
+
+  const [currentScreen, setCurrentScreen] = useState<Screen>(() => {
+    const saved = localStorage.getItem(storageKey) as Screen | null;
+    // Don't restore replay-briefing
+    if (saved === "replay-briefing") return "company-briefing";
+    return saved || "company-briefing";
+  });
+
   const { setCurrentRoom } = useMusic();
 
   useEffect(() => {
-    localStorage.setItem("detective-game-screen", currentScreen);
-  }, [currentScreen]);
+    // Don't persist replay-briefing
+    if (currentScreen !== "replay-briefing") {
+      localStorage.setItem(storageKey, currentScreen);
+    }
+  }, [currentScreen, storageKey]);
 
-  const handleNavigate = (screen: string) => {
+  const handleNavigate = useCallback((screen: string) => {
     setCurrentScreen(screen as Screen);
-  };
+  }, []);
 
   useEffect(() => {
     const roomTypes = ["intro", "office", "evidence", "analysis", "floor", "result"];
@@ -59,20 +72,46 @@ const GameContent = () => {
     }
   }, [currentScreen, setCurrentRoom]);
 
+  const handleReplayBriefing = useCallback(() => {
+    setCurrentScreen("replay-briefing");
+  }, []);
+
+  const handleResetProgress = useCallback(() => {
+    localStorage.removeItem(storageKey);
+    setCurrentScreen("company-briefing");
+  }, [storageKey]);
+
   const showNotebook = showNotebookScreens.includes(currentScreen);
+  const showSettings = currentScreen !== "replay-briefing";
 
   return (
     <div className="min-h-screen bg-background">
-      <SoundToggle />
-      <button
-        onClick={signOut}
-        className="fixed top-4 left-4 z-50 p-2 rounded-lg bg-card/80 backdrop-blur-md border border-border text-muted-foreground hover:text-destructive hover:border-destructive/50 transition-colors"
-        title="تسجيل الخروج"
-      >
-        <LogOut className="w-5 h-5" />
-      </button>
+      {showSettings && (
+        <>
+          <SoundToggle />
+          <PlayerSettingsPanel
+            onReplayBriefing={handleReplayBriefing}
+            onResetProgress={handleResetProgress}
+          />
+        </>
+      )}
       {showNotebook && <FloatingNotebook />}
-      {currentScreen === "company-briefing" && <CompanyBriefingScreen onComplete={() => handleNavigate("intro")} />}
+
+      {currentScreen === "company-briefing" && (
+        <CompanyBriefingScreen onComplete={() => handleNavigate("travel")} />
+      )}
+      {currentScreen === "replay-briefing" && (
+        <CompanyBriefingScreen
+          onComplete={() => {
+            const saved = localStorage.getItem(storageKey) as Screen;
+            setCurrentScreen(saved || "intro");
+          }}
+          isReviewMode
+        />
+      )}
+      {currentScreen === "travel" && (
+        <TravelScreen onComplete={() => handleNavigate("intro")} />
+      )}
       {currentScreen === "intro" && <IntroScreen onNavigate={() => handleNavigate("onboarding")} />}
       {currentScreen === "onboarding" && <OnboardingScreen onComplete={() => handleNavigate("scenes")} />}
       {currentScreen === "scenes" && <ScenesScreen onComplete={() => handleNavigate("hypothesis-select")} />}

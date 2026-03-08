@@ -3,15 +3,16 @@ import { motion } from "framer-motion";
 import { useAuth } from "@/contexts/AuthContext";
 import { gText } from "@/lib/gText";
 import { EnhancedDialogue } from "../EnhancedDialogue";
-import { Rocket, Sparkles } from "lucide-react";
+import { Rocket, Target, GraduationCap } from "lucide-react";
 import analystImg from "@/assets/characters/analyst.png";
 import saraImg from "@/assets/characters/sara.png";
 
 interface CompanyBriefingScreenProps {
   onComplete: () => void;
+  isReviewMode?: boolean;
 }
 
-export const CompanyBriefingScreen = ({ onComplete }: CompanyBriefingScreenProps) => {
+export const CompanyBriefingScreen = ({ onComplete, isReviewMode = false }: CompanyBriefingScreenProps) => {
   const { profile } = useAuth();
   const name = profile?.display_name || "محلل";
   const g = profile?.gender || "male";
@@ -20,7 +21,7 @@ export const CompanyBriefingScreen = ({ onComplete }: CompanyBriefingScreenProps
   const dialogues = [
     {
       characterId: "mansour",
-      text: `أهلا يا ${name}… ${gText("اتفضل اقعد", "اتفضلي اقعدي", g)}. ${gText("عامل", "عاملة", g)} إيه؟`,
+      text: `أهلاً يا ${name}… ${gText("اتفضل اقعد", "اتفضلي اقعدي", g)}. ${gText("عامل", "عاملة", g)} إيه؟`,
       mood: "happy" as const,
     },
     {
@@ -76,6 +77,10 @@ export const CompanyBriefingScreen = ({ onComplete }: CompanyBriefingScreenProps
   ];
 
   const handleDialogueComplete = () => {
+    if (isReviewMode) {
+      onComplete();
+      return;
+    }
     setPhase("transition");
   };
 
@@ -104,28 +109,27 @@ export const CompanyBriefingScreen = ({ onComplete }: CompanyBriefingScreenProps
             animate={{ y: 0, opacity: 1 }}
             transition={{ delay: 0.4 }}
           >
-            <Sparkles className="w-8 h-8 text-accent mx-auto" />
+            <GraduationCap className="w-8 h-8 text-accent mx-auto" />
             <p className="text-foreground text-lg font-bold leading-relaxed" dir="rtl">
               {gText(
-                `أنت ذاكرت كويس وفاهم المنهجية من كورس IMP…`,
-                `أنتِ ذاكرتي كويس وفاهمة المنهجية من كورس IMP…`,
+                `أنت خلّصت دبلومة IMP وفاهم عقلية المحلل ومنهجية التفكير الصح. دلوقتي جه وقت الاختبار الحقيقي — أثبت إنك قد المهمة.`,
+                `أنتِ خلّصتي دبلومة IMP وفاهمة عقلية المحلل ومنهجية التفكير الصح. دلوقتي جه وقت الاختبار الحقيقي — أثبتي إنك قد المهمة.`,
                 g
               )}
             </p>
             <p className="text-muted-foreground text-base leading-relaxed" dir="rtl">
               {gText(
-                `دلوقتي وقت التطبيق. طبّق اللي اتعلمته، اسأل الأسئلة الصح، واثبت إنك قد المهمة.`,
-                `دلوقتي وقت التطبيق. طبّقي اللي اتعلمتيه، اسألي الأسئلة الصح، واثبتي إنك قد المهمة.`,
+                `قدامك قضية حقيقية — متجر بيخسر ومحتاج حد يفهم ليه. استخدم كل اللي اتعلمته: حلل، اسأل الأسئلة الصح، واوصل للسبب الحقيقي.`,
+                `قدامك قضية حقيقية — متجر بيخسر ومحتاج حد يفهم ليه. استخدمي كل اللي اتعلمتيه: حللي، اسألي الأسئلة الصح، واوصلي للسبب الحقيقي.`,
                 g
               )}
             </p>
-            <p className="text-accent font-bold text-sm" dir="rtl">
-              {gText(
-                `خش يا بطل شوف دنيتك! 💪`,
-                `خشي يا بطلة شوفي دنيتك! 💪`,
-                g
-              )}
-            </p>
+            <div className="flex items-center justify-center gap-2 pt-2">
+              <Target className="w-4 h-4 text-primary" />
+              <p className="text-primary font-bold text-sm" dir="rtl">
+                وقت التطبيق. القضية الأولى بتبدأ دلوقتي. 🚀
+              </p>
+            </div>
           </motion.div>
 
           <motion.button
@@ -145,7 +149,7 @@ export const CompanyBriefingScreen = ({ onComplete }: CompanyBriefingScreenProps
             />
             <span className="relative z-10 flex items-center justify-center gap-2 text-white">
               <Rocket className="w-5 h-5" />
-              يلا نبدأ المهمة!
+              يلا نروح المتجر!
             </span>
           </motion.button>
         </motion.div>
@@ -164,7 +168,8 @@ export const CompanyBriefingScreen = ({ onComplete }: CompanyBriefingScreenProps
         animate={{ opacity: 1, y: 0 }}
       >
         <p className="text-muted-foreground text-sm">🏢 مكتب الشركة</p>
-        <h2 className="text-accent font-bold text-lg">IMP Consulting</h2>
+        <h2 className="text-accent font-bold text-lg">IMP</h2>
+        <p className="text-muted-foreground text-xs">Institute of Management Professionals</p>
       </motion.div>
 
       <EnhancedDialogue

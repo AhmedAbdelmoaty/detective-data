@@ -1,9 +1,8 @@
 import { motion } from "framer-motion";
 import { AnimatedCharacter } from "../AnimatedCharacter";
 import { CASE_INFO, CHARACTERS } from "@/data/case1";
-import { useAuth } from "@/contexts/AuthContext";
+import { MapPin, DoorOpen } from "lucide-react";
 import storeFrontImg from "@/assets/scenes/store-front.png";
-import introCharImg from "@/assets/scenes/intro-character.png";
 
 interface IntroScreenProps {
   onStart?: () => void;
@@ -27,31 +26,29 @@ export const IntroScreen = ({ onStart, onNavigate }: IntroScreenProps) => {
       </div>
 
       <div className="relative z-10 flex flex-col items-center justify-center h-full px-4">
-        {/* Title + character in a glass box */}
+        {/* Arrival card */}
         <motion.div
           className="flex flex-col items-center px-8 py-5 rounded-2xl bg-black/60 backdrop-blur-md border border-white/10 mb-4"
           initial={{ y: -30, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           transition={{ duration: 0.8 }}
         >
+          <motion.div
+            className="flex items-center gap-2 mb-2"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.3 }}
+          >
+            <MapPin className="w-4 h-4 text-accent" />
+            <span className="text-accent text-sm font-bold">وصلت المتجر</span>
+          </motion.div>
           <h1 className="text-2xl md:text-3xl font-bold text-white mb-0.5 drop-shadow-lg">
-            Data Analyst
+            Fashion House
           </h1>
-          <h2 className="text-base md:text-lg text-amber-400 font-bold mb-1">محلل البيانات</h2>
-          <p className="text-white/70 text-xs mb-3">اكتشف القصة ورا البيانات</p>
-
-          {/* Hero character - small & circular */}
-          <motion.img
-            src={introCharImg}
-            alt="Data Analyst"
-            className="w-16 h-16 rounded-full object-cover border-2 border-amber-400/50 shadow-[0_0_15px_rgba(251,191,36,0.3)]"
-            initial={{ scale: 0 }}
-            animate={{ scale: 1 }}
-            transition={{ delay: 0.3, type: "spring", damping: 12 }}
-          />
+          <p className="text-white/70 text-xs mb-1" dir="rtl">أبو سعيد مستنيك جوه</p>
         </motion.div>
 
-        {/* Start button */}
+        {/* Enter button */}
         <motion.button
           className="relative px-8 py-3 rounded-xl text-base font-bold overflow-hidden group mb-4"
           style={{ background: "linear-gradient(135deg, hsl(var(--primary)), hsl(var(--accent)))" }}
@@ -67,10 +64,13 @@ export const IntroScreen = ({ onStart, onNavigate }: IntroScreenProps) => {
             animate={{ x: ["-200%", "200%"] }}
             transition={{ duration: 2, repeat: Infinity, repeatDelay: 1 }}
           />
-          <span className="relative z-10 flex items-center gap-2 text-white">🚀 ابدأ المهمة</span>
+          <span className="relative z-10 flex items-center gap-2 text-white">
+            <DoorOpen className="w-5 h-5" />
+            ادخل المتجر
+          </span>
         </motion.button>
 
-        {/* Case info card - centered */}
+        {/* Case info card */}
         <motion.div
           className="max-w-md w-full text-center"
           initial={{ opacity: 0 }}
