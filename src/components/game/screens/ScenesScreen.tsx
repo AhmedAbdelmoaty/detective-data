@@ -2,6 +2,7 @@ import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { EnhancedDialogue } from "../EnhancedDialogue";
 import { useGame } from "@/contexts/GameContext";
+import { useAuth } from "@/contexts/AuthContext";
 import { INTRO_SCENES } from "@/data/case1";
 import abuSaeed1 from "@/assets/scenes/abu-saeed-1.png";
 import abuSaeed2 from "@/assets/scenes/abu-saeed-2.png";
