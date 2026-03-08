@@ -176,6 +176,8 @@ export const CompanyBriefingScreen = ({ onComplete, isReviewMode = false }: Comp
         dialogues={dialogues}
         isActive={phase === "dialogue"}
         onComplete={handleDialogueComplete}
+        playerName={name}
+        playerGender={g as "male" | "female"}
       />
     </div>
   );

@@ -38,7 +38,7 @@ const Setup = () => {
     { id: "female" as const, label: "محللة", image: saraImg },
   ];
 
-  if (isProfileComplete) return null;
+  if (authLoading || isProfileComplete) return null;
 
   return (
     <div className="min-h-screen bg-background flex items-center justify-center px-4">

@@ -130,7 +130,7 @@ export const AnimatedCharacter = ({
       </motion.div>
       {showName && (
         <motion.div className="mt-3 text-center" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}>
-          <p className={`font-bold ${colors.text}`}>{character.name}</p>
+          <p className={`font-bold ${colors.text}`}>{displayName}</p>
           <p className="text-xs text-muted-foreground">{character.role}</p>
         </motion.div>
       )}
