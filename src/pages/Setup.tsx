@@ -9,7 +9,7 @@ const Setup = () => {
   const [name, setName] = useState("");
   const [gender, setGender] = useState<"male" | "female" | null>(null);
   const [loading, setLoading] = useState(false);
-  const { updateProfile, isProfileComplete } = useAuth();
+  const { updateProfile, isProfileComplete, loading: authLoading } = useAuth();
   const navigate = useNavigate();
 
   // If profile already complete, skip setup
