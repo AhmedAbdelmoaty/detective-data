@@ -75,7 +75,13 @@ export const EnhancedDialogue = ({
   
   const currentDialogue = dialogues[currentIndex];
   const colors = characterColors[currentDialogue?.characterId || "detective"];
-  const names = characterNames[currentDialogue?.characterId || "detective"];
+  const isDetective = currentDialogue?.characterId === "detective";
+  const resolvedNames = isDetective && playerName
+    ? { ar: playerName, en: playerName }
+    : characterNames[currentDialogue?.characterId || "detective"];
+  const detectiveImageOverride = isDetective && playerGender
+    ? (playerGender === "female" ? saraImg : analystImg)
+    : undefined;
 
   // Reset state when deactivated
   useEffect(() => {
