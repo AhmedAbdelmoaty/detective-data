@@ -192,6 +192,8 @@ export const OfficeScreen = ({ onNavigate }: OfficeScreenProps) => {
               onComplete={() => setShowExtraDialogue(false)}
               onClose={() => setShowExtraDialogue(false)}
               allowClickOutside={true}
+              playerName={profile?.display_name || undefined}
+              playerGender={profile?.gender as "male" | "female" | undefined}
             />
           </motion.div>
         )}
