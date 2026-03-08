@@ -80,11 +80,15 @@ export const AnimatedCharacter = ({
   onClick,
   entrance = "fade",
   className = "",
+  imageOverride,
+  nameOverride,
 }: AnimatedCharacterProps) => {
   const character = characterData[characterId];
   const sizeClass = sizeClasses[size];
   const colors = colorClasses[character.color as keyof typeof colorClasses];
   const entranceAnim = entranceVariants[entrance];
+  const displayImage = imageOverride || character.image;
+  const displayName = nameOverride || character.name;
 
   return (
     <motion.div
